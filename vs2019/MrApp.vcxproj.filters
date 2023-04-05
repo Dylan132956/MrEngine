@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine">
+      <UniqueIdentifier>{DE023E26-CA65-CDCA-73EB-05815F2D994D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\App">
+      <UniqueIdentifier>{1BD85349-07D1-729B-3003-58201C5B52A7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\App\Platform">
+      <UniqueIdentifier>{FC3FD2E3-6802-066E-B1B2-94FA1DB4DE4B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\App\Platform\win">
+      <UniqueIdentifier>{0659DE02-7271-C52C-3B1E-55C6A7F559C6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\MrEngine\App\Platform\win\Main.cpp">
+      <Filter>src\MrEngine\App\Platform\win</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

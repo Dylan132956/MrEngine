@@ -1,0 +1,52 @@
+#pragma once
+
+#include <stdint.h>
+#include <string>
+
+namespace filament
+{
+    namespace backend
+    {
+        class CommandStream;
+        using DriverApi = CommandStream;
+        enum class Backend : uint8_t;
+        enum class ShaderModel : uint8_t;
+        class Platform;
+        class Driver;
+    }
+}
+
+namespace moonriver
+{
+    class MrEngine;
+
+    class Engine
+    {
+    public:
+        static Engine* Create(void* native_window, int width, int height, uint64_t flags = 0, void* shared_gl_context = nullptr);
+        static void Destroy(Engine** engine);
+        static Engine* Instance();
+        void Execute();
+        filament::backend::DriverApi& GetDriverApi();
+        const filament::backend::Backend& GetBackend() const;
+        filament::backend::ShaderModel GetShaderModel() const;
+        void* GetDefaultRenderTarget();
+        void OnResize(void* native_window, int width, int height, uint64_t flags = 0);
+        int GetWidth() const;
+        int GetHeight() const;
+        bool HasQuit() const;
+        const std::string& GetDataPath();
+    private:
+        Engine(void* native_window, int width, int height, uint64_t flags, void* shared_gl_context);
+        ~Engine();
+
+    private:
+        friend class Memory;
+
+    private:
+        static Engine* m_instance;
+        MrEngine* m_pCore;
+        std::string m_data_path;
+    };
+
+}

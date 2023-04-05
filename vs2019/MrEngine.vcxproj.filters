@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine">
+      <UniqueIdentifier>{DE023E26-CA65-CDCA-73EB-05815F2D994D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine">
+      <UniqueIdentifier>{90F520AC-FC56-FEB9-85C4-446CF1243579}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\Engine.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\FileSystem.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\Shader.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\triangle.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\FileSystem.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\Shader.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
