@@ -251,6 +251,26 @@ project 'MrEngine'
     links { "MrEngineDep" }
 	targetname 'MrEngine'
 
+project "lua"
+    kind "StaticLib"
+    language "C++" 
+	defines { 'LUA_USE_C89', 'OF_LUA_CPP' }
+	local ofLuaSourceFiles = {
+		'../src/MrEngine/Dep/lua/*.h*',
+		'../src/MrEngine/Dep/lua/*.cpp',
+	  }
+    files(ofLuaSourceFiles)
+    removefiles{
+        '../src/MrEngine/Dep/lua/lua.cpp',
+        '../src/MrEngine/Dep/lua/luac.cpp',
+        '../src/MrEngine/Dep/lua/luaall.cpp',
+    }
+    if IS_XCODE then 
+        configuration { "Release" }
+            flags { "Optimize", "OptimizeSpeed", "NoEditAndContinue", "Symbols" } 
+    end
+    targetname "lua"
+
 project 'MrApp'
 	kind 'ConsoleApp'
 	language 'C++'
@@ -275,4 +295,327 @@ project 'MrApp'
 	end
 
 	targetname 'MrApp'
+
+project "mcpp"
+	kind "StaticLib"
+	language "C++"
+
+	defines {
+		'_MBCS',
+		'MCPP_LIB=1',
+	}
+
+	files{
+		'../src/MrEngine/Dep/mcpp-2.7.2/src/*.c*',
+		'../src/MrEngine/Dep/mcpp-2.7.2/src/*.h',
+	}
+
+	removefiles{
+		'../src/MrEngine/Dep/mcpp-2.7.2/src/testmain.c'
+	}
+
+	targetname "mcpp"
+
+project "hlslcc_lib"
+	kind "StaticLib"
+	language "C++"
+
+	files{
+		'../src/MrEngine/Dep/hlslcc_lib/*.cpp*',
+		'../src/MrEngine/Dep/hlslcc_lib/*.h',
+	}
+
+	targetname "hlslcc_lib"
+
+--- zilib
+project "zlib"
+    kind "StaticLib"
+    language "C++"
+    if IS_VS then
+        files{
+            '../src/MrEngine/Dep/zlib/*.c*',
+            '../src/MrEngine/Dep/zlib/*.h',
+        }
+	end
+
+    files{
+        '../src/MrEngine/Dep/zlib/wrapper/*.c',
+        '../src/MrEngine/Dep/zlib/wrapper/*.h',
+        '../src/MrEngine/Dep/zlib/wrapper/*.cpp',
+        '../src/MrEngine/Dep/zlib/wrapper/*.h',
+    }
+
+    includedirs {
+        '../src/MrEngine/Dep/zlib',
+    }
+
+    exportedIncludedirs_zlib = {
+        '../src/MrEngine/Dep/zlib/wrapper'
+    }
+
+    if IS_VS then
+        table.insert(exportedIncludedirs_zlib, '../src/MrEngine/Dep/zlib')
+    end
+
+    if IS_XCODE then 
+        configuration { "Release" }
+            flags { "Optimize", "OptimizeSpeed", "NoEditAndContinue", "Symbols" } 
+    end
+    targetname "zlib"
+
+project "liblz4"
+    kind "StaticLib"
+    language "C++"
+
+    files{
+        '../src/MrEngine/Dep/liblz4/include/lz4.h',
+        '../src/MrEngine/Dep/liblz4/include/lz4frame.h',
+        '../src/MrEngine/Dep/liblz4/include/lz4frame_static.h',
+        '../src/MrEngine/Dep/liblz4/include/lz4hc.h',
+        '../src/MrEngine/Dep/liblz4/include/xxhash.h',
+        '../src/MrEngine/Dep/liblz4/src/lz4frame.c',
+        '../src/MrEngine/Dep/liblz4/src/lz4.c',
+        '../src/MrEngine/Dep/liblz4/src/lz4hc.c',
+        '../src/MrEngine/Dep/liblz4/src/xxhash.c',
+    }
+
+    includedirs {
+        '../src/MrEngine/Dep/liblz4/include',
+    }
+
+    if IS_XCODE then 
+        configuration { "Release" }
+            flags { "Optimize", "OptimizeSpeed", "NoEditAndContinue", "Symbols" } 
+    end
+    targetname "liblz4"
+
+project "libzip"
+    kind "StaticLib"
+    language "C++"
+
+    if IS_VS then
+        defines {
+            'ZIP_STATIC',
+        }
+    else
+        defines {
+            'HAVE_UNISTD_H',
+            'HAVE_STRINGS_H',
+            'HAVE_STRCASECMP',
+            'HAVE_FSEEKO',
+            'HAVE_FTELLO',
+            'HAVE_STRICMP',
+        }
+    end
+
+    files{
+        '../src/MrEngine/Dep/libzip/source/zip_add.c',
+        '../src/MrEngine/Dep/libzip/source/zip_add_dir.c',
+        '../src/MrEngine/Dep/libzip/source/zip_add_entry.c',
+        '../src/MrEngine/Dep/libzip/source/zip_algorithm_deflate.c',
+        '../src/MrEngine/Dep/libzip/source/zip_buffer.c',
+        '../src/MrEngine/Dep/libzip/source/zip_close.c',
+        '../src/MrEngine/Dep/libzip/source/zip_delete.c',
+        '../src/MrEngine/Dep/libzip/source/zip_dir_add.c',
+        '../src/MrEngine/Dep/libzip/source/zip_dirent.c',
+        '../src/MrEngine/Dep/libzip/source/zip_discard.c',
+        '../src/MrEngine/Dep/libzip/source/zip_entry.c',
+        '../src/MrEngine/Dep/libzip/source/zip_err_str.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error_clear.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error_get.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error_get_sys_type.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error_strerror.c',
+        '../src/MrEngine/Dep/libzip/source/zip_error_to_str.c',
+        '../src/MrEngine/Dep/libzip/source/zip_extra_field.c',
+        '../src/MrEngine/Dep/libzip/source/zip_extra_field_api.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fclose.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fdopen.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_add.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_error_clear.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_error_get.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_get_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_get_external_attributes.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_get_offset.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_rename.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_replace.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_set_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_set_encryption.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_set_external_attributes.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_set_mtime.c',
+        '../src/MrEngine/Dep/libzip/source/zip_file_strerror.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fopen.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fopen_encrypted.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fopen_index.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fopen_index_encrypted.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fread.c',
+        '../src/MrEngine/Dep/libzip/source/zip_fseek.c',
+        '../src/MrEngine/Dep/libzip/source/zip_ftell.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_archive_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_archive_flag.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_encryption_implementation.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_file_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_name.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_num_entries.c',
+        '../src/MrEngine/Dep/libzip/source/zip_get_num_files.c',
+        '../src/MrEngine/Dep/libzip/source/zip_hash.c',
+        '../src/MrEngine/Dep/libzip/source/zip_io_util.c',
+        '../src/MrEngine/Dep/libzip/source/zip_libzip_version.c',
+        '../src/MrEngine/Dep/libzip/source/zip_memdup.c',
+        '../src/MrEngine/Dep/libzip/source/zip_name_locate.c',
+        '../src/MrEngine/Dep/libzip/source/zip_new.c',
+        '../src/MrEngine/Dep/libzip/source/zip_open.c',
+        '../src/MrEngine/Dep/libzip/source/zip_pkware.c',
+        '../src/MrEngine/Dep/libzip/source/zip_progress.c',
+        '../src/MrEngine/Dep/libzip/source/zip_rename.c',
+        '../src/MrEngine/Dep/libzip/source/zip_replace.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_archive_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_archive_flag.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_default_password.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_file_comment.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_file_compression.c',
+        '../src/MrEngine/Dep/libzip/source/zip_set_name.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_accept_empty.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_begin_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_begin_write_cloning.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_buffer.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_call.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_close.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_commit_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_compress.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_crc.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_error.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_file_common.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_file_stdio.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_free.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_function.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_get_file_attributes.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_is_deleted.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_layered.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_open.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_pkware_decode.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_pkware_encode.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_read.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_remove.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_rollback_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_seek.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_seek_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_stat.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_supports.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_tell.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_tell_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_window.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_write.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_zip.c',
+        '../src/MrEngine/Dep/libzip/source/zip_source_zip_new.c',
+        '../src/MrEngine/Dep/libzip/source/zip_stat.c',
+        '../src/MrEngine/Dep/libzip/source/zip_stat_index.c',
+        '../src/MrEngine/Dep/libzip/source/zip_stat_init.c',
+        '../src/MrEngine/Dep/libzip/source/zip_strerror.c',
+        '../src/MrEngine/Dep/libzip/source/zip_string.c',
+        '../src/MrEngine/Dep/libzip/source/zip_unchange.c',
+        '../src/MrEngine/Dep/libzip/source/zip_unchange_all.c',
+        '../src/MrEngine/Dep/libzip/source/zip_unchange_archive.c',
+        '../src/MrEngine/Dep/libzip/source/zip_unchange_data.c',
+        '../src/MrEngine/Dep/libzip/source/zip_utf-8.c',
+    }
+
+    if IS_VS then
+        files{
+            '../src/MrEngine/Dep/libzip/source/zip_crypto_win.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_win32.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_win32_ansi.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_win32_named.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_win32_utf16.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_win32_utf8.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_winzip_aes_decode.c',
+            '../src/MrEngine/Dep/libzip/source/zip_source_winzip_aes_encode.c',
+            '../src/MrEngine/Dep/libzip/source/zip_winzip_aes.c',
+        }
+    else
+        files{
+            '../src/MrEngine/Dep/libzip/source/zip_source_file_stdio_named.c',
+            '../src/MrEngine/Dep/libzip/source/zip_random_unix.c',
+			'../src/MrEngine/Dep/libzip/source/zip_mkstempm.c',
+        }
+    end
+
+    includedirs {
+        '../src/MrEngine/Dep/libzip/include',
+        '../src/MrEngine/Dep/zlib',
+    }
+
+    if IS_XCODE then 
+        configuration { "Release" }
+            flags { "Optimize", "OptimizeSpeed", "NoEditAndContinue", "Symbols" } 
+    end
+    targetname "libzip"
+
+project "zipper"
+	kind "StaticLib"
+	language "C++"
+
+	files{
+		'../src/MrEngine/Dep/zipper/zipper/CDirEntry.h',
+		'../src/MrEngine/Dep/zipper/zipper/CDirEntry.cpp',
+		'../src/MrEngine/Dep/zipper/zipper/defs.h',
+		'../src/MrEngine/Dep/zipper/zipper/tools.h',
+		'../src/MrEngine/Dep/zipper/zipper/tools.cpp',
+		'../src/MrEngine/Dep/zipper/zipper/unzipper.h',
+		'../src/MrEngine/Dep/zipper/zipper/unzipper.cpp',
+		'../src/MrEngine/Dep/zipper/zipper/zipper.h',
+		'../src/MrEngine/Dep/zipper/zipper/zipper.cpp',
+		'../src/MrEngine/Dep/zipper/zipper/tps/dirent.h',
+		'../src/MrEngine/Dep/zipper/zipper/tps/dirent.c',
+		'../src/MrEngine/Dep/zipper/minizip/crypt.h',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi.h',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi.c',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi_buf.h',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi_buf.c',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi_mem.h',
+		'../src/MrEngine/Dep/zipper/minizip/ioapi_mem.c',
+		'../src/MrEngine/Dep/zipper/minizip/iowin32.h',
+		'../src/MrEngine/Dep/zipper/minizip/iowin32.c',
+		'../src/MrEngine/Dep/zipper/minizip/unzip.h',
+		'../src/MrEngine/Dep/zipper/minizip/unzip.c',
+		'../src/MrEngine/Dep/zipper/minizip/zip.h',
+		'../src/MrEngine/Dep/zipper/minizip/zip.c',
+	}
+
+	includedirs {
+		'../src/MrEngine/Dep/zipper/minizip',
+		'../src/MrEngine/Dep/zlib',
+	}
+
+	if IS_XCODE then 
+		configuration { "Release" }
+			flags { "Optimize", "OptimizeSpeed", "NoEditAndContinue", "Symbols" } 
+	end
+	targetname "zipper"
+
+project 'CompilerShader'
+	kind 'ConsoleApp'
+	language 'C++'
+	
+	flags { "Cpp11" }
+	defines { 'OF_LUA_CPP' }
+
+	includedirs {
+		'../src/MrEngine/Dep',
+		'../src/MrEngine/Dep/liblz4/include',
+		'../src/MrEngine/Dep/zlib',
+	}
+
+	files {
+		'../src/MrEngine/Tools/CompilerShader/**.*',
+	}
+
+	links { 'mcpp', 'hlslcc_lib', 'lua', 'zlib', 'zipper', 'libzip', 'liblz4' }
+
+    -- links { "MrEngine" }
+	-- if IS_VS then
+	-- 	links { 'opengl32','d3d11','d3dcompiler','winmm' }
+	-- end
+
+	targetname 'CompilerShader'
 

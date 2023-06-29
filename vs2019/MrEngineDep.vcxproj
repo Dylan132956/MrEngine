@@ -533,8 +533,6 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Dep\SPIRV-Cross\spirv_reflect.cpp">
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles\3.23.2\CompilerIdCXX\CMakeCXXCompilerId.cpp">
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\MrEngine\Dep\glslang\glslang\MachineIndependent\glslang.m4" />

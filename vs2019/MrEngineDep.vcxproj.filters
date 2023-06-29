@@ -106,18 +106,6 @@
     <Filter Include="src\MrEngine\Dep\SPIRV-Cross">
       <UniqueIdentifier>{1A205B11-06DB-4ABD-AF92-C3079B2C954D}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\MrEngine\Dep\SPIRV-Cross\build">
-      <UniqueIdentifier>{263C6760-1278-6ACA-7B8A-82C167E512E5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles">
-      <UniqueIdentifier>{16EADCE7-825A-DF60-4B79-59E9B7A81762}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles\3.23.2">
-      <UniqueIdentifier>{F893DB96-E4D2-8512-8D55-624479733B7D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles\3.23.2\CompilerIdCXX">
-      <UniqueIdentifier>{4FB4BCE3-3BA0-5453-A416-14A69021F583}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\MrEngine\Dep\glslang\glslang\MachineIndependent\glslang.m4">
@@ -696,9 +684,6 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Dep\SPIRV-Cross\spirv_reflect.cpp">
       <Filter>src\MrEngine\Dep\SPIRV-Cross</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles\3.23.2\CompilerIdCXX\CMakeCXXCompilerId.cpp">
-      <Filter>src\MrEngine\Dep\SPIRV-Cross\build\CMakeFiles\3.23.2\CompilerIdCXX</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
