@@ -48,13 +48,15 @@ namespace moonriver
         backend::SwapChainHandle m_swap_chain;
         uint32_t m_frame_id = 0;
         backend::RenderTargetHandle m_render_target;
+        //test draw
+        triangle* t = nullptr;
 
         bool m_quit = false;
 
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::OPENGL),
+            m_backend(backend::Backend::D3D11),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -95,10 +97,14 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
             Shader::Init();
+
+            t = new triangle();
         }
 
         void Shutdown()
         {
+            delete t;
+
             this->GetDriverApi().destroyRenderTarget(m_render_target);
 
             if (!UTILS_HAS_THREADING)
@@ -182,8 +188,8 @@ namespace moonriver
 
         void Render()
         {
-            static triangle t;
-            t.run();
+            
+            t->run();
 
             this->Flush();
         }

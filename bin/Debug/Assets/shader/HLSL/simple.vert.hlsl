@@ -1,6 +1,6 @@
-#include "vsoutput.h.hlsl"
-
 #define _FRESNELAPLPHA_ON 1
+
+#include "vsoutput.h.hlsl"
 
 struct a2v_simple {
     float3 inputPosition : POSITION;

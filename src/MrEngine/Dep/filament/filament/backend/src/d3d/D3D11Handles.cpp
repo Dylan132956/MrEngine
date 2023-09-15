@@ -153,15 +153,18 @@ namespace filament
 				auto type = (Program::Shader) i;
 
 				const char* target = nullptr;
+                std::string sEntrypoint;
 				if (type == Program::Shader::VERTEX)
 				{
 					//target = "vs_4_0_level_9_3";
 					target = "vs_4_0";
+                    sEntrypoint = "vert";
 				}
 				else if (type == Program::Shader::FRAGMENT)
 				{
 					//target = "ps_4_0_level_9_3";
 					target = "ps_4_0";
+                    sEntrypoint = "frag";
 				}
 
 				ID3DBlob* binary = nullptr;
@@ -172,8 +175,8 @@ namespace filament
 					src.size(),
 					program.getName().c_str(),
 					nullptr,
-					nullptr,
-					"main",
+                    D3D_COMPILE_STANDARD_FILE_INCLUDE,
+                    sEntrypoint.c_str(),
 					target,
 					0,
 					0,
