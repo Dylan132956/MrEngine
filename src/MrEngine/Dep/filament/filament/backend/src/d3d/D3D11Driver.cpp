@@ -988,6 +988,7 @@ namespace filament
 					case ElementType::FLOAT2: return DXGI_FORMAT_R32G32_FLOAT;
 					case ElementType::FLOAT3: return DXGI_FORMAT_R32G32B32_FLOAT;
 					case ElementType::FLOAT4: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+                    case ElementType::UBYTE4: return DXGI_FORMAT_R8G8B8A8_UINT;
 					default: assert(false); return DXGI_FORMAT_UNKNOWN;
 					}
 				};

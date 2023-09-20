@@ -157,7 +157,7 @@ namespace filament
 				if (type == Program::Shader::VERTEX)
 				{
 					//target = "vs_4_0_level_9_3";
-					target = "vs_4_0";
+					target = "vs_5_0";
                     sEntrypoint = "vert";
 				}
 				else if (type == Program::Shader::FRAGMENT)
@@ -183,11 +183,11 @@ namespace filament
 					&binary,
 					&error);
 
-				if (error)
-				{
-					std::string message = reinterpret_cast<const char*>(error->GetBufferPointer());
-					assert(!error);
-				}
+                if (error)
+                {
+                    std::string message = reinterpret_cast<const char*>(error->GetBufferPointer());
+                    assert(!error);
+                }
 
 				if (type == Program::Shader::VERTEX)
 				{

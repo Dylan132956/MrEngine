@@ -225,12 +225,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\Camera.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\cube.h" />
     <ClInclude Include="..\src\MrEngine\Engine\Engine.h" />
     <ClInclude Include="..\src\MrEngine\Engine\FileSystem.h" />
     <ClInclude Include="..\src\MrEngine\Engine\Shader.h" />
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\WorldManager.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Bounds.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Frustum.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Mathf.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Matrix4x4.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Quaternion.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Ray.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Rect.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Recti.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector2.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector2i.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector3.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector4.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\MrEngine\Engine\Camera.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\FileSystem.cpp">
@@ -238,6 +257,28 @@
     <ClCompile Include="..\src\MrEngine\Engine\Shader.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\WorldManager.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Bounds.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Frustum.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Mathf.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Matrix4x4.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Quaternion.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Ray.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Rect.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Recti.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Vector2.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Vector3.cpp">
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

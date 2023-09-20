@@ -6,6 +6,7 @@
 #include "private/backend/CommandBufferQueue.h"
 #include "triangle.h"
 #include "Shader.h"
+#include "WorldManager.h"
 
 #if VR_WINDOWS
 #include <Windows.h>
@@ -48,15 +49,15 @@ namespace moonriver
         backend::SwapChainHandle m_swap_chain;
         uint32_t m_frame_id = 0;
         backend::RenderTargetHandle m_render_target;
-        //test draw
-        triangle* t = nullptr;
+
+        std::shared_ptr<WorldManager> m_world_manager;
 
         bool m_quit = false;
 
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::D3D11),
+            m_backend(backend::Backend::OPENGL),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -97,14 +98,12 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
             Shader::Init();
-
-            t = new triangle();
+            m_world_manager = std::make_shared<WorldManager>();
         }
 
         void Shutdown()
         {
-            delete t;
-
+            m_world_manager = nullptr;
             this->GetDriverApi().destroyRenderTarget(m_render_target);
 
             if (!UTILS_HAS_THREADING)
@@ -188,9 +187,7 @@ namespace moonriver
 
         void Render()
         {
-            
-            t->run();
-
+            m_world_manager->run();
             this->Flush();
         }
 

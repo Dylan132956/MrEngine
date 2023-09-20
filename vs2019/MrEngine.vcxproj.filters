@@ -10,8 +10,17 @@
     <Filter Include="src\MrEngine\Engine">
       <UniqueIdentifier>{90F520AC-FC56-FEB9-85C4-446CF1243579}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\math">
+      <UniqueIdentifier>{362FA716-2254-F696-4B9F-DB263723F5B4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\Camera.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\cube.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\Engine.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
@@ -24,8 +33,53 @@
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\WorldManager.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Bounds.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Frustum.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Mathf.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Matrix4x4.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Quaternion.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Ray.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Rect.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Recti.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector2.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector2i.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector3.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\math\Vector4.h">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\MrEngine\Engine\Camera.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
@@ -37,6 +91,39 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
       <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\WorldManager.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Bounds.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Frustum.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Mathf.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Matrix4x4.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Quaternion.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Ray.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Rect.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Recti.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Vector2.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\math\Vector3.cpp">
+      <Filter>src\MrEngine\Engine\math</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

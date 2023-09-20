@@ -25,7 +25,7 @@ v2p VSMain(uint id : SV_VertexID,
 	return result;
 }
 
-float4 PSMain(v2p input) : SV_TARGET
+float4 frag(v2p input) : SV_TARGET
 {
 	uint2 coord = uint2(input.texCoord.x * dimensions.x, input.texCoord.y * dimensions.y);
 	

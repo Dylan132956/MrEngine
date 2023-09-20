@@ -1,3 +1,6 @@
+#include "glslang/Public/ShaderLang.h"
+#include "spirv_glsl.hpp"
+
 namespace moonriver
 {
     class Shader
@@ -8,3 +11,7 @@ namespace moonriver
         static void Init();
     };
 }
+
+void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
+    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+std::string compile_iteration(std::vector<uint32_t>& spirv_file);
