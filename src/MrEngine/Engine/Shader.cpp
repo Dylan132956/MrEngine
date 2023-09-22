@@ -15,8 +15,13 @@ namespace moonriver
 
         vs_path[0] = asset_path + "/shader/HLSL/simple.vert.hlsl";
         fs_path[0] = asset_path + "/shader/HLSL/simple.frag.hlsl";
-        std::string vs_hlsl = FileSystem::ReadFileData(vs_path[0].c_str());
-        std::string fs_hlsl = FileSystem::ReadFileData(fs_path[0].c_str());
+        char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
+        char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
+
+        std::string vs_hlsl = vs_buffer;
+        std::string fs_hlsl = fs_buffer;
+        FileSystem::FreeFileData(vs_buffer);
+        FileSystem::FreeFileData(fs_buffer);
 
         const char* c_vs_hlsl[1];
         const char* c_fs_hlsl[1];
@@ -60,6 +65,12 @@ namespace moonriver
 
     Shader::~Shader()
     {
+
+    }
+
+    void Shader::Exit()
+    {
+        glslang::FinalizeProcess();
     }
 
     void Shader::Init()

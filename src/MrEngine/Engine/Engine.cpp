@@ -57,7 +57,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::OPENGL),
+            m_backend(backend::Backend::D3D11),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -124,6 +124,7 @@ namespace moonriver
             {
                 m_driver_thread.join();
             }
+            Shader::Exit();
         }
 
         void Loop()

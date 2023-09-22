@@ -9,6 +9,7 @@ namespace moonriver
         Shader();
         ~Shader();
         static void Init();
+        static void Exit();
     };
 }
 

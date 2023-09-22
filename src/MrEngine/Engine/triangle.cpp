@@ -69,8 +69,12 @@ namespace moonriver
 
         vs_path[0] = asset_path + "/shader/HLSL/triangle.vert.hlsl";
         fs_path[0] = asset_path + "/shader/HLSL/triangle.frag.hlsl";
-        std::string vs_hlsl = FileSystem::ReadFileData(vs_path[0].c_str());
-        std::string fs_hlsl = FileSystem::ReadFileData(fs_path[0].c_str());
+        char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
+        char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
+        std::string vs_hlsl = vs_buffer;
+        std::string fs_hlsl = fs_buffer;
+        FileSystem::FreeFileData(vs_buffer);
+        FileSystem::FreeFileData(fs_buffer);
         //////////////////////////////////////////////////////////////////////////
         std::string vs;
         std::string fs;
@@ -141,8 +145,6 @@ namespace moonriver
         m_uniforms.uWorldMatrix = Matrix4x4::Identity();
         m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -1.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
         m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 10.);
-
-        Shader shader;
     }
 
     triangle::~triangle()

@@ -177,6 +177,9 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 
 int CreateAppWindow()
 {
+#if defined(_DEBUG) || defined(DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
     const char* name = "MrEngine";
     int window_width = 1280;
     int window_height = 720;

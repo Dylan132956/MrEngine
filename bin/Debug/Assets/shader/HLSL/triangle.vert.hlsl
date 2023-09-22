@@ -17,7 +17,7 @@ struct a2v_simple {
 simple_vert_color_output vert(a2v_simple a)
 {
     simple_vert_color_output o;
-    o.pos = mul(float4(a.inputPosition.xy, 0.0, 1.0),  uProjectionMatrix * uViewMatrix * uWorldMatrix); //
+    o.pos = mul(uProjectionMatrix, mul(uViewMatrix, mul(uWorldMatrix, float4(a.inputPosition.xy, 0.0, 1.0))));
     o.v_color = a.inColor;
     //o.v_color = test;
 #if COMPILER_HLSL

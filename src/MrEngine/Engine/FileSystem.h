@@ -8,5 +8,6 @@ namespace moonriver
         FileSystem();
         ~FileSystem();
         static char* ReadFileData(const char* fileName);
+        static void FreeFileData(char* data);
     };
 }

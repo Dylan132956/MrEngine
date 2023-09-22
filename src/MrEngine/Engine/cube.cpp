@@ -58,8 +58,12 @@ namespace moonriver
 
         vs_path[0] = asset_path + "/shader/HLSL/cube.vert.hlsl";
         fs_path[0] = asset_path + "/shader/HLSL/cube.frag.hlsl";
-        std::string vs_hlsl = FileSystem::ReadFileData(vs_path[0].c_str());
-        std::string fs_hlsl = FileSystem::ReadFileData(fs_path[0].c_str());
+        char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
+        char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
+        std::string vs_hlsl = vs_buffer;
+        std::string fs_hlsl = fs_buffer;
+        FileSystem::FreeFileData(vs_buffer);
+        FileSystem::FreeFileData(fs_buffer);
         //////////////////////////////////////////////////////////////////////////
         std::string vs;
         std::string fs;

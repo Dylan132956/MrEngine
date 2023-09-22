@@ -43,4 +43,9 @@ namespace moonriver
 
         return return_data;
     }
+
+    void FileSystem::FreeFileData(char* data)
+    {
+        free(data);
+    }
 }
