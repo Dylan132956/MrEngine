@@ -18,6 +18,6 @@ namespace moonriver
     void WorldManager::run()
     {
         m_cube->run();
-        m_triangle->run();
+        //m_triangle->run();
     }
 }

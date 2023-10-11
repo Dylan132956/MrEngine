@@ -38,7 +38,7 @@ namespace moonriver
 		static float Angle(const Vector3& from, const Vector3& to);
         static float Dot(const Vector3& a, const Vector3& b);
 
-		explicit Vector3(float x = 0, float y = 0, float z = 0);
+		Vector3(float x = 0, float y = 0, float z = 0);
         Vector3(const Vector4& v4);
 		Vector3(const Vector2& v2);
 		Vector3 operator -() const;

@@ -4,16 +4,19 @@
 #include "FileSystem.h"
 #include "glslang/Public/ShaderLang.h"
 #include "spirv_glsl.hpp"
+#include "math/Matrix4x4.h"
+#include "math/Vector4.h"
+#include "math/Vector2.h"
 
 namespace moonriver
 {
     const uint32_t cube::mIndices[] = {
         // solid
-        2,0,1, 2,1,3,  // far
+        1,0,2, 3,1,2,  // far
         6,4,5, 6,5,7,  // near
         2,0,4, 2,4,6,  // left
-        3,1,5, 3,5,7,  // right
-        0,4,5, 0,5,1,  // bottom
+        5,1,3, 7,5,3,  // right
+        5,4,0, 1,5,0,  // bottom
         2,6,7, 2,7,3,  // top
 
         // wire-frame
@@ -22,33 +25,61 @@ namespace moonriver
         0,4, 1,5, 3,7, 2,6,
     };
 
-    const filament::math::float3 cube::mVertices[] = {
-            { -1/2., -1/2.,  1/2.},  // 0. left bottom far
-            {  1/2., -1/2.,  1/2.},  // 1. right bottom far
-            { -1/2.,  1/2.,  1/2.},  // 2. left top far
-            {  1/2.,  1/2.,  1/2.},  // 3. right top far
-            { -1/2., -1/2., -1/2.},  // 4. left bottom near
-            {  1/2., -1/2., -1/2.},  // 5. right bottom near
-            { -1/2.,  1/2., -1/2.},  // 6. left top near
-            {  1/2.,  1/2., -1/2.} }; // 7. right top near
+    struct Vertex_Cube {
+        Vector3 position;
+        Vector4 color;
+        Vector2 uv;
+    };
+
+    Vertex_Cube CUBE_VERTICES[8] = {
+        {{-1., -1.,  1.}, {1., 0., 0., 1.}, {0., 1.}},        // 0. left bottom far
+        {{ 1., -1.,  1.}, {0., 1., 0., 1.}, {0., 1.}},        // 1. right bottom far
+        {{-1.,  1.,  1.}, {0., 0., 1., 1.}, {0., 1.}},        // 2. left top far
+        {{ 1.,  1.,  1.}, {1., 0., 0., 1.}, {0., 1.}},        // 3. right top far
+        {{-1., -1., -1.}, {0., 1., 0., 1.}, {0., 1.}},        // 4. left bottom near
+        {{ 1., -1., -1.}, {0., 0., 1., 1.}, {0., 1.}},        // 5. right bottom near
+        {{-1.,  1., -1.}, {1., 0., 0., 1.}, {0., 1.}},        // 6. left top near
+        {{ 1.,  1., -1.}, {0., 1., 0., 1.}, {0., 1.}}         // 7. right top near
+    };
 
     cube::cube()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
         filament::backend::BufferUsage usage = filament::backend::BufferUsage::DYNAMIC;
-        m_attributes[0].offset = 0;
-        m_attributes[0].stride = sizeof(float) * 3;
-        m_attributes[0].buffer = 0;
-        m_attributes[0].type = filament::backend::ElementType::FLOAT3;
-        m_vb = driver.createVertexBuffer(1, 1, 8, m_attributes, usage);
-        driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(mVertices, 8 * sizeof(mVertices[0]), nullptr), 0);
+
+        int sizes[] = {
+            sizeof(Vertex_Cube::position), sizeof(Vertex_Cube::color), sizeof(Vertex_Cube::uv)
+        };
+        filament::backend::ElementType types[] = {
+            filament::backend::ElementType::FLOAT3,
+            filament::backend::ElementType::FLOAT4,
+            filament::backend::ElementType::FLOAT2
+        };
+        int offset = 0;
+        for (int i = 0; i < (int)Shader::AttributeLocation_Cube::Count; ++i)
+        {
+            m_attributes[i].offset = offset;
+            m_attributes[i].stride = sizeof(Vertex_Cube);
+            m_attributes[i].buffer = 0;
+            m_attributes[i].type = types[i];
+            m_attributes[i].flags = 0;
+
+            offset += sizes[i];
+        }
+        m_vb = driver.createVertexBuffer(1, (uint8_t)Shader::AttributeLocation_Cube::Count, 8, m_attributes, usage);
+        driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(CUBE_VERTICES, 8 * sizeof(CUBE_VERTICES[0]), nullptr), 0);
         filament::backend::ElementType index_type = filament::backend::ElementType::UINT;
         m_ib = driver.createIndexBuffer(index_type, 12 * 2 + 3 * 2 * 6, usage);
         driver.updateIndexBuffer(m_ib, filament::backend::BufferDescriptor(mIndices, 12 * 2 + 3 * 2 * 6 * sizeof(mIndices[0]), nullptr), 0);
         m_primitives.resize(1);
         m_primitives[0] = driver.createRenderPrimitive();
-        driver.setRenderPrimitiveBuffer(m_primitives[0], m_vb, m_ib, 1);
-        driver.setRenderPrimitiveRange(m_primitives[0], filament::backend::PrimitiveType::TRIANGLES, 0, 0, sizeof(mVertices) - 1, 12 * 2 + 3 * 2 * 6);
+        m_enabled_attributes =
+            (1 << (int)Shader::AttributeLocation_Cube::Vertex) |
+            (1 << (int)Shader::AttributeLocation_Cube::Color) |
+            (1 << (int)Shader::AttributeLocation_Cube::UV);
+
+        driver.setRenderPrimitiveBuffer(m_primitives[0], m_vb, m_ib, m_enabled_attributes);
+        driver.setRenderPrimitiveRange(m_primitives[0], filament::backend::PrimitiveType::TRIANGLES, 0, 0, sizeof(CUBE_VERTICES) - 1, 12 * 2 + 3 * 2 * 6);
 
         //////////////////////////////////////////////////////////////////////////
         std::string vs_path[1];
@@ -98,7 +129,7 @@ namespace moonriver
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
         {
-            vs = vs_hlsl;
+            vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
             fs = fs_hlsl;
         }
 
@@ -111,19 +142,23 @@ namespace moonriver
         memcpy(&fs_data[0], &fs[0], fs_data.size());
 
         filament::backend::Program pb;
-        pb.diagnostics(utils::CString("Assets/shader/HLSL/triangle"))
+        pb.diagnostics(utils::CString("Assets/shader/HLSL/cube"))
             .withVertexShader((void*)&vs_data[0], vs_data.size())
             .withFragmentShader((void*)&fs_data[0], fs_data.size());
 
         pipeline.program = driver.createProgram(std::move(pb));
-
-        pipeline.rasterState.depthWrite = false;
+        pipeline.rasterState.depthWrite = true;
         pipeline.rasterState.colorWrite = true;
         //disable depthtest
-        pipeline.rasterState.depthFunc = filament::backend::RasterState::DepthFunc::A;
-        pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::NONE;
-
-        Shader shader;
+        //pipeline.rasterState.depthFunc = filament::backend::RasterState::DepthFunc::A;
+        pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::BACK;
+        m_uniform_buffer = driver.createUniformBuffer(sizeof(mvpUniforms), filament::backend::BufferUsage::DYNAMIC);
+        constexpr float ZOOM = 1.5f;
+        const float aspect = (float)Engine::Instance()->GetWidth() / Engine::Instance()->GetHeight();
+        m_uniforms.uWorldMatrix = Matrix4x4::Identity();
+        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -1.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
+        m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 20.);
+        //Shader shader;
     }
 
     cube::~cube()
@@ -147,11 +182,25 @@ namespace moonriver
             m_primitives[i].clear();
         }
         m_primitives.clear();
+
+        if (m_uniform_buffer)
+        {
+            driver.destroyUniformBuffer(m_uniform_buffer);
+            m_uniform_buffer.clear();
+        }
     }
 
     void cube::run()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
+
+        static float angle = 0.01;
+        angle += 0.01;
+        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle);
+
+        void* buffer = driver.allocate(sizeof(mvpUniforms));
+        memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));
+        driver.loadUniformBuffer(m_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(mvpUniforms)));
 
         filament::backend::RenderTargetHandle target = *(filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
         filament::backend::RenderPassParams params;
@@ -161,10 +210,11 @@ namespace moonriver
         params.viewport.bottom = (int32_t)0;
         params.viewport.width = (uint32_t)1280;
         params.viewport.height = (uint32_t)720;
-        params.clearColor = filament::math::float4(0.0, 1.0, 0.0, 1.0);
+        params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
         driver.beginRenderPass(target, params);
         driver.setViewportScissor(0, 0, 1280, 720);
+        driver.bindUniformBuffer(0, m_uniform_buffer);
         driver.draw(pipeline, m_primitives[0]);
         driver.endRenderPass();
         driver.flush();

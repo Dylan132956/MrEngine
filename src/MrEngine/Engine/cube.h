@@ -1,5 +1,6 @@
 #pragma once
 #include "private/backend/DriverApi.h"
+#include "Shader.h"
 
 namespace moonriver
 {
@@ -21,5 +22,7 @@ namespace moonriver
         filament::backend::PrimitiveType m_primitive_type;
         std::vector<filament::backend::RenderPrimitiveHandle> m_primitives;
         filament::backend::PipelineState pipeline;
+        filament::backend::UniformBufferHandle m_uniform_buffer;
+        mvpUniforms m_uniforms;
     };
 }
