@@ -49,4 +49,5 @@ namespace moonriver
         std::string m_data_path;
     };
 
+    void FreeBufferCallback(void* buffer, size_t size, void* user);
 }

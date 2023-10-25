@@ -1,28 +1,39 @@
 #include "cube.h"
 #include "Engine.h"
-#include "Shader.h"
-#include "FileSystem.h"
+#include "graphics/Shader.h"
+#include "io/FileSystem.h"
 #include "glslang/Public/ShaderLang.h"
 #include "spirv_glsl.hpp"
 #include "math/Matrix4x4.h"
 #include "math/Vector4.h"
 #include "math/Vector2.h"
+#include "graphics/Image.h"
+//#include "graphics/Texture.h"
 
 namespace moonriver
 {
-    const uint32_t cube::mIndices[] = {
-        // solid
-        1,0,2, 3,1,2,  // far
-        6,4,5, 6,5,7,  // near
-        2,0,4, 2,4,6,  // left
-        5,1,3, 7,5,3,  // right
-        5,4,0, 1,5,0,  // bottom
-        2,6,7, 2,7,3,  // top
+    //const uint32_t cube::mIndices[] = {
+    //    // solid
+    //    1,0,2, 3,1,2,  // far
+    //    6,4,5, 6,5,7,  // near
+    //    2,0,4, 2,4,6,  // left
+    //    5,1,3, 7,5,3,  // right
+    //    5,4,0, 1,5,0,  // bottom
+    //    2,6,7, 2,7,3,  // top
 
-        // wire-frame
-        0,1, 1,3, 3,2, 2,0,     // far
-        4,5, 5,7, 7,6, 6,4,     // near
-        0,4, 1,5, 3,7, 2,6,
+    //    // wire-frame
+    //    0,1, 1,3, 3,2, 2,0,     // far
+    //    4,5, 5,7, 7,6, 6,4,     // near
+    //    0,4, 1,5, 3,7, 2,6,
+    //};
+
+    const uint32_t cube::mIndices_Tex[] = {
+        1,0,2,    0,3,2,
+        5,6,4,    6,7,4,
+        9,10,8,   10,11,8,
+        13,14,12, 14,15,12,
+        17,18,16, 18,19,16,
+        22,21,20, 23,22,20
     };
 
     struct Vertex_Cube {
@@ -31,15 +42,67 @@ namespace moonriver
         Vector2 uv;
     };
 
-    Vertex_Cube CUBE_VERTICES[8] = {
-        {{-1., -1.,  1.}, {1., 0., 0., 1.}, {0., 1.}},        // 0. left bottom far
-        {{ 1., -1.,  1.}, {0., 1., 0., 1.}, {0., 1.}},        // 1. right bottom far
-        {{-1.,  1.,  1.}, {0., 0., 1., 1.}, {0., 1.}},        // 2. left top far
-        {{ 1.,  1.,  1.}, {1., 0., 0., 1.}, {0., 1.}},        // 3. right top far
-        {{-1., -1., -1.}, {0., 1., 0., 1.}, {0., 1.}},        // 4. left bottom near
-        {{ 1., -1., -1.}, {0., 0., 1., 1.}, {0., 1.}},        // 5. right bottom near
-        {{-1.,  1., -1.}, {1., 0., 0., 1.}, {0., 1.}},        // 6. left top near
-        {{ 1.,  1., -1.}, {0., 1., 0., 1.}, {0., 1.}}         // 7. right top near
+    //Vertex_Cube CUBE_VERTICES[8] = {
+    //    {{-1., -1.,  1.}, {1., 0., 0., 1.}, {0., 1.}},        // 0. left bottom far
+    //    {{ 1., -1.,  1.}, {0., 1., 0., 1.}, {1., 1.}},        // 1. right bottom far
+    //    {{-1.,  1.,  1.}, {0., 0., 1., 1.}, {0., 0.}},        // 2. left top far
+    //    {{ 1.,  1.,  1.}, {1., 0., 0., 1.}, {1., 0.}},        // 3. right top far
+    //    {{-1., -1., -1.}, {0., 1., 0., 1.}, {0., 0.}},        // 4. left bottom near
+    //    {{ 1., -1., -1.}, {0., 0., 1., 1.}, {1., 0.}},        // 5. right bottom near
+    //    {{-1.,  1., -1.}, {1., 0., 0., 1.}, {0., 0.}},        // 6. left top near
+    //    {{ 1.,  1., -1.}, {0., 1., 0., 1.}, {1., 1.}}         // 7. right top near
+    //};
+
+    const int c_vertexcount = 24;
+
+    // Cube vertices
+
+    //      (-1,+1,+1)________________(+1,+1,+1)
+    //               /|              /|
+    //              / |             / |
+    //             /  |            /  |
+    //            /   |           /   |
+    //(-1,+1,-1) /____|__________/(+1,+1,-1)
+    //           |    |__________|____|
+    //           |   /(-1,-1,+1) |    /(+1,-1,+1)
+    //           |  /            |   /
+    //           | /             |  /
+    //           |/              | /
+    //           /_______________|/
+    //        (-1,-1,-1)       (+1,-1,-1)
+    //
+
+    Vertex_Cube CUBE_VERTICES_TEX[c_vertexcount] = {
+        //near
+        {{-1., -1., -1.}, {1., 0., 0., 1.}, {0., 1.}},
+        {{-1., +1., -1.}, {0., 1., 0., 1.}, {0., 0.}},
+        {{+1., +1., -1.}, {0., 0., 1., 1.}, {1., 0.}},
+        {{+1., -1., -1.}, {1., 0., 0., 1.}, {1., 1.}},
+        //bottom
+        {{-1., -1., -1.}, {0., 1., 0., 1.}, {1., 1.}},
+        {{-1., -1., +1.}, {0., 0., 1., 1.}, {1., 0.}},
+        {{+1., -1., +1.}, {1., 0., 0., 1.}, {0., 0.}},
+        {{+1., -1., -1.}, {0., 1., 0., 1.}, {0., 1.}},
+        //right
+        {{+1., -1., -1.}, {0., 1., 0., 1.}, {0., 1.}},
+        {{+1., -1., +1.}, {0., 0., 1., 1.}, {1., 1.}},
+        {{+1., +1., +1.}, {1., 0., 0., 1.}, {1., 0.}},
+        {{+1., +1., -1.}, {0., 1., 0., 1.}, {0., 0.}},
+        //top
+        {{+1., +1., -1.}, {0., 1., 0., 1.}, {1., 1.}},
+        {{+1., +1., +1.}, {0., 0., 1., 1.}, {1., 0.}},
+        {{-1., +1., +1.}, {1., 0., 0., 1.}, {0., 0.}},
+        {{-1., +1., -1.}, {0., 1., 0., 1.}, {0., 1.}},
+        //left
+        {{-1., +1., -1.}, {0., 1., 0., 1.}, {1., 0.}},
+        {{-1., +1., +1.}, {0., 0., 1., 1.}, {0., 0.}},
+        {{-1., -1., +1.}, {1., 0., 0., 1.}, {0., 1.}},
+        {{-1., -1., -1.}, {0., 1., 0., 1.}, {1., 1.}},
+        //far
+        {{-1., -1., +1.}, {0., 1., 0., 1.}, {1., 1.}},
+        {{+1., -1., +1.}, {0., 0., 1., 1.}, {0., 1.}},
+        {{+1., +1., +1.}, {1., 0., 0., 1.}, {0., 0.}},
+        {{-1., +1., +1.}, {0., 1., 0., 1.}, {1., 0.}}
     };
 
     cube::cube()
@@ -66,11 +129,11 @@ namespace moonriver
 
             offset += sizes[i];
         }
-        m_vb = driver.createVertexBuffer(1, (uint8_t)Shader::AttributeLocation_Cube::Count, 8, m_attributes, usage);
-        driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(CUBE_VERTICES, 8 * sizeof(CUBE_VERTICES[0]), nullptr), 0);
+        m_vb = driver.createVertexBuffer(1, (uint8_t)Shader::AttributeLocation_Cube::Count, c_vertexcount, m_attributes, usage);
+        driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(CUBE_VERTICES_TEX, c_vertexcount * sizeof(Vertex_Cube), nullptr), 0);
         filament::backend::ElementType index_type = filament::backend::ElementType::UINT;
-        m_ib = driver.createIndexBuffer(index_type, 12 * 2 + 3 * 2 * 6, usage);
-        driver.updateIndexBuffer(m_ib, filament::backend::BufferDescriptor(mIndices, 12 * 2 + 3 * 2 * 6 * sizeof(mIndices[0]), nullptr), 0);
+        m_ib = driver.createIndexBuffer(index_type, 3 * 2 * 6, usage);
+        driver.updateIndexBuffer(m_ib, filament::backend::BufferDescriptor(mIndices_Tex, 3 * 2 * 6 * sizeof(mIndices_Tex[0]), nullptr), 0);
         m_primitives.resize(1);
         m_primitives[0] = driver.createRenderPrimitive();
         m_enabled_attributes =
@@ -79,7 +142,8 @@ namespace moonriver
             (1 << (int)Shader::AttributeLocation_Cube::UV);
 
         driver.setRenderPrimitiveBuffer(m_primitives[0], m_vb, m_ib, m_enabled_attributes);
-        driver.setRenderPrimitiveRange(m_primitives[0], filament::backend::PrimitiveType::TRIANGLES, 0, 0, sizeof(CUBE_VERTICES) - 1, 12 * 2 + 3 * 2 * 6);
+
+        driver.setRenderPrimitiveRange(m_primitives[0], filament::backend::PrimitiveType::TRIANGLES, 0, 0, c_vertexcount - 1, 3 * 2 * 6);
 
         //////////////////////////////////////////////////////////////////////////
         std::string vs_path[1];
@@ -146,19 +210,42 @@ namespace moonriver
             .withVertexShader((void*)&vs_data[0], vs_data.size())
             .withFragmentShader((void*)&fs_data[0], fs_data.size());
 
+        if (!m_cube_sampler_group)
+        {
+            m_cube_sampler_group = driver.createSamplerGroup(1);
+        }
+
+        vector<filament::backend::Program::Sampler> _samplers;
+
+        filament::backend::Program::Sampler sampler;
+        sampler.name = utils::CString("SPIRV_Cross_Combinedtex0samp0");
+        sampler.binding = 0;
+        _samplers.push_back(sampler);
+        pb.setSamplerGroup((size_t)4, &_samplers[0], _samplers.size());
+
         pipeline.program = driver.createProgram(std::move(pb));
+
         pipeline.rasterState.depthWrite = true;
         pipeline.rasterState.colorWrite = true;
         //disable depthtest
         //pipeline.rasterState.depthFunc = filament::backend::RasterState::DepthFunc::A;
         pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::BACK;
+        //pipeline.rasterState.inverseFrontFaces = true;
         m_uniform_buffer = driver.createUniformBuffer(sizeof(mvpUniforms), filament::backend::BufferUsage::DYNAMIC);
         constexpr float ZOOM = 1.5f;
         const float aspect = (float)Engine::Instance()->GetWidth() / Engine::Instance()->GetHeight();
         m_uniforms.uWorldMatrix = Matrix4x4::Identity();
-        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -1.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
-        m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 20.);
-        //Shader shader;
+        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -10.0), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
+        //m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, -20., 20.);
+
+        m_uniforms.uProjectionMatrix = Matrix4x4::Perspective(18., aspect, 0.1, 1000.);
+        //test load image jpg png
+        //std::shared_ptr<Image> image =  Image::LoadFromFile(asset_path + "/texture/" + "model18.png");
+        //image->EncodeToPNG("out.png");
+
+        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "71zmLpB67-L._UF1000,1000_QL80_.jpg", FilterMode::Linear, SamplerAddressMode::ClampToEdge, false);
+
+        Shader shader;
     }
 
     cube::~cube()
@@ -170,6 +257,12 @@ namespace moonriver
 
         driver.destroyIndexBuffer(m_ib);
         m_ib.clear();
+
+        if (m_cube_sampler_group)
+        {
+            driver.destroySamplerGroup(m_cube_sampler_group);
+            m_cube_sampler_group.clear();
+        }
 
         if (pipeline.program) {
             driver.destroyProgram(pipeline.program);
@@ -194,13 +287,17 @@ namespace moonriver
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 
-        static float angle = 0.01;
+        static float angle = 0.00;
         angle += 0.01;
-        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle);
+        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle) * Matrix4x4::Translation(Vector3(0., 0., 0.));
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));
         memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));
         driver.loadUniformBuffer(m_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(mvpUniforms)));
+
+        filament::backend::SamplerGroup samplers(1);
+        samplers.setSampler(0, cube_texture->GetTexture(), cube_texture->GetSampler());
+        driver.updateSamplerGroup(m_cube_sampler_group, std::move(samplers));
 
         filament::backend::RenderTargetHandle target = *(filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
         filament::backend::RenderPassParams params;
@@ -215,6 +312,9 @@ namespace moonriver
         driver.beginRenderPass(target, params);
         driver.setViewportScissor(0, 0, 1280, 720);
         driver.bindUniformBuffer(0, m_uniform_buffer);
+
+        driver.bindSamplers((size_t)4, m_cube_sampler_group);
+
         driver.draw(pipeline, m_primitives[0]);
         driver.endRenderPass();
         driver.flush();

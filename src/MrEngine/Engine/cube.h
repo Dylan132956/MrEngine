@@ -1,6 +1,7 @@
 #pragma once
 #include "private/backend/DriverApi.h"
-#include "Shader.h"
+#include "graphics/Shader.h"
+#include "graphics/Texture.h"
 
 namespace moonriver
 {
@@ -13,6 +14,7 @@ namespace moonriver
     private:
         static constexpr size_t WIREFRAME_OFFSET = 3 * 2 * 6;
         static const uint32_t mIndices[];
+        static const uint32_t mIndices_Tex[];
         static const filament::math::float3 mVertices[];
 
         filament::backend::AttributeArray m_attributes;
@@ -24,5 +26,7 @@ namespace moonriver
         filament::backend::PipelineState pipeline;
         filament::backend::UniformBufferHandle m_uniform_buffer;
         mvpUniforms m_uniforms;
+        std::shared_ptr<Texture> cube_texture;
+        filament::backend::SamplerGroupHandle m_cube_sampler_group;
     };
 }

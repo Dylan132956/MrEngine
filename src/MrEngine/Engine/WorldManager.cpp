@@ -1,7 +1,7 @@
 #include "WorldManager.h"
 #include "triangle.h"
 #include "cube.h"
-#include "shader.h"
+#include "graphics/shader.h"
 
 namespace moonriver
 {
@@ -9,7 +9,7 @@ namespace moonriver
     {
         m_triangle = std::make_shared<triangle>();
         m_cube = std::make_shared<cube>();
-        Shader shader;
+        //Shader shader;
     }
     WorldManager::~WorldManager()
     {
@@ -17,7 +17,8 @@ namespace moonriver
     }
     void WorldManager::run()
     {
+        m_triangle->run();
         m_cube->run();
-        //m_triangle->run();
+
     }
 }

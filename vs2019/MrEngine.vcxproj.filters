@@ -10,24 +10,42 @@
     <Filter Include="src\MrEngine\Engine">
       <UniqueIdentifier>{90F520AC-FC56-FEB9-85C4-446CF1243579}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\graphics">
+      <UniqueIdentifier>{1D7904D0-0934-F47B-B2EB-6CC69E853E0C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\io">
+      <UniqueIdentifier>{E460C93E-D05A-F290-B9C7-88A1A56058FD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\jpeg">
+      <UniqueIdentifier>{F2C7A516-DEEC-F496-0738-DA26F3BBF3B4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\MrEngine\Engine\math">
       <UniqueIdentifier>{362FA716-2254-F696-4B9F-DB263723F5B4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\memory">
+      <UniqueIdentifier>{058D745D-F19C-202E-5A56-854C46850FC7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\png">
+      <UniqueIdentifier>{719BF517-DDD2-3DAF-E6DC-A1D2529364A8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\zlib">
+      <UniqueIdentifier>{7D7DAE16-69A2-FD96-92ED-E2267E71FCB4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\MrEngine\Engine\Camera.h">
+    <ClInclude Include="..\src\MrEngine\Engine\cube.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MrEngine\Engine\cube.h">
+    <ClInclude Include="..\src\MrEngine\Engine\Debug.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\Engine.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MrEngine\Engine\FileSystem.h">
+    <ClInclude Include="..\src\MrEngine\Engine\Object.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MrEngine\Engine\Shader.h">
+    <ClInclude Include="..\src\MrEngine\Engine\object_id_allocator.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h">
@@ -35,6 +53,69 @@
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\WorldManager.h">
       <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Camera.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Image.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Shader.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Texture.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\io\Directory.h">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\io\File.h">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\io\FileSystem.h">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\io\MemoryStream.h">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\io\Stream.h">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\cderror.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\cdjpeg.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jconfig.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jdct.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jerror.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jinclude.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jmemsys.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jmorecfg.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jpegint.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jpeglib.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jversion.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\transupp.h">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\math\Bounds.h">
       <Filter>src\MrEngine\Engine\math</Filter>
@@ -72,21 +153,90 @@
     <ClInclude Include="..\src\MrEngine\Engine\math\Vector4.h">
       <Filter>src\MrEngine\Engine\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\memory\ByteBuffer.h">
+      <Filter>src\MrEngine\Engine\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\memory\Memory.h">
+      <Filter>src\MrEngine\Engine\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\memory\Ref.h">
+      <Filter>src\MrEngine\Engine\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\png.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngconf.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngdebug.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pnginfo.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pnglibconf.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngpriv.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngstruct.h">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\crc32.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\deflate.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\gzguts.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inffast.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inffixed.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inflate.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inftrees.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\ioapi.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\trees.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\unzip.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zconf.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zlib.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zutil.h">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\MrEngine\Engine\Camera.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\Debug.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\FileSystem.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\Object.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\Shader.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\object_id_allocator.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
@@ -94,6 +244,171 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\WorldManager.cpp">
       <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Camera.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Image.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Shader.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Texture.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\Directory.cpp">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\File.cpp">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\FileSystem.cpp">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\MemoryStream.cpp">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\Stream.cpp">
+      <Filter>src\MrEngine\Engine\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jaricom.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcapimin.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcapistd.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcarith.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jccoefct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jccolor.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcdctmgr.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jchuff.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcinit.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmainct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmarker.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmaster.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcomapi.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcparam.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcprepct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcsample.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jctrans.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdapimin.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdapistd.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdarith.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdatadst.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdatasrc.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdcoefct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdcolor.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jddctmgr.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdhuff.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdinput.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmainct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmarker.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmaster.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmerge.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdpostct.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdsample.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdtrans.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jerror.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctflt.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctfst.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctint.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctflt.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctfst.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctint.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jmemmgr.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jmemnobs.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jquant1.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jquant2.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jutils.c">
+      <Filter>src\MrEngine\Engine\jpeg</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\math\Bounds.cpp">
       <Filter>src\MrEngine\Engine\math</Filter>
@@ -124,6 +439,108 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\math\Vector3.cpp">
       <Filter>src\MrEngine\Engine\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\memory\ByteBuffer.cpp">
+      <Filter>src\MrEngine\Engine\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\memory\Memory.cpp">
+      <Filter>src\MrEngine\Engine\memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\png.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngerror.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngget.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngmem.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngpread.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngread.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrio.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrtran.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrutil.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngset.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngtrans.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwio.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwrite.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwtran.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwutil.c">
+      <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\adler32.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\compress.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\crc32.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\deflate.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzclose.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzlib.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzread.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzwrite.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\infback.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inffast.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inflate.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inftrees.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\ioapi.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\trees.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\uncompr.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\unzip.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\zutil.c">
+      <Filter>src\MrEngine\Engine\zlib</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

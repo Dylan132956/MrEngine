@@ -5,8 +5,9 @@
 #include "private/backend/CommandStream.h"
 #include "private/backend/CommandBufferQueue.h"
 #include "triangle.h"
-#include "Shader.h"
+#include "graphics/Shader.h"
 #include "WorldManager.h"
+#include "memory/Memory.h"
 
 #if VR_WINDOWS
 #include <Windows.h>
@@ -385,5 +386,10 @@ namespace moonriver
         }
 
         return m_data_path;
+    }
+
+    void FreeBufferCallback(void* buffer, size_t size, void* user)
+    {
+        Memory::Free(buffer, (int)size);
     }
 }

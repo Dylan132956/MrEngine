@@ -237,6 +237,8 @@ project 'MrEngine'
 	flags { "Cpp11" }
 
 	includedirs {
+        '../src/MrEngine/Engine',
+		'../src/MrEngine/Engine/zlib',
 		'../src/MrEngine/Dep/filament/filament/backend/include',
 		'../src/MrEngine/Dep/filament/libs/math/include',
 		'../src/MrEngine/Dep/filament/libs/utils/include',

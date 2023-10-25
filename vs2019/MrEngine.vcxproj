@@ -100,7 +100,7 @@
     <ClCompile>
       <AdditionalOptions>/wd4819 /EHsc  %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -115,7 +115,7 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   <Lib>
     <OutputFile>$(OutDir)MrEngine.lib</OutputFile>
@@ -131,7 +131,7 @@
     <ClCompile>
       <AdditionalOptions>/wd4819 /EHsc  %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -146,7 +146,7 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   <Lib>
     <OutputFile>$(OutDir)MrEngine.lib</OutputFile>
@@ -162,7 +162,7 @@
     <ClCompile>
       <AdditionalOptions>/wd4819 /EHsc  %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
@@ -177,7 +177,7 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   <Lib>
     <OutputFile>$(OutDir)MrEngine.lib</OutputFile>
@@ -195,7 +195,7 @@
     <ClCompile>
       <AdditionalOptions>/wd4819 /EHsc  %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <StringPooling>true</StringPooling>
@@ -210,7 +210,7 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>VR_WINDOWS;VR_VULKAN=1;VR_GLES=1;VR_D3D=1;VK_USE_PLATFORM_WIN32_KHR;FILAMENT_DRIVER_SUPPORTS_VULKAN;UTILS_NO_THREADING=1;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\MrEngine\Engine;..\src\MrEngine\Engine\zlib;..\src\MrEngine\Dep\filament\filament\backend\include;..\src\MrEngine\Dep\filament\libs\math\include;..\src\MrEngine\Dep\filament\libs\utils\include;..\src\MrEngine\Dep\filament\libs\bluevk\include;..\src\MrEngine\Dep\glslang;..\src\MrEngine\Dep\SPIRV-Cross;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
   <Lib>
     <OutputFile>$(OutDir)MrEngine.lib</OutputFile>
@@ -225,13 +225,34 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\MrEngine\Engine\Camera.h" />
     <ClInclude Include="..\src\MrEngine\Engine\cube.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\Debug.h" />
     <ClInclude Include="..\src\MrEngine\Engine\Engine.h" />
-    <ClInclude Include="..\src\MrEngine\Engine\FileSystem.h" />
-    <ClInclude Include="..\src\MrEngine\Engine\Shader.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\Object.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\object_id_allocator.h" />
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h" />
     <ClInclude Include="..\src\MrEngine\Engine\WorldManager.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Camera.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Image.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Shader.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Texture.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\io\Directory.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\io\File.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\io\FileSystem.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\io\MemoryStream.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\io\Stream.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\cderror.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\cdjpeg.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jconfig.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jdct.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jerror.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jinclude.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jmemsys.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jmorecfg.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jpegint.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jpeglib.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\jversion.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\jpeg\transupp.h" />
     <ClInclude Include="..\src\MrEngine\Engine\math\Bounds.h" />
     <ClInclude Include="..\src\MrEngine\Engine\math\Frustum.h" />
     <ClInclude Include="..\src\MrEngine\Engine\math\Mathf.h" />
@@ -244,21 +265,154 @@
     <ClInclude Include="..\src\MrEngine\Engine\math\Vector2i.h" />
     <ClInclude Include="..\src\MrEngine\Engine\math\Vector3.h" />
     <ClInclude Include="..\src\MrEngine\Engine\math\Vector4.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\memory\ByteBuffer.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\memory\Memory.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\memory\Ref.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\png.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngconf.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngdebug.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pnginfo.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pnglibconf.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngpriv.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\png\pngstruct.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\crc32.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\deflate.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\gzguts.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inffast.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inffixed.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inflate.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\inftrees.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\ioapi.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\trees.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\unzip.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zconf.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zlib.h" />
+    <ClInclude Include="..\src\MrEngine\Engine\zlib\zutil.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\MrEngine\Engine\Camera.cpp">
-    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\Debug.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\FileSystem.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\Object.cpp">
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\Shader.cpp">
+    <ClCompile Include="..\src\MrEngine\Engine\object_id_allocator.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\WorldManager.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Camera.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Image.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Shader.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Texture.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\Directory.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\File.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\FileSystem.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\MemoryStream.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\io\Stream.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jaricom.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcapimin.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcapistd.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcarith.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jccoefct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jccolor.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcdctmgr.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jchuff.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcinit.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmainct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmarker.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcmaster.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcomapi.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcparam.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcprepct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jcsample.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jctrans.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdapimin.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdapistd.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdarith.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdatadst.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdatasrc.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdcoefct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdcolor.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jddctmgr.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdhuff.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdinput.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmainct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmarker.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmaster.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdmerge.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdpostct.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdsample.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jdtrans.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jerror.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctflt.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctfst.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jfdctint.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctflt.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctfst.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jidctint.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jmemmgr.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jmemnobs.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jquant1.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jquant2.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\jpeg\jutils.c">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\math\Bounds.cpp">
     </ClCompile>
@@ -279,6 +433,74 @@
     <ClCompile Include="..\src\MrEngine\Engine\math\Vector2.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\math\Vector3.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\memory\ByteBuffer.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\memory\Memory.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\png.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngerror.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngget.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngmem.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngpread.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngread.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrio.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrtran.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngrutil.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngset.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngtrans.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwio.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwrite.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwtran.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\png\pngwutil.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\adler32.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\compress.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\crc32.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\deflate.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzclose.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzlib.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzread.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\gzwrite.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\infback.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inffast.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inflate.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\inftrees.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\ioapi.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\trees.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\uncompr.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\unzip.c">
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\zlib\zutil.c">
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

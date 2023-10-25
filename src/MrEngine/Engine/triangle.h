@@ -1,6 +1,6 @@
 #pragma once
 #include "private/backend/DriverApi.h"
-#include "Shader.h"
+#include "graphics/Shader.h"
 
 namespace moonriver
 {

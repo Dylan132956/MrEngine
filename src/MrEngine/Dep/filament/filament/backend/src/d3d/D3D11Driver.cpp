@@ -913,6 +913,8 @@ namespace filament
                                 if (s.t)
                                 {
                                     auto texture = handle_const_cast<D3D11Texture>(m_handle_map, s.t);
+                                    int height = texture->height;
+                                    int width = texture->width;
                                     if (texture->image_view)
                                     {
                                         m_context->context->PSSetShaderResources((UINT) samplers[i][j].binding, 1, (ID3D11ShaderResourceView* const*) &texture->image_view);

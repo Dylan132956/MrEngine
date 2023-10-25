@@ -3,6 +3,7 @@
 #include "glslang/Public/ShaderLang.h"
 #include "spirv_glsl.hpp"
 #include "math/Matrix4x4.h"
+#include "Object.h"
 
 namespace moonriver
 {
@@ -16,7 +17,7 @@ namespace moonriver
         Matrix4x4 uProjectionMatrix;
     };
 
-    class Shader
+    class Shader : public Object
     {
     public:
         enum class AttributeLocation_Cube
