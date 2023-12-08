@@ -1007,7 +1007,6 @@ namespace filament
 						desc.Format = get_format(attribute.type);
 						desc.InputSlot = (UINT) i;
 						desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-
 						input_descs.push_back(desc);
 					}
 				}

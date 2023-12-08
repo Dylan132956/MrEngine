@@ -8,6 +8,10 @@
 #include "math/Vector4.h"
 #include "math/Vector2.h"
 
+void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
+    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+std::string compile_iteration(std::vector<uint32_t>& spirv_file);
+
 // triangle vertices
 
 //               /\(0.0, 0.5)
@@ -176,7 +180,7 @@ namespace moonriver
         }
     }
 
-    void triangle::run()
+    void triangle::Update()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 

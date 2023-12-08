@@ -3,11 +3,25 @@
 #include <vector>
 #include "io/FileSystem.h"
 #include "Engine.h"
+#include <list>
+#include "io/File.h"
+#include "Debug.h"
+#include "glslang/Public/ShaderLang.h"
+#include "spirv_glsl.hpp"
+
+void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
+    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+std::string compile_iteration(std::vector<uint32_t>& spirv_file);
 
 namespace moonriver
 {
-    Shader::Shader()
+    std::map<std::string, std::shared_ptr<Shader>> Shader::m_shaders;
+
+    Shader::Shader(const std::string& name) :
+        m_queue(0)
     {
+        this->SetName(name);
+
         std::string vs_path[1];
         std::string fs_path[1];
 
@@ -65,7 +79,171 @@ namespace moonriver
 
     Shader::~Shader()
     {
+        auto& driver = Engine::Instance()->GetDriverApi();
 
+        for (int i = 0; i < m_passes.size(); ++i)
+        {
+            auto& pass = m_passes[i];
+
+            if (pass.pipeline.program)
+            {
+                driver.destroyProgram(pass.pipeline.program);
+                pass.pipeline.program.clear();
+            }
+        }
+        m_passes.clear();
+    }
+
+    void Shader::Done()
+    {
+        m_shaders.clear();
+    }
+
+    static std::list<std::string> KeywordsToList(const std::vector<std::string>& keywords)
+    {
+        std::list<std::string> keyword_list;
+        for (int i = 0; i < keywords.size(); ++i)
+        {
+            keyword_list.push_back(keywords[i]);
+        }
+        keyword_list.sort();
+        return keyword_list;
+    }
+
+    std::string Shader::MakeKey(const std::string& name, const std::vector<std::string>& keywords)
+    {
+        std::string key = name;
+        std::list<std::string> keyword_list = KeywordsToList(keywords);
+        for (const auto& i : keyword_list)
+        {
+            key += "|" + i;
+        }
+        return key;
+    }
+
+    void Shader::Compile()
+    {
+        std::string vs;
+        std::string fs;
+        std::string define;
+
+        if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
+        }
+        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+        {
+            define = "#define COMPILER_HLSL 1\n";
+        }
+
+        for (const auto& i : m_keywords)
+        {
+            define += "#define " + i + " 1\n";
+        }
+
+        for (int i = 0; i < m_passes.size(); ++i)
+        {
+            auto& pass = m_passes[i];
+            std::string vs;
+            std::string fs;
+            std::string vs_hlsl = pass.vs;
+            std::string fs_hlsl = pass.fs;
+            if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
+                std::string vs_path[1];
+                std::string fs_path[1];
+                vs_path[0] = pass.vsPath;
+                fs_path[0] = pass.fsPath;
+                const char* c_vs_hlsl[1];
+                const char* c_fs_hlsl[1];
+                vs_hlsl = define + vs_hlsl;
+                fs_hlsl = define + fs_hlsl;
+                c_vs_hlsl[0] = vs_hlsl.c_str();
+                c_fs_hlsl[0] = fs_hlsl.c_str();
+
+                const char* c_vs_path[1];
+                const char* c_fs_path[1];
+                c_vs_path[0] = vs_path[0].c_str();
+                c_fs_path[0] = fs_path[0].c_str();
+
+                std::vector<unsigned int> vs_spriv;
+                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                std::string entryPointName = "vert";
+                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+                std::vector<unsigned int> fs_spriv;
+                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                entryPointName = "frag";
+                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+                std::string vs_glsl = compile_iteration(vs_spriv);
+
+                std::string fs_glsl = compile_iteration(fs_spriv);
+
+                vs = vs_glsl;
+                fs = fs_glsl;
+            }
+            else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+            {
+                vs = define + vs_hlsl;
+                fs = define + fs_hlsl;
+            }
+
+            std::vector<char> vs_data;
+            std::vector<char> fs_data;
+
+            vs_data.resize(vs.size());
+            memcpy(&vs_data[0], &vs[0], vs_data.size());
+            fs_data.resize(fs.size());
+            memcpy(&fs_data[0], &fs[0], fs_data.size());
+
+            filament::backend::Program pb;
+            pb.diagnostics(utils::CString("Assets/shader/HLSL/standard"))
+                .withVertexShader((void*)&vs_data[0], vs_data.size())
+                .withFragmentShader((void*)&fs_data[0], fs_data.size());
+
+            auto& driver = Engine::Instance()->GetDriverApi();
+
+            pass.pipeline.program = driver.createProgram(std::move(pb));
+        }
+    }
+
+    std::shared_ptr<Shader>Shader::Find(const std::string& name, const std::vector<std::string>& keywords)
+    {
+        std::shared_ptr<Shader> shader;
+        std::string key = MakeKey(name, keywords);
+        std::map<std::string, std::shared_ptr<Shader>>::iterator it = m_shaders.find(key);
+        if (it != m_shaders.end()) {
+            shader = it->second;
+        }
+        else
+        {
+            shader = std::make_shared<Shader>(name);
+            std::string vs_path[1];
+            std::string fs_path[1];
+
+            std::string asset_path = Engine::Instance()->GetDataPath();
+
+            vs_path[0] = asset_path + "/shader/HLSL/" + name + ".vert.hlsl";
+            fs_path[0] = asset_path + "/shader/HLSL/" + name + ".frag.hlsl";
+
+            if (File::Exist(vs_path[0]) && File::Exist(fs_path[0]))
+            {
+                //only one pass current
+                shader->m_passes.resize(1);
+                char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
+                char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
+                shader->m_passes[0].vs = vs_buffer;
+                shader->m_passes[0].fs = fs_buffer;
+                FileSystem::FreeFileData(vs_buffer);
+                FileSystem::FreeFileData(fs_buffer);
+                shader->m_passes[0].vsPath = vs_path[0];
+                shader->m_passes[0].fsPath = fs_path[0];
+                shader->m_shader_key = key;
+                shader->m_keywords = keywords;
+                shader->Compile();
+                m_shaders[key] = shader;
+            }
+        }
+
+        return shader;
     }
 
     void Shader::Exit()

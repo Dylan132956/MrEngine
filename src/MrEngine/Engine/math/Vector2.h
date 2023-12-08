@@ -45,6 +45,16 @@ namespace moonriver
 		float Magnitude() const;
 		float SqrMagnitude() const;
 
+        template <typename Y>
+        static Vector2 MakeVector(const Y& vals)
+        {
+            return Vector2 //
+            {
+                static_cast<float>(vals[0]),
+                static_cast<float>(vals[1]) //
+            };
+        }
+
 		float x;
 		float y;
 	};

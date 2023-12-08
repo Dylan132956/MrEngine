@@ -9,7 +9,7 @@ namespace moonriver
     public:
         triangle();
         ~triangle();
-        void run();
+        void Update();
     private:
         filament::backend::AttributeArray m_attributes;
         uint32_t m_enabled_attributes;

@@ -43,7 +43,7 @@ namespace moonriver
     }
 
 #define Log(...) moonriver::Debug::LogString(str_format(__VA_ARGS__) + str_format("\n<=[%s:%d]", __FILE__, __LINE__), true)
-
+                
 #define LogGLError()						\
     {										\
         int err = glGetError();				\

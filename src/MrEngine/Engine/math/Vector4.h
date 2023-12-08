@@ -105,6 +105,18 @@ namespace moonriver
 			return *this;
 		}
 
+        template <typename Y>
+        static Vector4 MakeVector(const Y& vals)
+        {
+            return Vector4 //
+            {
+                static_cast<float>(vals[0]),
+                static_cast<float>(vals[1]),
+                static_cast<float>(vals[2]),
+                static_cast<float>(vals[3]) //
+            };
+        }
+
 		float x;
 		float y;
 		float z;

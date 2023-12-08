@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "App.h"
 #include <Windows.h>
 #include <windowsx.h>
 
@@ -9,6 +10,7 @@ static bool g_minimized = false;
 static int g_window_width;
 static int g_window_height;
 static Engine* g_engine;
+static App* g_App;
 
 static void SwitchFullScreen(HWND hWnd)
 {
@@ -48,6 +50,7 @@ static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
     switch (uMsg)
     {
         case WM_CLOSE:
+            delete g_App;
             Engine::Destroy(&g_engine);
             DestroyWindow(hWnd);
             break;
@@ -243,6 +246,7 @@ int CreateAppWindow()
     g_window_height = window_height;
 
     g_engine = Engine::Create(hwnd, g_window_width, g_window_height);
+    g_App = new App(g_engine);
 
     bool exit = false;
     MSG msg;
@@ -280,6 +284,7 @@ int CreateAppWindow()
                 g_engine->OnResize(hwnd, g_window_width, g_window_height);
             }
 
+            g_App->Update();
             g_engine->Execute();
 
             if (g_engine->HasQuit())

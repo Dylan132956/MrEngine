@@ -879,6 +879,10 @@ namespace moonriver
 		texture = Ref<Texture>(new Texture());
 		texture->m_width = width;
 		texture->m_height = height;
+        if (texture->m_width == 3 && texture->m_height == 3)
+        {
+            int k = 3;
+        }
 		texture->m_mipmap_level_count = mipmap_level_count;
 		texture->m_array_size = 1;
 		texture->m_cubemap = false;

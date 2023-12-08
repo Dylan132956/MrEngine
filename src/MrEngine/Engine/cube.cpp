@@ -10,6 +10,10 @@
 #include "graphics/Image.h"
 //#include "graphics/Texture.h"
 
+void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
+    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+std::string compile_iteration(std::vector<uint32_t>& spirv_file);
+
 namespace moonriver
 {
     //const uint32_t cube::mIndices[] = {
@@ -243,9 +247,9 @@ namespace moonriver
         //std::shared_ptr<Image> image =  Image::LoadFromFile(asset_path + "/texture/" + "model18.png");
         //image->EncodeToPNG("out.png");
 
-        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "71zmLpB67-L._UF1000,1000_QL80_.jpg", FilterMode::Linear, SamplerAddressMode::ClampToEdge, false);
+        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "moonriver.jpg", FilterMode::Linear, SamplerAddressMode::ClampToEdge, false);
 
-        Shader shader;
+        //Shader shader;
     }
 
     cube::~cube()
@@ -283,7 +287,7 @@ namespace moonriver
         }
     }
 
-    void cube::run()
+    void cube::Update()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 

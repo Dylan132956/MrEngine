@@ -10,7 +10,7 @@ namespace moonriver
     public:
         cube();
         ~cube();
-        void run();
+        void Update();
     private:
         static constexpr size_t WIREFRAME_OFFSET = 3 * 2 * 6;
         static const uint32_t mIndices[];

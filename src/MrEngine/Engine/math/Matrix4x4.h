@@ -45,6 +45,8 @@ namespace moonriver
 		Vector3 MultiplyDirection(const Vector3& v) const;
 		Matrix4x4 Inverse() const;
 		Matrix4x4 Transpose() const;
+        float Determinant() const;
+        void Decompose(Vector3& trans, Vector3& rot, Vector3& scale) const;
 		std::string ToString() const;
 		void SetRow(int row, const Vector4& v);
 		Vector4 GetRow(int row);

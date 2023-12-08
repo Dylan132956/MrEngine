@@ -245,6 +245,8 @@ project 'MrEngine'
 		'../src/MrEngine/Dep/filament/libs/bluevk/include',
 		'../src/MrEngine/Dep/glslang',
 		'../src/MrEngine/Dep/SPIRV-Cross',
+		'../src/MrEngine/Dep/tinygltf',
+		'../src/MrEngine/Dep/stb',
 	}
 
 	files {
@@ -289,6 +291,7 @@ project 'MrApp'
 
 	files {
 		'../src/MrEngine/App/Platform/win/Main.cpp',
+        '../src/MrEngine/App/App.cpp',
 	}
 
     links { "MrEngine" }

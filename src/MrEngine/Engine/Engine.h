@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <memory>
 
 namespace filament
 {
@@ -19,7 +20,7 @@ namespace filament
 namespace moonriver
 {
     class MrEngine;
-
+    class Scene;
     class Engine
     {
     public:
@@ -36,6 +37,7 @@ namespace moonriver
         int GetHeight() const;
         bool HasQuit() const;
         const std::string& GetDataPath();
+        std::shared_ptr<Scene> CreateScene();
     private:
         Engine(void* native_window, int width, int height, uint64_t flags, void* shared_gl_context);
         ~Engine();

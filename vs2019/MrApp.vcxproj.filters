@@ -21,5 +21,8 @@
     <ClCompile Include="..\src\MrEngine\App\Platform\win\Main.cpp">
       <Filter>src\MrEngine\App\Platform\win</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\MrEngine\App\App.cpp">
+      <Filter>src\MrEngine\App</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

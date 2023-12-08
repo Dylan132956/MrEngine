@@ -10,6 +10,9 @@
     <Filter Include="src\MrEngine\Engine">
       <UniqueIdentifier>{90F520AC-FC56-FEB9-85C4-446CF1243579}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\animation">
+      <UniqueIdentifier>{6C85FBC4-D89D-E2EE-A14A-72880D227788}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\MrEngine\Engine\graphics">
       <UniqueIdentifier>{1D7904D0-0934-F47B-B2EB-6CC69E853E0C}</UniqueIdentifier>
     </Filter>
@@ -28,11 +31,23 @@
     <Filter Include="src\MrEngine\Engine\png">
       <UniqueIdentifier>{719BF517-DDD2-3DAF-E6DC-A1D2529364A8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\postprocessing">
+      <UniqueIdentifier>{AF01EADF-9B3D-ED49-0450-0541F0AA9564}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\string">
+      <UniqueIdentifier>{2394856C-0FA4-313D-785D-965B648C20D6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\MrEngine\Engine\time">
+      <UniqueIdentifier>{FB26AB16-E74B-FA96-1097-DF26FC1AF9B4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\MrEngine\Engine\zlib">
       <UniqueIdentifier>{7D7DAE16-69A2-FD96-92ED-E2267E71FCB4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\Component.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\cube.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
@@ -42,25 +57,70 @@
     <ClInclude Include="..\src\MrEngine\Engine\Engine.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\Entity.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\gltfview.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\Object.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\object_id_allocator.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\Scene.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\SceneManager.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\Transform.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\MrEngine\Engine\WorldManager.h">
-      <Filter>src\MrEngine\Engine</Filter>
+    <ClInclude Include="..\src\MrEngine\Engine\animation\Animation.h">
+      <Filter>src\MrEngine\Engine\animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\animation\AnimationCurve.h">
+      <Filter>src\MrEngine\Engine\animation</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\graphics\Camera.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\CameraClearFlags.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Color.h">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\graphics\Image.h">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Light.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Material.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Mesh.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\MeshRenderer.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\Renderer.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\RenderTarget.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\graphics\Shader.h">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\graphics\SkinnedMeshRenderer.h">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\graphics\Texture.h">
@@ -183,6 +243,15 @@
     <ClInclude Include="..\src\MrEngine\Engine\png\pngstruct.h">
       <Filter>src\MrEngine\Engine\png</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\postprocessing\PostProcessing.h">
+      <Filter>src\MrEngine\Engine\postprocessing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\string\stringutils.h">
+      <Filter>src\MrEngine\Engine\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\time\Time.h">
+      <Filter>src\MrEngine\Engine\time</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\zlib\crc32.h">
       <Filter>src\MrEngine\Engine\zlib</Filter>
     </ClInclude>
@@ -224,6 +293,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\MrEngine\Engine\Component.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\cube.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
@@ -233,25 +305,67 @@
     <ClCompile Include="..\src\MrEngine\Engine\Engine.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\Entity.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\gltfview.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\Object.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\object_id_allocator.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\Scene.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\SceneManager.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\Transform.cpp">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\triangle.cpp">
       <Filter>src\MrEngine\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\MrEngine\Engine\WorldManager.cpp">
-      <Filter>src\MrEngine\Engine</Filter>
+    <ClCompile Include="..\src\MrEngine\Engine\animation\Animation.cpp">
+      <Filter>src\MrEngine\Engine\animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\animation\AnimationCurve.cpp">
+      <Filter>src\MrEngine\Engine\animation</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\graphics\Camera.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Color.cpp">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\graphics\Image.cpp">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Light.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Material.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Mesh.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\MeshRenderer.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\Renderer.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\RenderTarget.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\graphics\Shader.cpp">
+      <Filter>src\MrEngine\Engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\graphics\SkinnedMeshRenderer.cpp">
       <Filter>src\MrEngine\Engine\graphics</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\graphics\Texture.cpp">
@@ -490,6 +604,15 @@
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\png\pngwutil.c">
       <Filter>src\MrEngine\Engine\png</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\postprocessing\PostProcessing.cpp">
+      <Filter>src\MrEngine\Engine\postprocessing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\string\stringutils.cpp">
+      <Filter>src\MrEngine\Engine\string</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MrEngine\Engine\time\Time.cpp">
+      <Filter>src\MrEngine\Engine\time</Filter>
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\Engine\zlib\adler32.c">
       <Filter>src\MrEngine\Engine\zlib</Filter>

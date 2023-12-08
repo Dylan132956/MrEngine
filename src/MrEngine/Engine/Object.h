@@ -7,11 +7,16 @@
 namespace moonriver
 {
     class FastObjectManager;
-    class Object 
+    class Object
     {
     public:
         Object();
-        ~Object();
+        virtual ~Object();
+        const std::string& GetName() const { return m_name; }
+        void SetName(const std::string& name) { m_name = name; }
+        size_t GetId() const {
+            return m_id;
+        }
         static FastObjectManager& GetObjectManager();
     protected:
         ObjectID   m_id{ k_invalid_gobject_id };

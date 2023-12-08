@@ -235,6 +235,8 @@
   <ItemGroup>
     <ClCompile Include="..\src\MrEngine\App\Platform\win\Main.cpp">
     </ClCompile>
+    <ClCompile Include="..\src\MrEngine\App\App.cpp">
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="MrEngine.vcxproj">

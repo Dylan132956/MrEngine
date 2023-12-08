@@ -6,8 +6,15 @@
 #include "private/backend/CommandBufferQueue.h"
 #include "triangle.h"
 #include "graphics/Shader.h"
-#include "WorldManager.h"
+#include "SceneManager.h"
 #include "memory/Memory.h"
+#include "time/Time.h"
+#include "graphics/Texture.h"
+#include "graphics/Material.h"
+#include "graphics/Mesh.h"
+#include "graphics/RenderTarget.h"
+#include "graphics/Camera.h"
+#include "graphics/Renderer.h"
 
 #if VR_WINDOWS
 #include <Windows.h>
@@ -51,7 +58,7 @@ namespace moonriver
         uint32_t m_frame_id = 0;
         backend::RenderTargetHandle m_render_target;
 
-        std::shared_ptr<WorldManager> m_world_manager;
+        std::unique_ptr<SceneManager> m_scene_manager;
 
         bool m_quit = false;
 
@@ -99,12 +106,18 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
             Shader::Init();
-            m_world_manager = std::make_shared<WorldManager>();
+            m_scene_manager = std::make_unique<SceneManager>();
         }
 
         void Shutdown()
         {
-            m_world_manager = nullptr;
+            Mesh::Done();
+            RenderTarget::Done();
+            Material::Done();
+            Camera::Done();
+            Texture::Done();
+            Shader::Done();
+            m_scene_manager = nullptr;
             this->GetDriverApi().destroyRenderTarget(m_render_target);
 
             if (!UTILS_HAS_THREADING)
@@ -189,7 +202,9 @@ namespace moonriver
 
         void Render()
         {
-            m_world_manager->run();
+            Time::SetDrawCall(0);
+            Renderer::PrepareAll();
+            Camera::RenderAll();
             this->Flush();
         }
 
@@ -301,6 +316,8 @@ namespace moonriver
 
     void Engine::Execute()
     {
+        m_pCore->m_scene_manager->Update();
+
         m_pCore->BeginFrame();
         m_pCore->Render();
         m_pCore->EndFrame();
@@ -386,6 +403,11 @@ namespace moonriver
         }
 
         return m_data_path;
+    }
+
+    std::shared_ptr<Scene> Engine::CreateScene()
+    {
+        return m_pCore->m_scene_manager->CreateScene();
     }
 
     void FreeBufferCallback(void* buffer, size_t size, void* user)

@@ -175,6 +175,60 @@ namespace moonriver
 		return mt * mr * ms;
 	}
 
+    float Matrix4x4::Determinant() const
+    {
+        return
+            m30 * m21 * m12 * m03 - m20 * m31 * m12 * m03 - m30 * m11 * m22 * m03 + m10 * m31 * m22 * m03 +
+            m20 * m11 * m32 * m03 - m10 * m21 * m32 * m03 - m30 * m21 * m02 * m13 + m20 * m31 * m02 * m13 +
+            m30 * m01 * m22 * m13 - m00 * m31 * m22 * m13 - m20 * m01 * m32 * m13 + m00 * m21 * m32 * m13 +
+            m30 * m11 * m02 * m23 - m10 * m31 * m02 * m23 - m30 * m01 * m12 * m23 + m00 * m31 * m12 * m23 +
+            m10 * m01 * m32 * m23 - m00 * m11 * m32 * m23 - m20 * m11 * m02 * m33 + m10 * m21 * m02 * m33 +
+            m20 * m01 * m12 * m33 - m00 * m21 * m12 * m33 - m10 * m01 * m22 * m33 + m00 * m11 * m22 * m33;
+    }
+
+    void Matrix4x4::Decompose(Vector3& trans, Vector3& rot, Vector3& scale) const
+    {
+        // Getting translation is trivial
+        trans = Vector3(m03, m13, m23);
+
+        // Scale is length of columns
+        scale.x = sqrtf(m00 * m00 + m10 * m10 + m20 * m20);
+        scale.y = sqrtf(m01 * m01 + m11 * m11 + m21 * m21);
+        scale.z = sqrtf(m02 * m02 + m12 * m12 + m22 * m22);
+
+        if (scale.x == 0 || scale.y == 0 || scale.z == 0) return;
+
+        // Detect negative scale with determinant and flip one arbitrary axis
+        if (Determinant() < 0) scale.x = -scale.x;
+
+        // Combined rotation matrix YXZ
+        //
+        // Cos[y]*Cos[z]+Sin[x]*Sin[y]*Sin[z]   Cos[z]*Sin[x]*Sin[y]-Cos[y]*Sin[z]  Cos[x]*Sin[y]    
+        // Cos[x]*Sin[z]                        Cos[x]*Cos[z]                       -Sin[x]
+        // -Cos[z]*Sin[y]+Cos[y]*Sin[x]*Sin[z]  Cos[y]*Cos[z]*Sin[x]+Sin[y]*Sin[z]  Cos[x]*Cos[y]
+
+        rot.x = asinf(-m12 / scale.z);
+
+        // Special case: Cos[x] == 0 (when Sin[x] is +/-1)
+        float f = fabsf(m12 / scale.z);
+        if (f > 0.999f && f < 1.001f)
+        {
+            // Pin arbitrarily one of y or z to zero
+            // Mathematical equivalent of gimbal lock
+            rot.y = 0;
+
+            // Now: Cos[x] = 0, Sin[x] = +/-1, Cos[y] = 1, Sin[y] = 0
+            // => m[0][0] = Cos[z] and m[1][0] = Sin[z]
+            rot.z = atan2f(-m01 / scale.y, m00 / scale.x);
+        }
+        // Standard case
+        else
+        {
+            rot.y = atan2f(m02 / scale.z, m22 / scale.z);
+            rot.z = atan2f(m10 / scale.x, m11 / scale.y);
+        }
+    }
+
 	Matrix4x4 Matrix4x4::LookTo(const Vector3& eye_position, const Vector3& to_direction, const Vector3& up_direction)
 	{
 		Matrix4x4 m = Matrix4x4::Identity();
