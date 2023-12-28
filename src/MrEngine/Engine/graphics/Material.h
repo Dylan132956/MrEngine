@@ -141,6 +141,7 @@ namespace moonriver
     public:
         Material();
         Material(const std::shared_ptr<Shader>& shader);
+        ~Material();
         static void Done();
         static const std::shared_ptr<Material>& GetSharedBoundsMaterial();
         const std::string& GetShaderName();
@@ -158,7 +159,7 @@ namespace moonriver
         void SetFloat(const std::string& name, float value);
         void SetInt(const std::string& name, int value);
         std::shared_ptr<Texture> GetTexture(const std::string& name) const;
-        void SetTexture(const std::string& name, const Ref<Texture>& texture);
+        void SetTexture(const std::string& name, const std::shared_ptr<Texture>& texture);
         void SetVectorArray(const std::string& name, const std::vector<Vector4>& array);
         void SetMatrixArray(const std::string& name, const std::vector<Matrix4x4>& array);
         template <class T>
@@ -280,6 +281,7 @@ namespace moonriver
     private:
         void UpdateUniformMember(const std::string& name, const void* data, int size);
         void UpdateUniformTexture(const std::string& name, const std::shared_ptr<Texture>& texture);
+        void UpdatePbrUniform();
 
         static std::shared_ptr<Material> m_shared_bounds_material;
         std::map<std::string, ShaderVariant> m_shader_variants;
@@ -288,6 +290,8 @@ namespace moonriver
         Rect m_scissor_rect;
         std::vector<std::vector<UniformBuffer >> m_unifrom_buffers;
         std::vector<std::vector<SamplerGroup>> m_samplers;
+        //pbr material
+        filament::backend::UniformBufferHandle m_pbr_uniform_buffer;
     };
 }
 

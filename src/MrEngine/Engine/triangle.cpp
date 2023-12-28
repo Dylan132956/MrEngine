@@ -180,7 +180,7 @@ namespace moonriver
         }
     }
 
-    void triangle::Update()
+    void triangle::Render()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 

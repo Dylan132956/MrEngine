@@ -212,7 +212,9 @@ private:
     class HandleAllocator {
         utils::PoolAllocator< 16, 16>   mPool0;
         utils::PoolAllocator< 64, 32>   mPool1;
-        utils::PoolAllocator<128, 32>   mPool2;
+        //utils::PoolAllocator<128, 32>   mPool2;
+        //modify:
+        utils::PoolAllocator<160, 32>   mPool2;
     public:
         static constexpr size_t MIN_ALIGNMENT_SHIFT = 4;
         explicit HandleAllocator(const utils::HeapArea& area);

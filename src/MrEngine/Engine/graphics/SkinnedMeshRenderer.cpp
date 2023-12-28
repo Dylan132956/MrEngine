@@ -154,7 +154,7 @@ namespace moonriver
 
     void SkinnedMeshRenderer::SetBones(const std::vector<std::shared_ptr<Transform>>& bones)
     {
-        m_bones.resize(m_bone_paths.size());
+        m_bones.resize(bones.size());
         for (int i = 0; i < m_bones.size(); ++i)
         {
             m_bones[i] = bones[i];
@@ -168,13 +168,13 @@ namespace moonriver
         const auto& mesh = this->GetMesh();
 
 		// update bones
-        if (materials.size() > 0 && mesh && m_bone_paths.size() > 0)
+        if (materials.size() > 0 && mesh && m_bones.size() > 0)
         {
             const auto& bindposes = mesh->GetBindposes();
             int bone_count = bindposes.size();
 
-            assert(m_bone_paths.size() == bone_count);
-            assert(m_bone_paths.size() <= SkinnedMeshRendererUniforms::BONES_VECTOR_MAX_COUNT / 3);
+            assert(m_bones.size() == bone_count);
+            assert(m_bones.size() <= SkinnedMeshRendererUniforms::BONES_VECTOR_MAX_COUNT / 3);
 
             if (m_bones.empty())
             {

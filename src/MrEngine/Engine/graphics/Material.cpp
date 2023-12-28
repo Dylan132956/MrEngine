@@ -18,6 +18,7 @@ namespace moonriver
     Material::Material(const std::shared_ptr<Shader>& shader) :
         m_scissor_rect(0, 0, 1, 1)
     {
+        TextureIds.fill(-1);
         ShaderVariant variant;
         variant.key = shader->GetShaderKey();
         variant.keywords = shader->GetKeywords();
@@ -39,6 +40,43 @@ namespace moonriver
         this->SetTexture(MaterialProperty::TEXTURE, Texture::GetSharedWhiteTexture());
         this->SetVector(MaterialProperty::TEXTURE_SCALE_OFFSET, Vector4(1, 1, 0, 0));
         this->SetColor(MaterialProperty::COLOR, Color(1, 1, 1, 1));
+    }
+
+    Material::~Material()
+    {
+        auto& driver = Engine::Instance()->GetDriverApi();
+
+        for (int i = 0; i < m_unifrom_buffers.size(); ++i)
+        {
+            for (int j = 0; j < m_unifrom_buffers[i].size(); ++j)
+            {
+                if (m_unifrom_buffers[i][j].uniform_buffer)
+                {
+                    driver.destroyUniformBuffer(m_unifrom_buffers[i][j].uniform_buffer);
+                    m_unifrom_buffers[i][j].uniform_buffer.clear();
+                }
+            }
+        }
+        m_unifrom_buffers.clear();
+
+        for (int i = 0; i < m_samplers.size(); ++i)
+        {
+            for (int j = 0; j < m_samplers[i].size(); ++j)
+            {
+                if (m_samplers[i][j].sampler_group)
+                {
+                    driver.destroySamplerGroup(m_samplers[i][j].sampler_group);
+                    m_samplers[i][j].sampler_group.clear();
+                }
+            }
+        }
+        m_samplers.clear();
+
+        if (m_pbr_uniform_buffer)
+        {
+            driver.destroyUniformBuffer(m_pbr_uniform_buffer);
+            m_pbr_uniform_buffer.clear();
+        }
     }
 
     const std::string& Material::GetShaderName()
@@ -154,6 +192,8 @@ namespace moonriver
                 }
             }
         }
+
+        UpdatePbrUniform();
     }
 
     void Material::UpdateUniformMember(const std::string& name, const void* data, int size)
@@ -240,6 +280,18 @@ namespace moonriver
         }
     }
 
+    void Material::UpdatePbrUniform()
+    {
+        auto& driver = Engine::Instance()->GetDriverApi();
+        if (!m_pbr_uniform_buffer)
+        {
+            m_pbr_uniform_buffer = driver.createUniformBuffer(sizeof(ShaderAttribs), filament::backend::BufferUsage::DYNAMIC);
+        }
+        void* buffer = driver.allocate(sizeof(ShaderAttribs));
+        Memory::Copy(buffer, &Attribs, sizeof(ShaderAttribs));
+        driver.loadUniformBuffer(m_pbr_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(ShaderAttribs)));
+    }
+
     void Material::SetScissor(int target_width, int target_height)
     {
         auto& driver = Engine::Instance()->GetDriverApi();
@@ -323,6 +375,7 @@ namespace moonriver
                 }
             }
         }
+        driver.bindUniformBuffer((size_t)Shader::BindingPoint::PerMaterialFragment, m_pbr_uniform_buffer);
     }
 
     const std::shared_ptr<Shader>& Material::GetShader()

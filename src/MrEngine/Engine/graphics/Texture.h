@@ -96,6 +96,7 @@ namespace moonriver
 		static const Ref<Image>& GetSharedWhiteImage();
         static const Ref<Texture>& GetSharedWhiteTexture();
         static const Ref<Texture>& GetSharedBlackTexture();
+        static const Ref<Texture>& GetSharedGreenTexture();
         static const Ref<Texture>& GetSharedNormalTexture();
         static const Ref<Texture>& GetSharedCubemap();
 		static Ref<Texture> LoadFromKTXFile(
@@ -179,6 +180,7 @@ namespace moonriver
 		static Ref<Image> m_shared_white_image;
         static Ref<Texture> m_shared_white_texture;
         static Ref<Texture> m_shared_black_texture;
+        static Ref<Texture> m_shared_green_texture;
         static Ref<Texture> m_shared_normal_texture;
         static Ref<Texture> m_shared_cubemap;
 		int m_width;

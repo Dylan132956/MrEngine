@@ -66,8 +66,8 @@ namespace moonriver
 		const filament::backend::VertexBufferHandle& GetVertexBuffer() const { return m_vb; }
 		const filament::backend::IndexBufferHandle& GetIndexBuffer() const { return m_ib; }
 		const std::vector<filament::backend::RenderPrimitiveHandle>& GetPrimitives() const { return m_primitives; }
-
         void SetBindposes(std::vector<Matrix4x4>&& bindposes) { m_bindposes = std::move(bindposes); }
+        void RecalculateBoundsInternal();
     private:
         void SetBlendShapes(std::vector<BlendShape>&& blend_shapes);
     private:

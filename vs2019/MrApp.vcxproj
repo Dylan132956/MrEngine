@@ -233,6 +233,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\App\AppImplementGLTF.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\src\MrEngine\App\Platform\win\Main.cpp">
     </ClCompile>
     <ClCompile Include="..\src\MrEngine\App\App.cpp">

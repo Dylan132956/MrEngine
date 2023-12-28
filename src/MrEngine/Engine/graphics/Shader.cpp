@@ -201,6 +201,60 @@ namespace moonriver
 
             auto& driver = Engine::Instance()->GetDriverApi();
 
+            //Uniform u;
+            //u.name = "PerMaterialFragment";
+            //u.binding = (int)Shader::BindingPoint::PerMaterialFragment;
+            //u.members.push_back({ "u_view_matrix", 0, 64 });
+            //u.members.push_back({ "u_projection_matrix", 64, 64 });
+            //u.size = 128;
+
+            SamplerGroup group;
+            group.name = "PerMaterialFragment";
+            group.binding = 4;
+
+            Sampler sampler;
+            sampler.name = "SPIRV_Cross_Combinedg_ColorMapg_ColorSampler";
+            sampler.binding = 0;
+            group.samplers.push_back(sampler);
+
+            sampler.name = "SPIRV_Cross_Combinedg_PhysicalDescriptorMapg_PhysicalDescriptorSampler";
+            sampler.binding = 1;
+            group.samplers.push_back(sampler);
+
+            sampler.name = "SPIRV_Cross_Combinedg_NormalMapg_NormalSampler";
+            sampler.binding = 2;
+            group.samplers.push_back(sampler);
+
+            sampler.name = "SPIRV_Cross_Combinedg_AOMapg_AOSampler";
+            sampler.binding = 3;
+            group.samplers.push_back(sampler);
+
+            sampler.name = "SPIRV_Cross_Combinedg_EmissiveMapg_EmissiveSampler";
+            sampler.binding = 4;
+            group.samplers.push_back(sampler);
+
+            pass.samplers.push_back(group);
+
+            for (int i = 0; i < pass.samplers.size(); ++i)
+            {
+                const auto& group = pass.samplers[i];
+
+                std::vector<filament::backend::Program::Sampler> samplers;
+                for (int j = 0; j < group.samplers.size(); ++j)
+                {
+                    filament::backend::Program::Sampler sampler;
+                    sampler.name = utils::CString(group.samplers[j].name.c_str());
+                    sampler.binding = group.samplers[j].binding;
+                    samplers.push_back(sampler);
+                }
+                pb.setSamplerGroup((size_t)group.binding, &samplers[0], samplers.size());
+            }
+            //material: TODO
+            pass.pipeline.rasterState.depthWrite = true;
+            pass.pipeline.rasterState.colorWrite = true;
+
+            pass.pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::BACK;
+
             pass.pipeline.program = driver.createProgram(std::move(pb));
         }
     }

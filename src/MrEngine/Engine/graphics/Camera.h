@@ -64,7 +64,7 @@ namespace moonriver
         Vector3 ScreenToWorldPoint(const Vector3& position);
         Vector3 WorldToScreenPoint(const Vector3& position);
         Ray ScreenPointToRay(const Vector3& position);
-
+        void SetLeftHandSpace(bool enable);
 	protected:
 		virtual void OnTransformDirty();
 
@@ -103,6 +103,7 @@ namespace moonriver
 		bool m_projection_matrix_dirty;
 		bool m_view_matrix_external;
 		bool m_projection_matrix_external;
+        bool m_leftHandSpace = false;
 		std::shared_ptr<Texture> m_render_target_color;
         std::shared_ptr<Texture> m_render_target_depth;
         std::shared_ptr<RenderTarget> m_post_processing_target;

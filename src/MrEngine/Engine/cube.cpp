@@ -8,6 +8,7 @@
 #include "math/Vector4.h"
 #include "math/Vector2.h"
 #include "graphics/Image.h"
+#include "time/Time.h"
 //#include "graphics/Texture.h"
 
 void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
@@ -122,6 +123,9 @@ namespace moonriver
             filament::backend::ElementType::FLOAT4,
             filament::backend::ElementType::FLOAT2
         };
+        unsigned int semantics[] = {
+            0, 4, 10
+        };
         int offset = 0;
         for (int i = 0; i < (int)Shader::AttributeLocation_Cube::Count; ++i)
         {
@@ -130,6 +134,7 @@ namespace moonriver
             m_attributes[i].buffer = 0;
             m_attributes[i].type = types[i];
             m_attributes[i].flags = 0;
+            m_attributes[i].Semantic = semantics[i];
 
             offset += sizes[i];
         }
@@ -239,10 +244,14 @@ namespace moonriver
         constexpr float ZOOM = 1.5f;
         const float aspect = (float)Engine::Instance()->GetWidth() / Engine::Instance()->GetHeight();
         m_uniforms.uWorldMatrix = Matrix4x4::Identity();
+        //for DX left hand
+        //m_uniforms.uViewMatrix = Matrix4x4::LookAtLH(Vector3(0., 0., -10.0), Vector3(0., 0., 0.), Vector3(0., 1., 0.));
+        //m_uniforms.uProjectionMatrix = Matrix4x4::PerspectiveFovLH(18., aspect, 0.1, 1000.);
+        //for left hand
         m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -10.0), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
-        //m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, -20., 20.);
-
         m_uniforms.uProjectionMatrix = Matrix4x4::Perspective(18., aspect, 0.1, 1000.);
+
+        //m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, -20., 20.);
         //test load image jpg png
         //std::shared_ptr<Image> image =  Image::LoadFromFile(asset_path + "/texture/" + "model18.png");
         //image->EncodeToPNG("out.png");
@@ -287,12 +296,13 @@ namespace moonriver
         }
     }
 
-    void cube::Update()
+    void cube::Render()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 
         static float angle = 0.00;
-        angle += 0.01;
+        angle = Time::GetRealTimeSinceStartup();
+        //printf("%.6f\n", angle);
         m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle) * Matrix4x4::Translation(Vector3(0., 0., 0.));
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));

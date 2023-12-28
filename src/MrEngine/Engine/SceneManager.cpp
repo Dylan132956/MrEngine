@@ -43,8 +43,12 @@ namespace moonriver
 
     void SceneManager::Update()
     {
-        //m_triangle->Update();
-        //m_cube->Update();
         m_Scene->Update();
+    }
+
+    void SceneManager::Render()
+    {
+        //m_triangle->Render();
+        //m_cube->Render();
     }
 }

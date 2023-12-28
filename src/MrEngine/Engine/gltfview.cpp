@@ -166,7 +166,8 @@ namespace moonriver
             ByteBuffer buffer(const_cast<byte*>(gltf_image.image.data()), gltf_image.image.size());
             //std::shared_ptr<Image> pImage = Image::LoadFromMemory(buffer);
             //pImage->EncodeToPNG("out.png");
-            std::shared_ptr<Texture> pTexture = Texture::LoadTexture2DFromMemory(buffer, FilterMode::Linear, SamplerAddressMode::ClampToEdge, true);
+            std::shared_ptr<Texture> pTexture = Texture::LoadTexture2DFromMemory(buffer, FilterMode::Linear, SamplerAddressMode::Repeat, true);
+            //cache->textures[gltf_tex.source] = pTexture;
             cache->textures.push_back(pTexture);
         }
     }
@@ -202,6 +203,7 @@ namespace moonriver
                 {
                     Mat->TextureIds[Param.TextureId] = tex_it->second.TextureIndex();
                     Param.UVSelector = static_cast<float>(tex_it->second.TextureTexCoord());
+                    //Mat->SetTexture(Param.TextureName, cache->textures[Mat->TextureIds[Param.TextureId]]);
                 }
             }
 
@@ -306,6 +308,28 @@ namespace moonriver
                     }
                 }
             }
+
+            auto SetTexture = [&](Material::TEXTURE_ID TexId, const char* VarName, std::shared_ptr<Texture> pDefaultTex)
+            {
+                auto TexIdx = Mat->TextureIds[TexId];
+                if (TexIdx >= 0) {
+                    if (auto pTexture = cache->textures[TexIdx])
+                    {
+                        Mat->SetTexture(VarName, pTexture);
+                    }
+                }
+                else
+                {
+                    Mat->SetTexture(VarName, pDefaultTex);
+                }
+            };
+
+            SetTexture(Material::TEXTURE_ID_BASE_COLOR, "SPIRV_Cross_Combinedg_ColorMapg_ColorSampler", Texture::GetSharedWhiteTexture());
+            SetTexture(Material::TEXTURE_ID_PHYSICAL_DESC, "SPIRV_Cross_Combinedg_PhysicalDescriptorMapg_PhysicalDescriptorSampler", Texture::GetSharedGreenTexture());
+            SetTexture(Material::TEXTURE_ID_NORMAL_MAP, "SPIRV_Cross_Combinedg_NormalMapg_NormalSampler", Texture::GetSharedNormalTexture());
+            SetTexture(Material::TEXTURE_ID_OCCLUSION, "SPIRV_Cross_Combinedg_AOMapg_AOSampler", Texture::GetSharedWhiteTexture());
+            SetTexture(Material::TEXTURE_ID_EMISSIVE, "SPIRV_Cross_Combinedg_EmissiveMapg_EmissiveSampler", Texture::GetSharedBlackTexture());
+     
             cache->Materials.push_back(Mat);
         }
         cache->Materials.push_back(std::shared_ptr<Material>());
@@ -333,12 +357,12 @@ namespace moonriver
             transform->SetLocalScale(Vector3(gltf_node.scale[0], gltf_node.scale[1], gltf_node.scale[2]));
         }
         if (gltf_node.matrix.size() == 16) {
-            Matrix4x4 matrix;
-            memcpy(&matrix, &gltf_node.matrix, sizeof(Matrix4x4));
+            Matrix4x4 matrix = Matrix4x4::MakeMatrix(gltf_node.matrix.data());
+            matrix = matrix.Transpose();
             Vector3 t, r, s;
             matrix.Decompose(t, r, s);
             transform->SetLocalPosition(t);
-            transform->SetLocalRotation(Quaternion(r.x, r.y, r.z));
+            transform->SetLocalRotation(Quaternion::Euler(r.x * Mathf::Rad2Deg, r.y * Mathf::Rad2Deg, r.z * Mathf::Rad2Deg));
             transform->SetLocalScale(s);
         }
         if (gltf_node.children.size() > 0) {

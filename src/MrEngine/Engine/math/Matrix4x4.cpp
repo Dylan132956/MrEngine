@@ -228,45 +228,119 @@ namespace moonriver
             rot.z = atan2f(m10 / scale.x, m11 / scale.y);
         }
     }
+    //left hand space
+    Matrix4x4 Matrix4x4::LookTo(const Vector3& eye_position, const Vector3& to_direction, const Vector3& up_direction)
+    {
+        Matrix4x4 m = Matrix4x4::Identity();
 
-	Matrix4x4 Matrix4x4::LookTo(const Vector3& eye_position, const Vector3& to_direction, const Vector3& up_direction)
-	{
-		Matrix4x4 m = Matrix4x4::Identity();
+        Vector3 zaxis(-to_direction);
+        zaxis.Normalize();
 
-		Vector3 zaxis(-to_direction);
-		zaxis.Normalize();
+        Vector3 xaxis = zaxis * up_direction;
+        xaxis.Normalize();
 
-		Vector3 xaxis = zaxis * up_direction;
-		xaxis.Normalize();
+        Vector3 yaxis = xaxis * zaxis;
 
-		Vector3 yaxis = xaxis * zaxis;
+        m.m00 = xaxis.x;	m.m01 = xaxis.y;	m.m02 = xaxis.z;	m.m03 = -xaxis.Dot(eye_position);
+        m.m10 = yaxis.x;	m.m11 = yaxis.y;	m.m12 = yaxis.z;	m.m13 = -yaxis.Dot(eye_position);
+        m.m20 = zaxis.x;	m.m21 = zaxis.y;	m.m22 = zaxis.z;	m.m23 = -zaxis.Dot(eye_position);
+        m.m30 = 0;			m.m31 = 0;			m.m32 = 0;			m.m33 = 1.0f;
 
-		m.m00 = xaxis.x;	m.m01 = xaxis.y;	m.m02 = xaxis.z;	m.m03 = -xaxis.Dot(eye_position);
-		m.m10 = yaxis.x;	m.m11 = yaxis.y;	m.m12 = yaxis.z;	m.m13 = -yaxis.Dot(eye_position);
-		m.m20 = zaxis.x;	m.m21 = zaxis.y;	m.m22 = zaxis.z;	m.m23 = -zaxis.Dot(eye_position);
-		m.m30 = 0;			m.m31 = 0;			m.m32 = 0;			m.m33 = 1.0f;
-
-		return m;
-	}
-
+        return m;
+    }
+    //right hand space
 	Matrix4x4 Matrix4x4::Perspective(float fov, float aspect, float near, float far)
 	{
-		Matrix4x4 m = Matrix4x4::Identity();
+        Matrix4x4 m = Matrix4x4::Identity();
 
-		float scale_y = 1 / tan(Mathf::Deg2Rad * fov / 2);
-		float scale_x = scale_y / aspect;
-		float n_f = 1 / (near - far);
+        float scale_y = 1 / tan(Mathf::Deg2Rad * fov / 2);
+        float scale_x = scale_y / aspect;
+        float n_f = 1 / (near - far);
 
-		m.m00 = scale_x;
-		m.m11 = scale_y;
-		m.m22 = (near + far) * n_f;
-		m.m23 = 2 * near * far * n_f;
-		m.m32 = -1.0f;
-		m.m33 = 0;
+        m.m00 = scale_x;
+        m.m11 = scale_y;
+        m.m22 = (near + far) * n_f;
+        m.m23 = 2 * near * far * n_f;
+        m.m32 = -1.0f;
+        m.m33 = 0;
 
-		return m;
+        return m;
 	}
+    //for DX
+    Matrix4x4 Matrix4x4::LookAtLH(const Vector3& eye_position, const Vector3& lookat, const Vector3& up_direction)
+    {
+        Matrix4x4 m = Matrix4x4::Identity();
 
+        Vector3 zaxis(lookat - eye_position);
+        zaxis.Normalize();
+
+        Vector3 xaxis = up_direction * zaxis;
+        xaxis.Normalize();
+
+        Vector3 yaxis = zaxis * xaxis;
+
+        m.m00 = xaxis.x;	m.m01 = xaxis.y;	m.m02 = xaxis.z;	m.m03 = -xaxis.Dot(eye_position);
+        m.m10 = yaxis.x;	m.m11 = yaxis.y;	m.m12 = yaxis.z;	m.m13 = -yaxis.Dot(eye_position);
+        m.m20 = zaxis.x;	m.m21 = zaxis.y;	m.m22 = zaxis.z;	m.m23 = -zaxis.Dot(eye_position);
+        m.m30 = 0;			m.m31 = 0;			m.m32 = 0;			m.m33 = 1.0f;
+
+        return m;
+    }
+
+    Matrix4x4 Matrix4x4::LookAtRH(const Vector3& eye_position, const Vector3& lookat, const Vector3& up_direction)
+    {
+        Matrix4x4 m = Matrix4x4::Identity();
+
+        Vector3 zaxis(eye_position - lookat);
+        zaxis.Normalize();
+
+        Vector3 xaxis = up_direction * zaxis;
+        xaxis.Normalize();
+
+        Vector3 yaxis = zaxis * xaxis;
+
+        m.m00 = xaxis.x;	m.m01 = xaxis.y;	m.m02 = xaxis.z;	m.m03 = -xaxis.Dot(eye_position);
+        m.m10 = yaxis.x;	m.m11 = yaxis.y;	m.m12 = yaxis.z;	m.m13 = -yaxis.Dot(eye_position);
+        m.m20 = zaxis.x;	m.m21 = zaxis.y;	m.m22 = zaxis.z;	m.m23 = -zaxis.Dot(eye_position);
+        m.m30 = 0;			m.m31 = 0;			m.m32 = 0;			m.m33 = 1.0f;
+
+        return m;
+    }
+
+    Matrix4x4 Matrix4x4::PerspectiveFovLH(float fov, float aspect, float near, float far)
+    {
+        Matrix4x4 m = Matrix4x4::Identity();
+
+        float scale_y = 1 / tan(Mathf::Deg2Rad * fov / 2);
+        float scale_x = scale_y / aspect;
+
+        m.m00 = scale_x;
+        m.m11 = scale_y;
+        m.m22 = far / (far - near);
+        m.m23 = -near * far / (far - near);
+        m.m32 = 1.0f;
+        m.m33 = 0;
+
+        return m;
+    }
+
+    Matrix4x4 Matrix4x4::PerspectiveFovRH(float fov, float aspect, float near, float far)
+    {
+        Matrix4x4 m = Matrix4x4::Identity();
+
+        float scale_y = 1 / tan(Mathf::Deg2Rad * fov / 2);
+        float scale_x = scale_y / aspect;
+
+        m.m00 = scale_x;
+        m.m11 = scale_y;
+        m.m22 = far / (near - far);
+        m.m23 = near * far / (near - far);
+        m.m32 = -1.0f;
+        m.m33 = 0;
+
+        return m;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
 	Matrix4x4 Matrix4x4::Ortho(float left, float right, float bottom, float top, float near, float far)
 	{
 		Matrix4x4 m = Matrix4x4::Identity();

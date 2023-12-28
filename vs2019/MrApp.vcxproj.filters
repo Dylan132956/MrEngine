@@ -18,6 +18,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\App\AppImplementGLTF.h">
+      <Filter>src\MrEngine\App</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="..\src\MrEngine\App\Platform\win\Main.cpp">
       <Filter>src\MrEngine\App\Platform\win</Filter>
     </ClCompile>

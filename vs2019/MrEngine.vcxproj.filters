@@ -45,6 +45,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\App.h">
+      <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\Component.h">
       <Filter>src\MrEngine\Engine</Filter>
     </ClInclude>

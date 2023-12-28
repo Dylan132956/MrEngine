@@ -18,15 +18,27 @@ namespace moonriver
         {
             m_pEngine = pEngine;
             m_pScene = m_pEngine->CreateScene();
-            m_pScene->LoadGLTF("/model/DamagedHelmet/DamagedHelmet.gltf");
+            ///model/Sponza/Sponza.gltf
+            //m_pScene->LoadGLTF("/model/DamagedHelmet/DamagedHelmet.gltf");
+            ///model/BrainStem/glTF/BrainStem.gltf
+
+            auto model = m_pScene->LoadGLTF("/model/DamagedHelmet/DamagedHelmet.gltf");
+            model->GetTransform()->SetPosition(Vector3(0, -1, 1));
+            model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
             std::shared_ptr<Camera> camera = m_pScene->CreateEntity("camera")->AddComponent<Camera>();
             Camera::SetMainCamera(camera);
-            camera->GetTransform()->SetPosition(Vector3(0, 1.0f, 3.5f));
+            camera->GetTransform()->SetPosition(Vector3(0.f, 0.0f, 5.0f));
             camera->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
             camera->SetNearClip(0.03f);
             camera->SetFarClip(100);
             camera->SetDepth(2);
             camera->SetCullingMask((1 << 0) | (1 << 4) | (1 << 8));
+            camera->SetClearColor(Color(0.22, 0.22, 0.22, 1.0));
+            //camera->SetLeftHandSpace(false);
+
+            auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
+            light->GetTransform()->SetRotation(Quaternion::Euler(60, 90, 0));
+            light->SetType(LightType::Directional);
         }
 
         virtual ~AppImplementGLTF()

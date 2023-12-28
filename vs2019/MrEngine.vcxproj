@@ -225,6 +225,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\MrEngine\Engine\App.h" />
     <ClInclude Include="..\src\MrEngine\Engine\Component.h" />
     <ClInclude Include="..\src\MrEngine\Engine\cube.h" />
     <ClInclude Include="..\src\MrEngine\Engine\Debug.h" />

@@ -17,6 +17,7 @@ namespace moonriver
         std::shared_ptr<Scene> GetScene();
         static SceneManager* Instance();
         void Update();
+        void Render();
     private:
         static SceneManager* m_instance;
         std::shared_ptr<triangle> m_triangle;

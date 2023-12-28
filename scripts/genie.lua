@@ -292,6 +292,7 @@ project 'MrApp'
 	files {
 		'../src/MrEngine/App/Platform/win/Main.cpp',
         '../src/MrEngine/App/App.cpp',
+		'../src/MrEngine/App/AppImplementGLTF.h',
 	}
 
     links { "MrEngine" }

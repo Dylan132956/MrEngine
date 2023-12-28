@@ -304,6 +304,10 @@ namespace moonriver
             sizeof(Vertex::vertex), sizeof(Vertex::color), sizeof(Vertex::uv), sizeof(Vertex::uv2),
             sizeof(Vertex::normal), sizeof(Vertex::tangent), sizeof(Vertex::bone_weights), sizeof(Vertex::bone_indices)
         };
+        //static const input_element_desc Semantics
+        unsigned int semantics[] = {
+            0, 4, 10, 11, 1, 2, 9, 8
+        };
         filament::backend::ElementType types[] = {
             filament::backend::ElementType::FLOAT4,
             filament::backend::ElementType::FLOAT4,
@@ -323,6 +327,7 @@ namespace moonriver
 			m_attributes[i].buffer = 0;
 			m_attributes[i].type = types[i];
 			m_attributes[i].flags = 0;
+            m_attributes[i].Semantic = semantics[i];
             
             offset += sizes[i];
         }
@@ -372,7 +377,7 @@ namespace moonriver
         // set vertex index in w
         for (int i = 0; i < m_vertices.size(); ++i)
         {
-            m_vertices[i].vertex.w = (float) i;
+            m_vertices[i].vertex.w = (float)i;
         }
         
         assert(m_vertices.size() <= m_buffer_vertex_count);
@@ -435,5 +440,21 @@ namespace moonriver
     void Mesh::SetBlendShapes(std::vector<BlendShape>&& blend_shapes)
     {
         m_blend_shapes = std::move(blend_shapes);
+    }
+
+    void Mesh::RecalculateBoundsInternal()
+    {
+        //MinMaxAABB minmax;
+        //for (size_t i = 0; i < vertices.size(); ++i)
+        //{s
+        //    minmax.Encapsulate(vertices[i]);
+        //}
+        //AABB aabb;
+        //if (vertices.size())
+        //    aabb = AABB(minmax);
+        //else
+        //    aabb = AABB(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f, 0.0f, 0.0f));
+
+        //m_LocalAABB = aabb;
     }
 }

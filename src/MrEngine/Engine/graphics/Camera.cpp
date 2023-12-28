@@ -142,10 +142,10 @@ namespace moonriver
 		m_view_uniforms.time = Vector4(t / 20, t, t * 2, t * 3);
 
 		// map depth range -1 ~ 1 to 0 ~ 1 for d3d
-		if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
-		{
-			m_view_uniforms.projection_matrix = Matrix4x4::ProjectionDepthMapD3D11() * this->GetProjectionMatrix();
-		}
+		//if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+		//{
+		//	m_view_uniforms.projection_matrix = Matrix4x4::ProjectionDepthMapD3D11() * this->GetProjectionMatrix();
+		//}
 
 		void* buffer = driver.allocate(sizeof(ViewUniforms));
 		Memory::Copy(buffer, &m_view_uniforms, sizeof(ViewUniforms));
@@ -319,7 +319,7 @@ namespace moonriver
 
 		driver.beginRenderPass(target, params);
 
-		//driver.bindUniformBuffer((size_t) Shader::BindingPoint::PerView, m_view_uniform_buffer);
+		driver.bindUniformBuffer((size_t) Shader::BindingPoint::PerView, m_view_uniform_buffer);
 
         for (auto i : renderers)
         {
@@ -335,7 +335,7 @@ namespace moonriver
     {
         auto& driver = Engine::Instance()->GetDriverApi();
 		
-		//driver.bindUniformBuffer((size_t) Shader::BindingPoint::PerRenderer, renderer->GetTransformUniformBuffer());
+		driver.bindUniformBuffer((size_t) Shader::BindingPoint::PerRenderer, renderer->GetTransformUniformBuffer());
 
         SkinnedMeshRenderer* skin = dynamic_cast<SkinnedMeshRenderer*>(renderer);
         if (skin && skin->GetBonesUniformBuffer())
@@ -870,12 +870,29 @@ namespace moonriver
 
 			if (!m_view_matrix_external)
 			{
-				m_view_matrix = Matrix4x4::LookTo(this->GetTransform()->GetPosition(), this->GetTransform()->GetForward(), this->GetTransform()->GetUp());
+                if (m_leftHandSpace)
+                {
+                    //+z
+                    Vector3 target = this->GetTransform()->GetPosition() + this->GetTransform()->GetForward();
+                    m_view_matrix = Matrix4x4::LookAtLH(this->GetTransform()->GetPosition(), target, this->GetTransform()->GetUp());
+                }
+                else
+                {
+                    //-z
+                    Vector3 target = this->GetTransform()->GetPosition() - this->GetTransform()->GetForward();
+                    m_view_matrix = Matrix4x4::LookAtRH(this->GetTransform()->GetPosition(), this->GetTransform()->GetForward(), this->GetTransform()->GetUp());
+                }
 			}
 		}
 
 		return m_view_matrix;
 	}
+
+    void Camera::SetLeftHandSpace(bool enable)
+    {
+        m_leftHandSpace = enable;
+        m_view_matrix_dirty = true;
+    }
 
 	const Matrix4x4& Camera::GetProjectionMatrix()
 	{

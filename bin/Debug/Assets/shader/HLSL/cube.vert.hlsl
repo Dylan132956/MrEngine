@@ -8,9 +8,9 @@ cbuffer mvpUniforms : register(b0)
 }
 
 struct a2v_simple {
-    float3 inputPosition : TEXCOORD0;
-    float4 inputColor : TEXCOORD1;
-    float2 inputUV : TEXCOORD2;
+    float3 inputPosition : POSITION;
+    float4 inputColor : COLOR;
+    float2 inputUV : TEXCOORD0;
 };
 
 simple_vert_color_uv_output vert(a2v_simple a)

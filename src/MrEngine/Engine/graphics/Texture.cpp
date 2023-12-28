@@ -29,6 +29,7 @@ namespace moonriver
 	Ref<Image> Texture::m_shared_white_image;
 	Ref<Texture> Texture::m_shared_white_texture;
 	Ref<Texture> Texture::m_shared_black_texture;
+    Ref<Texture> Texture::m_shared_green_texture;
 	Ref<Texture> Texture::m_shared_normal_texture;
 	Ref<Texture> Texture::m_shared_cubemap;
 
@@ -42,11 +43,12 @@ namespace moonriver
 		m_shared_white_image.reset();
 		m_shared_white_texture.reset();
 		m_shared_black_texture.reset();
+        m_shared_green_texture.reset();
 		m_shared_normal_texture.reset();
 		m_shared_cubemap.reset();
 	}
 
-	const Ref<Image>& Texture::GetSharedWhiteImage()
+	const std::shared_ptr<Image>& Texture::GetSharedWhiteImage()
 	{
 		if (!m_shared_white_image)
 		{
@@ -59,7 +61,7 @@ namespace moonriver
 				pixels[i * 4 + 3] = 255;
 			}
 
-			m_shared_white_image = RefMake<Image>();
+			m_shared_white_image = std::make_shared<Image>();
 			m_shared_white_image->width = 3;
 			m_shared_white_image->height = 3;
 			m_shared_white_image->format = ImageFormat::R8G8B8A8;
@@ -69,7 +71,7 @@ namespace moonriver
 		return m_shared_white_image;
 	}
 
-	const Ref<Texture>& Texture::GetSharedWhiteTexture()
+	const std::shared_ptr<Texture>& Texture::GetSharedWhiteTexture()
 	{
 		if (!m_shared_white_texture)
 		{
@@ -120,6 +122,32 @@ namespace moonriver
 
 		return m_shared_black_texture;
 	}
+
+    const Ref<Texture>& Texture::GetSharedGreenTexture()
+    {
+        if (!m_shared_green_texture)
+        {
+            ByteBuffer pixels(4 * 9);
+            for (int i = 0; i < 9; ++i)
+            {
+                pixels[i * 4 + 0] = 0;
+                pixels[i * 4 + 1] = 255;
+                pixels[i * 4 + 2] = 0;
+                pixels[i * 4 + 3] = 255;
+            }
+
+            m_shared_green_texture = Texture::CreateTexture2DFromMemory(
+                pixels,
+                3,
+                3,
+                TextureFormat::R8G8B8A8,
+                FilterMode::Nearest,
+                SamplerAddressMode::ClampToEdge,
+                false);
+        }
+
+        return m_shared_green_texture;
+    }
 
 	const Ref<Texture>& Texture::GetSharedNormalTexture()
 	{

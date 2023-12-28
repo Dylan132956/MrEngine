@@ -709,6 +709,33 @@ enum ShaderType : uint8_t {
     FRAGMENT = 1
 };
 
+struct input_element_desc
+{
+    const char* SemanticName;
+    uint32_t SemanticIndex;
+};
+
+static const input_element_desc Semantics[] =
+{
+    { "POSITION",     0},
+    { "NORMAL",       0},
+    { "TANGENT",      0},
+    { "BINORMAL",     0},
+    { "COLOR",        0},
+    { "COLOR",        1},
+    { "COLOR",        2},
+    { "COLOR",        3},
+    { "BLENDINDICES", 0},
+    { "BLENDWEIGHT",  0},
+    { "TEXCOORD",     0},
+    { "TEXCOORD",     1},
+    { "TEXCOORD",     2},
+    { "TEXCOORD",     3},
+    { "TEXCOORD",     4},
+    { "TEXCOORD",     5},
+    { "TEXCOORD",     6},
+    { "TEXCOORD",     7},
+};
 
 struct Attribute {
     static constexpr uint8_t FLAG_NORMALIZED     = 0x1;
@@ -718,6 +745,7 @@ struct Attribute {
     uint8_t buffer = 0xFF;
     ElementType type = ElementType::BYTE;
     uint8_t flags = 0x0;
+    uint8_t Semantic = 0x0;
 };
 
 using AttributeArray = std::array<Attribute, MAX_VERTEX_ATTRIBUTE_COUNT>;

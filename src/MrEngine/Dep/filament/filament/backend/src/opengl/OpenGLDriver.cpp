@@ -907,7 +907,7 @@ template<typename D, typename B, typename ... ARGS>
 typename std::enable_if<std::is_base_of<B, D>::value, D>::type*
 OpenGLDriver::construct(Handle<B> const& handle, ARGS&& ... args) noexcept {
     assert(handle);
-    static_assert(sizeof(D) <= 128, "Handle<> too large");
+    //static_assert(sizeof(D) <= 128, "Handle<> too large");
     D* addr = handle_cast<D *>(const_cast<Handle<B>&>(handle));
     new(addr) D(std::forward<ARGS>(args)...);
 #if !defined(NDEBUG) && UTILS_HAS_RTTI

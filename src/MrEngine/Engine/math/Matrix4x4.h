@@ -53,6 +53,17 @@ namespace moonriver
 		void SetColumn(int row, const Vector4& v);
 		Vector4 GetColumn(int row);
 
+        template <typename Y>
+        static Matrix4x4 MakeMatrix(const Y& vals)
+        {
+            return Matrix4x4(
+                static_cast<float>(vals[0]), static_cast<float>(vals[1]), static_cast<float>(vals[2]), static_cast<float>(vals[3]),
+                    static_cast<float>(vals[4]), static_cast<float>(vals[5]), static_cast<float>(vals[6]), static_cast<float>(vals[7]),
+                    static_cast<float>(vals[8]), static_cast<float>(vals[9]), static_cast<float>(vals[10]), static_cast<float>(vals[11]),
+                    static_cast<float>(vals[12]), static_cast<float>(vals[13]), static_cast<float>(vals[14]), static_cast<float>(vals[15])
+                    );
+        }
+
 		static Matrix4x4 Identity();
 		static Matrix4x4 Translation(const Vector3& t);
 		static Matrix4x4 Rotation(const Quaternion& r);
@@ -65,7 +76,11 @@ namespace moonriver
 		static Matrix4x4 Scaling(const Vector3& s);
 		static Matrix4x4 TRS(const Vector3& t, const Quaternion& r, const Vector3& s);
         static Matrix4x4 LookTo(const Vector3& eye_position, const Vector3& to_direction, const Vector3& up_direction);
+        static Matrix4x4 LookAtLH(const Vector3& eye_position, const Vector3& lookat, const Vector3& up_direction);
+        static Matrix4x4 LookAtRH(const Vector3& eye_position, const Vector3& lookat, const Vector3& up_direction);
 		static Matrix4x4 Perspective(float fov, float aspect, float zNear, float zFar);
+        static Matrix4x4 PerspectiveFovLH(float fov, float aspect, float near, float far);
+        static Matrix4x4 PerspectiveFovRH(float fov, float aspect, float near, float far);
 		static Matrix4x4 Ortho(float left, float right, float bottom, float top, float zNear, float zFar);
         static Matrix4x4 ProjectionDepthMapD3D11();
 

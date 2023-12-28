@@ -191,6 +191,7 @@ namespace moonriver
 
         void BeginFrame()
         {
+            Time::Update();
             ++m_frame_id;
 
             auto& driver = this->GetDriverApi();
@@ -320,6 +321,7 @@ namespace moonriver
 
         m_pCore->BeginFrame();
         m_pCore->Render();
+        m_pCore->m_scene_manager->Render();
         m_pCore->EndFrame();
 
         if (!UTILS_HAS_THREADING)
