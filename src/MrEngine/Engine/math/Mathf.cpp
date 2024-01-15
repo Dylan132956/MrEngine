@@ -18,6 +18,7 @@
 #include "Mathf.h"
 #include <stdlib.h>
 #include <assert.h>
+#include "Bounds.h"
 
 namespace moonriver
 {

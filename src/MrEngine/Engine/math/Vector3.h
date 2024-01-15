@@ -50,6 +50,10 @@ namespace moonriver
 		Vector3 operator *=(float v);
         Vector3 operator /(float v) const;
         Vector3 operator /=(float v);
+		float& operator[](int index)
+		{
+			return *(&x + index);
+		}
 		bool operator !=(const Vector3& v) const;
 		bool operator ==(const Vector3& v) const;
 		float Dot(const Vector3& v) const;

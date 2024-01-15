@@ -1,5 +1,7 @@
 #include "Entity.h"
 #include "Transform.h"
+#include "graphics/MeshRenderer.h"
+#include "graphics/Mesh.h"
 #include "Scene.h"
 
 namespace moonriver
@@ -197,6 +199,20 @@ namespace moonriver
     void Entity::AddEntityTreeInScene(Scene* pScene)
     {
         AddInWorldRecursively(pScene);
+    }
+
+    AABB Entity::RecalculateBoundsInternal()
+    {
+        MinMaxAABB minmax;
+        auto renderers = GetComponentsInChildren<Renderer>();
+        for (size_t i = 0; i < renderers.size(); ++i)
+        {
+            AABB aabb;
+            TransformAABB(renderers[i]->GetLocalAABB(), renderers[i]->GetTransform()->GetLocalToWorldMatrix(), aabb);
+            minmax.Encapsulate(aabb.CalculateMin());
+            minmax.Encapsulate(aabb.CalculateMax());
+        }
+        return AABB(minmax);
     }
 
 }

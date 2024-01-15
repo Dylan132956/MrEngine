@@ -40,4 +40,19 @@ namespace moonriver
 
         return bounds;
     }
+
+    AABB MeshRenderer::GetLocalAABB() const
+    {
+        AABB aabb;
+		if (m_mesh)
+		{
+            aabb = m_mesh->GetAABB();
+		}
+        else
+        {
+            int k = 3;
+        }
+
+		return aabb;
+    }
 }

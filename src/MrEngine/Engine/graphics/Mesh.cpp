@@ -435,6 +435,8 @@ namespace moonriver
             driver.setRenderPrimitiveBuffer(m_primitives[i], m_vb, m_ib, m_enabled_attributes);
             driver.setRenderPrimitiveRange(m_primitives[i], m_primitive_type, m_submeshes[i].index_first, 0, m_vertices.size() - 1, m_submeshes[i].index_count);
         }
+
+        RecalculateBoundsInternal();
     }
 
     void Mesh::SetBlendShapes(std::vector<BlendShape>&& blend_shapes)
@@ -444,17 +446,17 @@ namespace moonriver
 
     void Mesh::RecalculateBoundsInternal()
     {
-        //MinMaxAABB minmax;
-        //for (size_t i = 0; i < vertices.size(); ++i)
-        //{s
-        //    minmax.Encapsulate(vertices[i]);
-        //}
-        //AABB aabb;
-        //if (vertices.size())
-        //    aabb = AABB(minmax);
-        //else
-        //    aabb = AABB(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f, 0.0f, 0.0f));
+		MinMaxAABB minmax;
+		for (size_t i = 0; i < m_vertices.size(); ++i)
+		{
+			minmax.Encapsulate(m_vertices[i].vertex);
+		}
+		AABB aabb;
+		if (m_vertices.size())
+			aabb = AABB(minmax);
+		else
+			aabb = AABB(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.0f, 0.0f, 0.0f));
 
-        //m_LocalAABB = aabb;
+		m_LocalAABB = aabb;
     }
 }

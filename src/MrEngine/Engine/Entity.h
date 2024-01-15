@@ -2,6 +2,7 @@
 #include "Object.h"
 #include <memory>
 #include "Component.h"
+#include "math/Bounds.h"
 
 namespace moonriver
 {
@@ -27,6 +28,7 @@ public:
     void LateUpdate();
     void AddInWorldRecursively(Scene* pScene);
     void AddEntityTreeInScene(Scene* pScene);
+    AABB RecalculateBoundsInternal();
     ~Entity();
     Entity(const std::string& name);
     std::weak_ptr<Scene> m_Scene;
@@ -122,9 +124,9 @@ private:
         {
             auto child = this->GetTransform()->GetChild(i);
             std::vector<std::shared_ptr<T>> child_coms = child->GetEntity()->GetComponentsInChildren<T>();
-            for (int j = 0; j < child_coms.Size(); ++j)
+            for (int j = 0; j < child_coms.size(); ++j)
             {
-                coms.Add(child_coms[j]);
+                coms.push_back(child_coms[j]);
             }
         }
 

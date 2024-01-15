@@ -61,6 +61,9 @@ namespace moonriver
         const std::vector<BlendShape>& GetBlendShapes() const { return m_blend_shapes; }
         const std::shared_ptr<Texture>& GetBlendShapeTexture() const { return m_blend_shape_texture; }
         const Bounds& GetBounds() const { return m_bounds; }
+		const AABB& GetAABB() const {
+            return m_LocalAABB;
+		}
 		const filament::backend::AttributeArray& GetAttributes() const { return m_attributes; }
 		uint32_t GetEnabledAttributes() const { return m_enabled_attributes; }
 		const filament::backend::VertexBufferHandle& GetVertexBuffer() const { return m_vb; }
@@ -82,6 +85,7 @@ namespace moonriver
         std::vector<BlendShape> m_blend_shapes;
         std::shared_ptr<Texture> m_blend_shape_texture;
         Bounds m_bounds;
+        AABB m_LocalAABB;
         bool m_uint32_index;
 		filament::backend::AttributeArray m_attributes;
 		uint32_t m_enabled_attributes;

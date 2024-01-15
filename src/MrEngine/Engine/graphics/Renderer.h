@@ -54,6 +54,7 @@ namespace moonriver
         const filament::backend::UniformBufferHandle& GetTransformUniformBuffer() const { return m_transform_uniform_buffer; }
         virtual std::vector<filament::backend::RenderPrimitiveHandle> GetPrimitives();
         virtual Bounds GetLocalBounds() const { return Bounds(); }
+        virtual AABB GetLocalAABB() const { return AABB(); }
 
 	protected:
 		virtual void Prepare();

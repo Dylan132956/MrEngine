@@ -20,12 +20,13 @@
 #include <math.h>
 #include "Vector3.h"
 #include "Ray.h"
-#include "Bounds.h"
+//#include "Bounds.h"
 #include <vector>
 
 namespace moonriver
 {
     typedef uint16_t half;
+	class Bounds;
 
 	class Mathf
 	{

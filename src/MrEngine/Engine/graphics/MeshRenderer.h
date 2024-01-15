@@ -16,6 +16,7 @@ namespace moonriver
 		virtual void SetMesh(const Ref<Mesh>& mesh);
         virtual std::vector<filament::backend::RenderPrimitiveHandle> GetPrimitives();
         virtual Bounds GetLocalBounds() const;
+        virtual AABB GetLocalAABB() const;
 
 	private:
         std::shared_ptr<Mesh> m_mesh;

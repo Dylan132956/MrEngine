@@ -754,8 +754,45 @@ namespace moonriver
         return sameParent;
     }
 
+	std::string GetPath(std::shared_ptr<Transform> parent, std::shared_ptr<Transform> child)
+	{
+		if (!parent || !child)
+		{
+			return "[Error] Invalid input!";
+		}
+
+		if (parent == child)
+		{
+			return "";
+		}
+
+		std::string path = child->GetName();
+
+		std::shared_ptr<Transform> p = child->GetParent();
+		bool isChild = false;
+		while (p)
+		{
+			if (p == parent)
+			{
+				isChild = true;
+				break;
+			}
+			path = std::string(p->GetEntity()->GetName()) + "/" + path;
+			p = p->GetParent();
+		}
+
+		if (!isChild)
+		{
+			return "[Error] Not a child!!";
+		}
+
+		return path;
+	}
+
     void LoadAnimations(const tinygltf::Model& gltf_model, LoadingCache* cache)
     {
+        std::shared_ptr<Animation> animationCom = nullptr;
+        std::vector<std::shared_ptr<AnimationClip>> clips;
         for (size_t animationIndex = 0; animationIndex < gltf_model.animations.size(); ++animationIndex)
         {
             const tinygltf::Animation& gltf_anim = gltf_model.animations[animationIndex];
@@ -790,7 +827,7 @@ namespace moonriver
                 return;
             }
 
-            std::shared_ptr<Animation> animationCom = topmostParent->GetEntity()->GetComponent<Animation>();
+            animationCom = topmostParent->GetEntity()->GetComponent<Animation>();
             if (animationCom == nullptr)
             {
                 animationCom = topmostParent->GetEntity()->AddComponent<Animation>();
@@ -807,6 +844,16 @@ namespace moonriver
 
             for (auto& source : gltf_anim.channels)
             {
+				std::shared_ptr<Entity> targetEntity(nullptr);
+				if (source.target_node >= 0 && source.target_node < cache->nodes.size())
+				{
+					targetEntity = cache->nodes[source.target_node];
+				}
+				if (targetEntity == nullptr) {
+                    Log("Animation's target(node index: %d) is null.", source.target_node);
+                    continue;
+				}
+                std::string childPath = GetPath(topmostParent, targetEntity->GetTransform());
                 const tinygltf::AnimationSampler& samp = gltf_anim.samplers[source.sampler];
                 // times
                 std::vector<float> times;
@@ -819,6 +866,10 @@ namespace moonriver
                     const float* buf = static_cast<const float*>(dataPtr);
                     times.resize(accessor.count);
                     memcpy(times.data(), buf, sizeof(float) * accessor.count);
+                    if (times.size())
+                    {
+                        clip->length = times[times.size() - 1];
+                    }
                 }
 
                 // Read sampler output T/R/S values
@@ -874,6 +925,7 @@ namespace moonriver
                         }
 
                         AnimationCurveWrapper new_path_curve;
+                        new_path_curve.path = childPath;
                         new_path_curve.properties.push_back(propertyX);
                         new_path_curve.properties.push_back(propertyY);
                         new_path_curve.properties.push_back(propertyZ);
@@ -920,6 +972,7 @@ namespace moonriver
                         }
 
                         AnimationCurveWrapper new_path_curve;
+                        new_path_curve.path = childPath;
                         new_path_curve.properties.push_back(propertyX);
                         new_path_curve.properties.push_back(propertyY);
                         new_path_curve.properties.push_back(propertyZ);
@@ -964,6 +1017,7 @@ namespace moonriver
                         }
 
                         AnimationCurveWrapper new_path_curve;
+                        new_path_curve.path = childPath;
                         new_path_curve.properties.push_back(propertyX);
                         new_path_curve.properties.push_back(propertyY);
                         new_path_curve.properties.push_back(propertyZ);
@@ -977,7 +1031,10 @@ namespace moonriver
                     }
 
                 }
+                clips.push_back(clip);
             }
+            assert(animationCom != nullptr && clips.size() > 0);
+            animationCom->SetClips(clips);
 
             for (auto& samp : gltf_anim.samplers)
             {
