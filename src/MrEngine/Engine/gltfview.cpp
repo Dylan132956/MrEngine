@@ -339,6 +339,12 @@ namespace moonriver
     {
         std::shared_ptr<Entity> entity = Entity::Create(gltf_node.name);
         cache->nodes[nodeIndex] = entity;
+        if (entity->GetName().empty())
+        {
+            char name[1024];
+            sprintf(name, "node_%d", nodeIndex);
+            entity->SetName(name);
+        }
         std::shared_ptr<Transform> transform = entity->GetTransform();
         if (parent) {
             transform->SetParent(parent->GetTransform());
@@ -611,6 +617,7 @@ namespace moonriver
                     std::vector<std::shared_ptr<Material>> vMaterial;
                     vMaterial.push_back(cache->Materials[primitive.material]);
                     renderer->SetMaterials(vMaterial);
+                    renderer->EnableShaderKeyword("SKIN_ON");
                 }
                 else
                 {
@@ -766,7 +773,7 @@ namespace moonriver
 			return "";
 		}
 
-		std::string path = child->GetName();
+		std::string path = child->GetEntity()->GetName();
 
 		std::shared_ptr<Transform> p = child->GetParent();
 		bool isChild = false;

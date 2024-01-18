@@ -185,7 +185,7 @@ namespace moonriver
 
             for (int i = 0; i < bone_count; ++i)
             {
-                Matrix4x4 mat = m_bones[i].lock()->GetLocalToWorldMatrix() * bindposes[i];
+                Matrix4x4 mat = m_bones[i].lock()->GetLocalToWorldMatrix() * bindposes[i].Transpose();
 
 				m_bone_vectors[i * 3 + 0] = mat.GetRow(0);
 				m_bone_vectors[i * 3 + 1] = mat.GetRow(1);

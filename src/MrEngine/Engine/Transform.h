@@ -24,7 +24,7 @@
 
 namespace moonriver
 {
-    class Transform : public Component
+    class Transform : public Component, public std::enable_shared_from_this<Transform>
     {
     public:
         Transform();
@@ -33,7 +33,7 @@ namespace moonriver
 		void SetParent(const std::shared_ptr<Transform>& parent);
 		int GetChildCount() const { return m_children.size(); }
 		const std::shared_ptr<Transform>& GetChild(int index) const { return m_children[index]; }
-        std::shared_ptr<Transform> Find(const std::string& path) const;
+        std::shared_ptr<Transform> Find(const std::string& path);
         std::shared_ptr<Transform> GetRoot() const;
 		const Vector3& GetLocalPosition() const { return m_local_position; }
 		void SetLocalPosition(const Vector3& pos);

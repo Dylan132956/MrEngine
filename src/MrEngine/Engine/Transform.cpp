@@ -60,11 +60,12 @@ namespace moonriver
         }
 	}
 
-	std::shared_ptr<Transform> Transform::Find(const std::string& path) const
+	std::shared_ptr<Transform> Transform::Find(const std::string& path)
 	{
 		if (path.empty())
 		{
-			return std::shared_ptr<Transform>();
+            std::shared_ptr<Transform> transform = shared_from_this();
+            return transform;
 		}
 
 		std::shared_ptr<Transform> find;
@@ -85,7 +86,7 @@ namespace moonriver
             {
                 for (int j = 0; j < p->GetChildCount(); ++j)
                 {
-                    if (layers[i] == p->GetChild(j)->GetName())
+                    if (layers[i] == p->GetChild(j)->GetEntity()->GetName())
                     {
                         find_child = true;
                         find = p->GetChild(j);
