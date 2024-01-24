@@ -287,7 +287,7 @@ namespace moonriver
         m_submeshes = submeshes;
         if (m_submeshes.empty())
         {
-            m_submeshes.push_back(Submesh({ 0, indices.size() }));
+            m_submeshes.push_back(Submesh({ 0, (unsigned int)indices.size() }));
         }
         
         filament::backend::BufferUsage usage;
@@ -386,7 +386,7 @@ namespace moonriver
         m_submeshes = submeshes;
         if (m_submeshes.empty())
         {
-            m_submeshes.push_back(Submesh({ 0, m_indices.size() }));
+            m_submeshes.push_back(Submesh({ 0, (unsigned int)m_indices.size() }));
         }
         
         void* buffer = Memory::Alloc<void>(m_vertices.size() * sizeof(m_vertices[0]));

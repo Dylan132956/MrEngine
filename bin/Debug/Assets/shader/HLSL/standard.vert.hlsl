@@ -97,5 +97,9 @@ v2f vert(appdata a)
 #if (COMPILER_HLSL == 1)
     o.vertex.z = 0.5 * (o.vertex.z + o.vertex.w);
 #endif
+#if (COMPILER_VULKAN == 1)
+    o.vertex.y = -o.vertex.y;
+    o.vertex.z = 0.5 * (o.vertex.z + o.vertex.w);
+#endif
     return o;
 }

@@ -50,11 +50,11 @@ VulkanBinder::VulkanBinder() : mDefaultRasterState(createDefaultRasterState()) {
     mShaderStages[0] = VkPipelineShaderStageCreateInfo{};
     mShaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     mShaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    mShaderStages[0].pName = "main";
+    mShaderStages[0].pName = "vert";
     mShaderStages[1] = VkPipelineShaderStageCreateInfo{};
     mShaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     mShaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    mShaderStages[1].pName = "main";
+    mShaderStages[1].pName = "frag";
     resetBindings();
 
     mDescriptorKey = {};

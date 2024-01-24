@@ -1,3 +1,9 @@
+#if (COMPILER_VULKAN == 1)
+#define reg(a, b) register(a, b)
+#else
+#define reg(a, b) register(a)
+#endif
+
 struct simple_vert_output
 {
     float4 pos : SV_Position;
@@ -6,14 +12,14 @@ struct simple_vert_output
 struct simple_vert_color_output
 {
     float4 pos : SV_Position;
-    float4 v_color : TEXCOORD0;
+    float4 v_color : COLOR;
 };
 
 struct simple_vert_color_uv_output
 {
     float4 pos : SV_Position;
     float4 v_color : COLOR;
-    float2 v_uv : TEXCOORD0;
+    float2 v_uv : TEXCOORD;
 };
 
 struct GLTFMaterialShaderInfo

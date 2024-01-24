@@ -1002,8 +1002,8 @@ namespace filament
 					{
 						const auto& attribute = vertex_buffer->attributes[i];
 						D3D11_INPUT_ELEMENT_DESC desc = { };
-						desc.SemanticName = Semantics[attribute.Semantic].SemanticName;
-						desc.SemanticIndex = Semantics[attribute.Semantic].SemanticIndex;
+                        desc.SemanticName = Semantics[attribute.Semantic].SemanticName;
+                        desc.SemanticIndex = Semantics[attribute.Semantic].SemanticIndex;
 						desc.Format = get_format(attribute.type);
 						desc.InputSlot = (UINT)0;
 						desc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;

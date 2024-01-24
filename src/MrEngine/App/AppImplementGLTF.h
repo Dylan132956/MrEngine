@@ -24,7 +24,6 @@ namespace moonriver
 
             auto model = m_pScene->LoadGLTF("/model/BrainStem/glTF/BrainStem.gltf");
             AABB aabb = model->RecalculateBoundsInternal();
-
             //model->GetTransform()->SetPosition(Vector3(0, 0, 0));
             model->GetTransform()->SetPosition(-aabb.GetCenter());
             model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
@@ -43,12 +42,10 @@ namespace moonriver
 			{
 				animations[0]->Play(0);
 			}
-
-            //camera->SetLeftHandSpace(false);
-
             auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
             light->GetTransform()->SetRotation(Quaternion::Euler(60, 90, 0));
             light->SetType(LightType::Directional);
+          
         }
 
         virtual ~AppImplementGLTF()

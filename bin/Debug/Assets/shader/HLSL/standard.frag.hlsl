@@ -7,21 +7,20 @@ cbuffer cbGLTFAttribs : register(b4)
     GLTFMaterialShaderInfo g_MaterialInfo;
 }
 
+Texture2D g_ColorMap : reg(t0, space1);
+SamplerState g_ColorSampler : reg(s0, space1);
 
-Texture2D g_ColorMap : register(t0);
-SamplerState g_ColorSampler : register(s0);
+Texture2D g_PhysicalDescriptorMap : reg(t1, space1);
+SamplerState g_PhysicalDescriptorSampler : reg(s1, space1);
 
-Texture2D g_PhysicalDescriptorMap : register(t1);
-SamplerState g_PhysicalDescriptorSampler : register(s1);
+Texture2D g_NormalMap : reg(t2, space1);
+SamplerState g_NormalSampler : reg(s2, space1);
 
-Texture2D g_NormalMap : register(t2);
-SamplerState g_NormalSampler : register(s2);
+Texture2D g_AOMap : reg(t3, space1);
+SamplerState g_AOSampler : reg(s3, space1);
 
-Texture2D g_AOMap : register(t3);
-SamplerState g_AOSampler : register(s3);
-
-Texture2D g_EmissiveMap : register(t4);
-SamplerState g_EmissiveSampler : register(s4);
+Texture2D g_EmissiveMap : reg(t4, space1);
+SamplerState g_EmissiveSampler : reg(s4, space1);
 
 void frag(in v2f i, out float4 outColor: SV_Target0)
 {

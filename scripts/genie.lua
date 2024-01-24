@@ -30,7 +30,7 @@ solution "MrEngine"
 	defines { 'VR_WINDOWS','VR_VULKAN=1','VR_GLES=1','VR_D3D=1','VK_USE_PLATFORM_WIN32_KHR','FILAMENT_DRIVER_SUPPORTS_VULKAN' }
 
 	--单线程模式
-	defines { 'UTILS_NO_THREADING=1' }
+	--defines { 'UTILS_NO_THREADING=1' }
 
 	-- if IS_VS then flags {"StaticRuntime"} end -- TODO: need to use Dynamic runtime ?
 	if IS_VS then

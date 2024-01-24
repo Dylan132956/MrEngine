@@ -22,44 +22,44 @@ namespace moonriver
     {
         this->SetName(name);
 
-        std::string vs_path[1];
-        std::string fs_path[1];
+        //std::string vs_path[1];
+        //std::string fs_path[1];
 
-        std::string asset_path = Engine::Instance()->GetDataPath();
+        //std::string asset_path = Engine::Instance()->GetDataPath();
 
-        vs_path[0] = asset_path + "/shader/HLSL/simple.vert.hlsl";
-        fs_path[0] = asset_path + "/shader/HLSL/simple.frag.hlsl";
-        char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
-        char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
+        //vs_path[0] = asset_path + "/shader/HLSL/simple.vert.hlsl";
+        //fs_path[0] = asset_path + "/shader/HLSL/simple.frag.hlsl";
+        //char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
+        //char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
 
-        std::string vs_hlsl = vs_buffer;
-        std::string fs_hlsl = fs_buffer;
-        FileSystem::FreeFileData(vs_buffer);
-        FileSystem::FreeFileData(fs_buffer);
+        //std::string vs_hlsl = vs_buffer;
+        //std::string fs_hlsl = fs_buffer;
+        //FileSystem::FreeFileData(vs_buffer);
+        //FileSystem::FreeFileData(fs_buffer);
 
-        const char* c_vs_hlsl[1];
-        const char* c_fs_hlsl[1];
-        c_vs_hlsl[0] = vs_hlsl.c_str();
-        c_fs_hlsl[0] = fs_hlsl.c_str();
+        //const char* c_vs_hlsl[1];
+        //const char* c_fs_hlsl[1];
+        //c_vs_hlsl[0] = vs_hlsl.c_str();
+        //c_fs_hlsl[0] = fs_hlsl.c_str();
 
-        const char* c_vs_path[1];
-        const char* c_fs_path[1];
-        c_vs_path[0] = vs_path[0].c_str();
-        c_fs_path[0] = fs_path[0].c_str();
+        //const char* c_vs_path[1];
+        //const char* c_fs_path[1];
+        //c_vs_path[0] = vs_path[0].c_str();
+        //c_fs_path[0] = fs_path[0].c_str();
 
-        std::vector<unsigned int> vs_spriv;
-        int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-        std::string entryPointName = "simple_vert_main";
-        CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+        //std::vector<unsigned int> vs_spriv;
+        //int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+        //std::string entryPointName = "simple_vert_main";
+        //CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
 
-        std::vector<unsigned int> fs_spriv;
-        option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-        entryPointName = "simple_frag_main";
-        CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+        //std::vector<unsigned int> fs_spriv;
+        //option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+        //entryPointName = "simple_frag_main";
+        //CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
-        std::string vs_glsl = compile_iteration(vs_spriv);
+        //std::string vs_glsl = compile_iteration(vs_spriv);
 
-        std::string fs_glsl = compile_iteration(fs_spriv);
+        //std::string fs_glsl = compile_iteration(fs_spriv);
 
         //spirv_cross::CompilerGLSL vs_compiler(&vs_spriv[0], vs_spriv.size());
         //std::string vs_glsl = vs_compiler.compile();
@@ -123,15 +123,16 @@ namespace moonriver
 
     void Shader::Compile()
     {
-        std::string vs;
-        std::string fs;
         std::string define;
-
         if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
         {
             define = "#define COMPILER_HLSL 1\n";
+        }
+        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
+        {
+            define = "#define COMPILER_VULKAN 1\n";
         }
 
         for (const auto& i : m_keywords)
@@ -142,10 +143,10 @@ namespace moonriver
         for (int i = 0; i < m_passes.size(); ++i)
         {
             auto& pass = m_passes[i];
-            std::string vs;
-            std::string fs;
             std::string vs_hlsl = pass.vs;
             std::string fs_hlsl = pass.fs;
+            std::vector<char> vs_data;
+            std::vector<char> fs_data;
             if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
                 std::string vs_path[1];
                 std::string fs_path[1];
@@ -177,22 +178,56 @@ namespace moonriver
 
                 std::string fs_glsl = compile_iteration(fs_spriv);
 
-                vs = vs_glsl;
-                fs = fs_glsl;
+                vs_data.resize(vs_glsl.size());
+                memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());
+                fs_data.resize(fs_glsl.size());
+                memcpy(&fs_data[0], &fs_glsl[0], fs_data.size());
             }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
             {
-                vs = define + vs_hlsl;
-                fs = define + fs_hlsl;
+                std::string vs = define + vs_hlsl;
+                std::string fs = define + fs_hlsl;
+                vs_data.resize(vs.size());
+                memcpy(&vs_data[0], &vs[0], vs_data.size());
+                fs_data.resize(fs.size());
+                memcpy(&fs_data[0], &fs[0], fs_data.size());
             }
+            else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
+            {
+                const char* c_vs_hlsl[1];
+                const char* c_fs_hlsl[1];
 
-            std::vector<char> vs_data;
-            std::vector<char> fs_data;
+                std::string vs_path[1];
+                std::string fs_path[1];
+                vs_path[0] = pass.vsPath;
+                fs_path[0] = pass.fsPath;
 
-            vs_data.resize(vs.size());
-            memcpy(&vs_data[0], &vs[0], vs_data.size());
-            fs_data.resize(fs.size());
-            memcpy(&fs_data[0], &fs[0], fs_data.size());
+                vs_hlsl = define + vs_hlsl;
+                fs_hlsl = define + fs_hlsl;
+
+                c_vs_hlsl[0] = vs_hlsl.c_str();
+                c_fs_hlsl[0] = fs_hlsl.c_str();
+
+                const char* c_vs_path[1];
+                const char* c_fs_path[1];
+                c_vs_path[0] = vs_path[0].c_str();
+                c_fs_path[0] = fs_path[0].c_str();
+
+                std::vector<unsigned int> vs_spriv;
+                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                std::string entryPointName = "vert";
+                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+                std::vector<unsigned int> fs_spriv;
+                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                entryPointName = "frag";
+                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+                vs_data.resize(vs_spriv.size() * 4);
+                memcpy(&vs_data[0], &vs_spriv[0], vs_data.size());
+                fs_data.resize(fs_spriv.size() * 4);
+                memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
+            }
 
             filament::backend::Program pb;
             pb.diagnostics(utils::CString("Assets/shader/HLSL/standard"))

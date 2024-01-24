@@ -28,13 +28,13 @@ std::string compile_iteration(std::vector<uint32_t>& spirv_file);
 namespace moonriver
 {
     struct Vertex {
-        Vector2 position;
+        Vector4 position;
         Vector4 color;
     };
     Vertex TRIANGLE_VERTICES[3] = {
-        {{0.3, -0.5}, {1., 0., 0., 1.}},
-        {{0.0, 0.5}, {0., 1., 0., 1.}},
-        {{-0.3, -0.5}, { 0., 0., 1., 1.}}
+        {{0.3, -0.5, 0.0, 1.0}, {1., 0., 0., 1.}},
+        {{0.0, 0.5, 0.0, 1.0}, {0., 1., 0., 1.}},
+        {{-0.3, -0.5, 0.0, 1.0}, { 0., 0., 1., 1.}}
     };
     static constexpr uint16_t TRIANGLE_INDICES[3] = { 0, 1, 2 };
 
@@ -45,14 +45,16 @@ namespace moonriver
         m_attributes[0].offset = 0;
         m_attributes[0].stride = sizeof(Vertex);
         m_attributes[0].buffer = 0;
-        m_attributes[0].type = filament::backend::ElementType::FLOAT2;
+        m_attributes[0].type = filament::backend::ElementType::FLOAT4;
         m_attributes[0].flags = 0;
+        m_attributes[0].Semantic = 0;
 
-        m_attributes[1].offset = sizeof(float) * 2;
+        m_attributes[1].offset = sizeof(float) * 4;
         m_attributes[1].stride = sizeof(Vertex);
         m_attributes[1].buffer = 0;
         m_attributes[1].type = filament::backend::ElementType::FLOAT4;
         m_attributes[1].flags = 0;
+        m_attributes[1].Semantic = 4;
 
         m_vb = driver.createVertexBuffer(1, 2, 3, m_attributes, usage);
         driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(TRIANGLE_VERTICES, sizeof(Vertex) * 3, nullptr), 0);
@@ -80,9 +82,8 @@ namespace moonriver
         FileSystem::FreeFileData(vs_buffer);
         FileSystem::FreeFileData(fs_buffer);
         //////////////////////////////////////////////////////////////////////////
-        std::string vs;
-        std::string fs;
-        std::string vfs;
+        std::vector<char> vs_data;
+        std::vector<char> fs_data;
         if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
             const char* c_vs_hlsl[1];
             const char* c_fs_hlsl[1];
@@ -111,22 +112,55 @@ namespace moonriver
 
             std::string fs_glsl = compile_iteration(fs_spriv);
 
-            vs = vs_glsl;
-            fs = fs_glsl;
+            vs_data.resize(vs_glsl.size());
+            memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());
+            fs_data.resize(fs_glsl.size());
+            memcpy(&fs_data[0], &fs_glsl[0], fs_data.size());
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
         {
-            vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
-            fs = fs_hlsl;
+            std::string vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
+            std::string fs = fs_hlsl;
+
+            vs_data.resize(vs.size());
+            memcpy(&vs_data[0], &vs[0], vs_data.size());
+            fs_data.resize(fs.size());
+            memcpy(&fs_data[0], &fs[0], fs_data.size());
         }
+        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
+        {
+            const char* c_vs_hlsl[1];
+            const char* c_fs_hlsl[1];
 
-        std::vector<char> vs_data;
-        std::vector<char> fs_data;
+            vs_hlsl = "#define COMPILER_VULKAN 1\n" + vs_hlsl;
 
-        vs_data.resize(vs.size());
-        memcpy(&vs_data[0], &vs[0], vs_data.size());
-        fs_data.resize(fs.size());
-        memcpy(&fs_data[0], &fs[0], fs_data.size());
+            c_vs_hlsl[0] = vs_hlsl.c_str();
+            c_fs_hlsl[0] = fs_hlsl.c_str();
+
+            const char* c_vs_path[1];
+            const char* c_fs_path[1];
+            c_vs_path[0] = vs_path[0].c_str();
+            c_fs_path[0] = fs_path[0].c_str();
+
+            std::vector<unsigned int> vs_spriv;
+            int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+            std::string entryPointName = "vert";
+            CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+            std::vector<unsigned int> fs_spriv;
+            option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+            entryPointName = "frag";
+            CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+            //std::string vs_glsl = compile_iteration(vs_spriv);
+
+            //std::string fs_glsl = compile_iteration(fs_spriv);
+
+            vs_data.resize(vs_spriv.size() * 4);
+            memcpy(&vs_data[0], &vs_spriv[0], vs_data.size());
+            fs_data.resize(fs_spriv.size() * 4);
+            memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
+        }
 
         filament::backend::Program pb;
         pb.diagnostics(utils::CString("Assets/shader/HLSL/triangle"))
@@ -192,7 +226,7 @@ namespace moonriver
         params.viewport.bottom = (int32_t)0;
         params.viewport.width = (uint32_t)1280;
         params.viewport.height = (uint32_t)720;
-        params.clearColor = filament::math::float4(0.0, 0.0, 0.0, 1.0);
+        params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
         static float angle = 0.01;
         angle += 0.01;
