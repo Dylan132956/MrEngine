@@ -3,6 +3,7 @@
 #include "Object.h"
 #include <memory>
 #include <map>
+#include "Entity.h"
 
 namespace moonriver
 {

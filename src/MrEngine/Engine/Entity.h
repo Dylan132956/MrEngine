@@ -3,6 +3,7 @@
 #include <memory>
 #include "Component.h"
 #include "math/Bounds.h"
+#include "Transform.h"
 
 namespace moonriver
 {

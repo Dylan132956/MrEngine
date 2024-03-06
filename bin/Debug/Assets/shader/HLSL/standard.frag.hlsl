@@ -28,4 +28,6 @@ void frag(in v2f i, out float4 outColor: SV_Target0)
        * g_AOMap.Sample(g_AOSampler, i.uv) + g_EmissiveMap.Sample(g_EmissiveSampler, i.uv);
     //outColor = float4(1.0, 0.0, 0.0, 1.0);
     //outColor = g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, i.uv);
+    //outColor = g_ColorMap.Sample(g_ColorSampler, i.uv);
+    //outColor = float4(i.uv, 0.0, 1.0);
 }

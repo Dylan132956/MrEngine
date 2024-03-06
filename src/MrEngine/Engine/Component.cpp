@@ -1,4 +1,5 @@
 #include "Component.h"
+#include "Transform.h"
 #include "Entity.h"
 
 namespace moonriver

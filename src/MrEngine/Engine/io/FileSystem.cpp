@@ -1,6 +1,10 @@
 #include "FileSystem.h"
 #include "stdio.h"
 #include <memory>
+#ifdef VR_ANDROID
+#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
+#endif
+
 namespace moonriver 
 {
     void Error(const char* message, const char* detail)

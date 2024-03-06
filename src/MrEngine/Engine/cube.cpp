@@ -2,18 +2,13 @@
 #include "Engine.h"
 #include "graphics/Shader.h"
 #include "io/FileSystem.h"
-#include "glslang/Public/ShaderLang.h"
-#include "spirv_glsl.hpp"
 #include "math/Matrix4x4.h"
 #include "math/Vector4.h"
 #include "math/Vector2.h"
 #include "graphics/Image.h"
 #include "time/Time.h"
+#include "shader_converter.h"
 //#include "graphics/Texture.h"
-
-void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
-    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
-std::string compile_iteration(std::vector<uint32_t>& spirv_file);
 
 namespace moonriver
 {
@@ -193,9 +188,15 @@ namespace moonriver
             entryPointName = "frag";
             CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
-            std::string vs_glsl = compile_iteration(vs_spriv);
-
-            std::string fs_glsl = compile_iteration(fs_spriv);
+            compile_arguments arg;
+#if VR_ANDROID || VR_IOS
+            arg.set_es = true;
+            arg.es = true;
+            arg.version = 310;
+            arg.set_version = true;
+#endif
+            std::string vs_glsl = spirv_converter(arg, vs_spriv);
+            std::string fs_glsl = spirv_converter(arg, fs_spriv);
 
             vs_data.resize(vs_glsl.size());
             memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());
@@ -333,7 +334,9 @@ namespace moonriver
         static float angle = 0.00;
         angle = Time::GetRealTimeSinceStartup();
         //printf("%.6f\n", angle);
-        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle) * Matrix4x4::Translation(Vector3(0., 0., 0.));
+        Vector3 r = Vector3(1., 1., 1.);
+        Vector3 t = Vector3(0., 0., 0.);
+        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(r, angle) * Matrix4x4::Translation(t);
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));
         memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));

@@ -246,6 +246,7 @@ int CreateAppWindow()
     g_window_height = window_height;
 
     g_engine = Engine::Create(hwnd, g_window_width, g_window_height);
+    g_engine->Init();
     g_App = new App(g_engine);
 
     bool exit = false;

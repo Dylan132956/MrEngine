@@ -654,7 +654,7 @@ namespace moonriver
             }
             else
             {
-                Log("Unexpected camera type: ", gltf_cam.type);
+                Log("Unexpected camera type: %s", gltf_cam.type.c_str());
             }
         }
     }

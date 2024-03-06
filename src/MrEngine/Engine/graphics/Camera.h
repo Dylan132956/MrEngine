@@ -7,6 +7,7 @@
 #include "math/Rect.h"
 #include "math/Matrix4x4.h"
 //#include "container/List.h"
+#include <list>
 #include "private/backend/DriverApi.h"
 
 namespace moonriver

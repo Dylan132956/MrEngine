@@ -22,6 +22,7 @@
 #include "math/Vector4.h"
 #include "math/Bounds.h"
 #include "private/backend/DriverApi.h"
+#include <list>
 
 namespace moonriver
 {

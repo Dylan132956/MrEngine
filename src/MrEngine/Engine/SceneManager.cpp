@@ -43,7 +43,9 @@ namespace moonriver
 
     void SceneManager::Update()
     {
-        m_Scene->Update();
+        if (m_Scene){
+            m_Scene->Update();
+        }
     }
 
     void SceneManager::Render()

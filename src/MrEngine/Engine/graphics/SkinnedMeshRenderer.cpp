@@ -34,7 +34,7 @@ namespace moonriver
     SkinnedMeshRenderer::~SkinnedMeshRenderer()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
-        
+
         if (m_bones_uniform_buffer)
         {
             driver.destroyUniformBuffer(m_bones_uniform_buffer);
@@ -144,7 +144,7 @@ namespace moonriver
             {
                 m_bones[i] = root->Find(m_bone_paths[i].substr(root_name.size() + 1));
             }
-            
+
             if (m_bones[i].expired())
             {
                 Log("can not find bone: %s", m_bone_paths[i].c_str());
@@ -212,10 +212,10 @@ namespace moonriver
 
                 m_bone_vectors.resize(2 + m_blend_shape_weights.size());
 
-                // store weight count in element 0£¬ texture size in 1
+                // store weight count in element 0ï¿½ï¿½ texture size in 1
                 m_bone_vectors[0] = Vector4((float) m_bone_vectors.size(), (float) mesh->GetVertices().size(), (float) mesh->GetBlendShapes().size());
                 m_bone_vectors[1] = Vector4((float) blend_shape_texture->GetWidth(), (float) blend_shape_texture->GetHeight());
-                
+
                 int weight_index = 2;
                 for (const auto& i : m_blend_shape_weights)
                 {
@@ -231,7 +231,7 @@ namespace moonriver
                 void* buffer = driver.allocate(m_bone_vectors.size() * sizeof(m_bone_vectors[0]));
                 Memory::Copy(buffer, m_bone_vectors.data(), m_bone_vectors.size() * sizeof(m_bone_vectors[0]));
                 driver.loadUniformBuffer(m_bones_uniform_buffer, filament::backend::BufferDescriptor(buffer, m_bone_vectors.size() * sizeof(m_bone_vectors[0])));
-                
+
                 // blend shape sampler
                 if (!m_blend_shape_sampler_group)
                 {
@@ -310,14 +310,14 @@ namespace moonriver
                 driver.updateVertexBuffer(m_vb, 0, filament::backend::BufferDescriptor(buffer, vertices.size() * sizeof(vertices[0])), 0);
             }
 		}
-        
+
         MeshRenderer::Prepare();
     }
 
     std::vector<filament::backend::RenderPrimitiveHandle> SkinnedMeshRenderer::GetPrimitives()
     {
         std::vector<filament::backend::RenderPrimitiveHandle> primitives;
-        
+
 		if (m_primitives.size() > 0)
 		{
 			primitives = m_primitives;
@@ -330,7 +330,7 @@ namespace moonriver
 				primitives = mesh->GetPrimitives();
 			}
 		}
-        
+
         return primitives;
     }
 }

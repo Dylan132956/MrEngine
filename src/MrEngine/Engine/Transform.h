@@ -1,5 +1,5 @@
 /*
-* Viry3D
+* Mr3D
 * Copyright 2014-2019 by Stack - stackos@qq.com
 *
 * Licensed under the Apache License, Version 2.0 (the "License");

@@ -37,6 +37,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
+#include "../shader_converter.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -1167,7 +1168,6 @@ static HLSLBindingFlags hlsl_resource_type_to_flag(const std::string &arg)
 string compile_iteration(std::vector<uint32_t> &spirv_file)
 {
 	CLIArguments args;
-
 	Parser spirv_parser(std::move(spirv_file));
 	spirv_parser.parse();
 
@@ -1932,6 +1932,16 @@ static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> 
 	}
 
 	return ret;
+}
+
+std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv_file)
+{
+	CLIArguments args;
+	args.set_es = arg.set_es;
+	args.es = arg.es;
+	args.version = arg.version;
+	args.set_version = arg.set_version;
+	return compile_iteration(args, spirv_file);
 }
 
 static int main_inner(int argc, char *argv[])

@@ -2,6 +2,7 @@
 
 #include "Component.h"
 #include "AnimationCurve.h"
+#include <list>
 
 namespace moonriver
 {

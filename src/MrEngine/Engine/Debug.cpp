@@ -51,7 +51,7 @@ namespace moonriver
 #elif VR_ANDROID
     void Debug::LogString(const string& str, bool end_line)
     {
-        __android_log_print(ANDROID_LOG_ERROR, "Viry3D", "%s", str.c_str());
+        __android_log_print(ANDROID_LOG_ERROR, "Mr3D", "%s", str.c_str());
     }
 #elif VR_WASM
     void Debug::LogString(const string& str, bool end_line)

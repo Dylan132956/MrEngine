@@ -10,6 +10,9 @@
     <Filter Include="src\MrEngine\Engine">
       <UniqueIdentifier>{90F520AC-FC56-FEB9-85C4-446CF1243579}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\MrEngine\Engine\android">
+      <UniqueIdentifier>{6D7CA884-D989-D66A-6270-D255CE7CA221}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\MrEngine\Engine\animation">
       <UniqueIdentifier>{6C85FBC4-D89D-E2EE-A14A-72880D227788}</UniqueIdentifier>
     </Filter>
@@ -83,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\triangle.h">
       <Filter>src\MrEngine\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\MrEngine\Engine\android\jni.h">
+      <Filter>src\MrEngine\Engine\android</Filter>
     </ClInclude>
     <ClInclude Include="..\src\MrEngine\Engine\animation\Animation.h">
       <Filter>src\MrEngine\Engine\animation</Filter>

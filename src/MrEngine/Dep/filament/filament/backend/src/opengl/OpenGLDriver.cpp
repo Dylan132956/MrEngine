@@ -3651,7 +3651,7 @@ void OpenGLDriver::draw(PipelineState state, Handle<HwRenderPrimitive> rph) {
     }
     else if (this->getShaderModel() >= backend::ShaderModel::GL_ES_30)
     {
-        bluegl_glDrawRangeElements(GLenum(rp->type), rp->minIndex, rp->maxIndex, rp->count,
+        glDrawRangeElements(GLenum(rp->type), rp->minIndex, rp->maxIndex, rp->count,
                             rp->gl.indicesType, (const void*) (size_t) rp->offset);
     }
 

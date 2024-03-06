@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace Viry3D
+namespace moonriver
 {
 	class Directory
 	{

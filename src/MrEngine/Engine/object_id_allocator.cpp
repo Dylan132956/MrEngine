@@ -7,7 +7,7 @@ namespace moonriver
 
     ObjectID ObjectIDAllocator::alloc()
     {
-        std::atomic<ObjectID> new_object_ret = m_next_id.load();
+        std::atomic<ObjectID> new_object_ret = {m_next_id.load()};
         m_next_id++;
         if (m_next_id >= k_invalid_gobject_id)
         {

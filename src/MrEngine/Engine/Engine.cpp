@@ -15,6 +15,7 @@
 #include "graphics/RenderTarget.h"
 #include "graphics/Camera.h"
 #include "graphics/Renderer.h"
+#include "string/stringutils.h"
 
 #if VR_WINDOWS
 #include <Windows.h>
@@ -65,11 +66,11 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::VULKAN),
+            m_backend(backend::Backend::OPENGL),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
-            m_backend(backend::Backend::OPENGL),
+            m_backend(backend::Backend::VULKAN),
 #elif VR_USE_METAL
             m_backend(backend::Backend::METAL),
 #else
@@ -106,7 +107,6 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
             Shader::Init();
-            m_scene_manager = std::make_unique<SceneManager>();
         }
 
         void Shutdown()
@@ -317,6 +317,9 @@ namespace moonriver
 
     void Engine::Execute()
     {
+        if (m_pCore->m_scene_manager == nullptr) {
+            m_pCore->m_scene_manager = std::make_unique<SceneManager>();
+        }
         m_pCore->m_scene_manager->Update();
 
         m_pCore->BeginFrame();
@@ -370,29 +373,7 @@ namespace moonriver
     {
         return m_pCore->m_quit;
     }
-
-    std::string Replace(const std::string& input, const std::string& old, const std::string& to)
-    {
-        std::string result(input);
-
-        int start = 0;
-        while (true)
-        {
-            int index = result.find(old, start);
-            if (index >= 0)
-            {
-                result.replace(index, old.size(), to);
-                start = index + (int)to.size();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return result;
-    }
-
+#if VR_WINDOWS
     const std::string& Engine::GetDataPath()
     {
         if (m_data_path.empty())
@@ -405,6 +386,20 @@ namespace moonriver
         }
 
         return m_data_path;
+    }
+#elif VR_ANDROID
+	const std::string& Engine::GetDataPath()
+	{
+		return m_data_path;
+	}
+	void Engine::SetDataPath(const std::string& path)
+	{
+		m_data_path = path;
+	}
+#endif
+    void Engine::Init()
+    {
+        m_pCore->m_scene_manager = std::make_unique<SceneManager>();
     }
 
     std::shared_ptr<Scene> Engine::CreateScene()

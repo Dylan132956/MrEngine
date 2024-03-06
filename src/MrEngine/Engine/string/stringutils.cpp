@@ -194,4 +194,49 @@ double StringToDouble(const char* text, double defaultValue, bool* successed) {
     return result;
 }
 
+std::string Replace(const std::string& input, const std::string& old, const std::string& to)
+{
+	std::string result(input);
+
+	int start = 0;
+	while (true)
+	{
+		int index = result.find(old, start);
+		if (index >= 0)
+		{
+			result.replace(index, old.size(), to);
+			start = index + (int)to.size();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+std::string str_format(const char* format, ...)
+{
+	std::string result;
+
+	va_list vs;
+	va_start(vs, format);
+	int size = vsnprintf(nullptr, 0, format, vs);
+	va_end(vs);
+
+	char* buffer = Memory::Alloc<char>(size + 1);
+	buffer[size] = 0;
+
+	va_start(vs, format);
+	size = vsnprintf(buffer, size + 1, format, vs);
+	va_end(vs);
+
+	result = buffer;
+
+	Memory::Free(buffer, size + 1);
+
+	return result;
+}
+
 }

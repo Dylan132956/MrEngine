@@ -83,17 +83,29 @@ v2f vert(appdata a)
     float weights_1 = a.boneWeight.y;
     float weights_2 = a.boneWeight.z;
     float weights_3 = a.boneWeight.w;
+    //weights_0 = 0.25;
+    //weights_1 = 0.25;
+    //weights_2 = 0.25;
+    //weights_3 = 0.25;
+    //index_0 = 2;
+    //index_1 = 2;
+    //index_2 = 8;
+    //index_3 = 8;
     float4x4 bone_0 = float4x4(u_bones[index_0 * 3], u_bones[index_0 * 3 + 1], u_bones[index_0 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 bone_1 = float4x4(u_bones[index_1 * 3], u_bones[index_1 * 3 + 1], u_bones[index_1 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 bone_2 = float4x4(u_bones[index_2 * 3], u_bones[index_2 * 3 + 1], u_bones[index_2 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 bone_3 = float4x4(u_bones[index_3 * 3], u_bones[index_3 * 3 + 1], u_bones[index_3 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 model_matrix = transpose(bone_0 * weights_0 + bone_1 * weights_1 + bone_2 * weights_2 + bone_3 * weights_3);
+
+    //o.uv.x = a.boneIndices.z / 10.0;
+    //o.uv.y = a.boneIndices.w / 10.0;
 #else
     float4x4 model_matrix = u_model_matrix;
 #endif
     o.vertex = mul(mul(mul(float4(a.vertex.xyz, 1.0), model_matrix), u_view_matrix), u_projection_matrix);
     o.vcolor = a.color;
     o.uv = a.uv;
+
 #if (COMPILER_HLSL == 1)
     o.vertex.z = 0.5 * (o.vertex.z + o.vertex.w);
 #endif

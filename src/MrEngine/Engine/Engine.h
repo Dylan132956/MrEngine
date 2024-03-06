@@ -4,6 +4,8 @@
 #include <string>
 #include <memory>
 
+#define VR_VERSION_NAME "1.0.0"
+
 namespace filament
 {
     namespace backend
@@ -37,6 +39,11 @@ namespace moonriver
         int GetHeight() const;
         bool HasQuit() const;
         const std::string& GetDataPath();
+        void Init();
+#if VR_ANDROID
+        void SetDataPath(const std::string& path);
+        void SetSavePath(const std::string& path);
+#endif
         std::shared_ptr<Scene> CreateScene();
     private:
         Engine(void* native_window, int width, int height, uint64_t flags, void* shared_gl_context);

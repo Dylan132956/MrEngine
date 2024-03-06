@@ -2,15 +2,10 @@
 #include "Engine.h"
 #include "graphics/Shader.h"
 #include "io/FileSystem.h"
-#include "glslang/Public/ShaderLang.h"
-#include "spirv_glsl.hpp"
 #include "math/Matrix4x4.h"
 #include "math/Vector4.h"
 #include "math/Vector2.h"
-
-void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
-    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
-std::string compile_iteration(std::vector<uint32_t>& spirv_file);
+#include "shader_converter.h"
 
 // triangle vertices
 
@@ -19,10 +14,10 @@ std::string compile_iteration(std::vector<uint32_t>& spirv_file);
 //             /    \
 //            /      \
 //           /        \
-//          /          \          
-//         /            \ 
+//          /          \
+//         /            \
 //        /______________\
-// (-0.3, -0.5)      (0.3, -0.5)      
+// (-0.3, -0.5)      (0.3, -0.5)
 
 // x:right y:up z:front
 namespace moonriver
@@ -108,9 +103,15 @@ namespace moonriver
             entryPointName = "frag";
             CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
-            std::string vs_glsl = compile_iteration(vs_spriv);
-
-            std::string fs_glsl = compile_iteration(fs_spriv);
+            compile_arguments arg;
+#if VR_ANDROID || VR_IOS
+            arg.set_es = true;
+            arg.es = true;
+            arg.version = 310;
+            arg.set_version = true;
+#endif
+            std::string vs_glsl = spirv_converter(arg, vs_spriv);
+            std::string fs_glsl = spirv_converter(arg, fs_spriv);
 
             vs_data.resize(vs_glsl.size());
             memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());
@@ -179,7 +180,7 @@ namespace moonriver
 
         constexpr float ZOOM = 1.5f;
         const float aspect = (float)Engine::Instance()->GetWidth() / Engine::Instance()->GetHeight();
-        
+
         m_uniforms.uWorldMatrix = Matrix4x4::Identity();
         m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -1.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
         m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 10.);
@@ -230,7 +231,8 @@ namespace moonriver
 
         static float angle = 0.01;
         angle += 0.01;
-        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(Vector3(1., 1., 1.), angle);
+        Vector3 r = Vector3(1., 1., 1.);
+        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(r, angle);
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));
         memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));

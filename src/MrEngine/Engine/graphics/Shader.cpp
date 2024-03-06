@@ -6,12 +6,7 @@
 #include <list>
 #include "io/File.h"
 #include "Debug.h"
-#include "glslang/Public/ShaderLang.h"
-#include "spirv_glsl.hpp"
-
-void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
-    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
-std::string compile_iteration(std::vector<uint32_t>& spirv_file);
+#include "shader_converter.h"
 
 namespace moonriver
 {
@@ -174,9 +169,15 @@ namespace moonriver
                 entryPointName = "frag";
                 CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
-                std::string vs_glsl = compile_iteration(vs_spriv);
-
-                std::string fs_glsl = compile_iteration(fs_spriv);
+                compile_arguments arg;
+#if VR_ANDROID || VR_IOS
+                arg.set_es = true;
+                arg.es = true;
+                arg.version = 310;
+                arg.set_version = true;
+#endif
+                std::string vs_glsl = spirv_converter(arg, vs_spriv);
+                std::string fs_glsl = spirv_converter(arg, fs_spriv);
 
                 vs_data.resize(vs_glsl.size());
                 memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());

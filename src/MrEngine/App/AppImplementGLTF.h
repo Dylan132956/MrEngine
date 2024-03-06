@@ -27,6 +27,7 @@ namespace moonriver
             //model->GetTransform()->SetPosition(Vector3(0, 0, 0));
             model->GetTransform()->SetPosition(-aabb.GetCenter());
             model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
+            //model->GetTransform()->SetScale(Vector3(1, 1, 1));
             std::shared_ptr<Camera> camera = m_pScene->CreateEntity("camera")->AddComponent<Camera>();
             Camera::SetMainCamera(camera);
             camera->GetTransform()->SetPosition(Vector3(0.f, 0.0f, 3.5f));
@@ -36,6 +37,7 @@ namespace moonriver
             camera->SetDepth(2);
             camera->SetCullingMask((1 << 0) | (1 << 4) | (1 << 8));
             camera->SetClearColor(Color(0.22, 0.22, 0.22, 1.0));
+            //camera->SetLeftHandSpace(true);
 
 			auto animations = model->GetComponentsInChildren<Animation>();
 			if (animations.size() > 0)
