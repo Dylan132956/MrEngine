@@ -22,10 +22,10 @@ SamplerState g_AOSampler : reg(s3, space1);
 Texture2D g_EmissiveMap : reg(t4, space1);
 SamplerState g_EmissiveSampler : reg(s4, space1);
 
-void frag(in v2f i, out float4 outColor: SV_Target0)
+void frag(v2f _entryPointOutput, out float4 outColor: SV_Target0)
 {
-    outColor = g_MaterialInfo.BaseColorFactor * g_ColorMap.Sample(g_ColorSampler, i.uv) * g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, i.uv) * g_NormalMap.Sample(g_NormalSampler, i.uv)
-       * g_AOMap.Sample(g_AOSampler, i.uv) + g_EmissiveMap.Sample(g_EmissiveSampler, i.uv);
+    outColor = g_MaterialInfo.BaseColorFactor * g_ColorMap.Sample(g_ColorSampler, _entryPointOutput.uv) * g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, _entryPointOutput.uv) * g_NormalMap.Sample(g_NormalSampler, _entryPointOutput.uv)
+       * g_AOMap.Sample(g_AOSampler, _entryPointOutput.uv) + g_EmissiveMap.Sample(g_EmissiveSampler, _entryPointOutput.uv);
     //outColor = float4(1.0, 0.0, 0.0, 1.0);
     //outColor = g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, i.uv);
     //outColor = g_ColorMap.Sample(g_ColorSampler, i.uv);

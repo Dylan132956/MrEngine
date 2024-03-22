@@ -107,7 +107,7 @@ namespace moonriver
 #if VR_ANDROID || VR_IOS
             arg.set_es = true;
             arg.es = true;
-            arg.version = 310;
+            arg.version = 300;
             arg.set_version = true;
 #endif
             std::string vs_glsl = spirv_converter(arg, vs_spriv);
@@ -168,6 +168,9 @@ namespace moonriver
             .withVertexShader((void*)&vs_data[0], vs_data.size())
             .withFragmentShader((void*)&fs_data[0], fs_data.size());
 
+        //uniform
+        pb.setUniformBlock(0, utils::CString("mvpUniforms"));
+
         pipeline.program = driver.createProgram(std::move(pb));
 
         pipeline.rasterState.depthWrite = true;
@@ -225,8 +228,8 @@ namespace moonriver
 
         params.viewport.left = (int32_t)0;
         params.viewport.bottom = (int32_t)0;
-        params.viewport.width = (uint32_t)1280;
-        params.viewport.height = (uint32_t)720;
+        params.viewport.width = Engine::Instance()->GetWidth();
+        params.viewport.height = Engine::Instance()->GetHeight();
         params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
         static float angle = 0.01;
@@ -239,7 +242,7 @@ namespace moonriver
         driver.loadUniformBuffer(m_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(mvpUniforms)));
 
         driver.beginRenderPass(target, params);
-        driver.setViewportScissor(0, 0, 1280, 720);
+        driver.setViewportScissor(0, 0, Engine::Instance()->GetWidth(), Engine::Instance()->GetHeight());
 
         driver.bindUniformBuffer(0, m_uniform_buffer);
 

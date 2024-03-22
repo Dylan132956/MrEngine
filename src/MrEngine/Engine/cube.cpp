@@ -250,6 +250,9 @@ namespace moonriver
             .withVertexShader((void*)&vs_data[0], vs_data.size())
             .withFragmentShader((void*)&fs_data[0], fs_data.size());
 
+        //uniform
+		pb.setUniformBlock(0, utils::CString("mvpUniforms"));
+		
         if (!m_cube_sampler_group)
         {
             m_cube_sampler_group = driver.createSamplerGroup(1);
@@ -279,7 +282,7 @@ namespace moonriver
         //m_uniforms.uViewMatrix = Matrix4x4::LookAtLH(Vector3(0., 0., -10.0), Vector3(0., 0., 0.), Vector3(0., 1., 0.));
         //m_uniforms.uProjectionMatrix = Matrix4x4::PerspectiveFovLH(18., aspect, 0.1, 1000.);
         //for left hand
-        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -10.0), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
+        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -18.0), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
         m_uniforms.uProjectionMatrix = Matrix4x4::Perspective(18., aspect, 0.1, 1000.);
 
         //m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, -20., 20.);
@@ -352,12 +355,12 @@ namespace moonriver
 
         params.viewport.left = (int32_t)0;
         params.viewport.bottom = (int32_t)0;
-        params.viewport.width = (uint32_t)1280;
-        params.viewport.height = (uint32_t)720;
+        params.viewport.width = Engine::Instance()->GetWidth();
+        params.viewport.height = Engine::Instance()->GetHeight();
         params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
         driver.beginRenderPass(target, params);
-        driver.setViewportScissor(0, 0, 1280, 720);
+        driver.setViewportScissor(0, 0, Engine::Instance()->GetWidth(), Engine::Instance()->GetHeight());
         driver.bindUniformBuffer(0, m_uniform_buffer);
 
         driver.bindSamplers((size_t)4, m_cube_sampler_group);

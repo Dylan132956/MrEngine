@@ -91,10 +91,10 @@ v2f vert(appdata a)
     //index_1 = 2;
     //index_2 = 8;
     //index_3 = 8;
-    float4x4 bone_0 = float4x4(u_bones[index_0 * 3], u_bones[index_0 * 3 + 1], u_bones[index_0 * 3 + 2], float4(0, 0, 0, 1));
-    float4x4 bone_1 = float4x4(u_bones[index_1 * 3], u_bones[index_1 * 3 + 1], u_bones[index_1 * 3 + 2], float4(0, 0, 0, 1));
-    float4x4 bone_2 = float4x4(u_bones[index_2 * 3], u_bones[index_2 * 3 + 1], u_bones[index_2 * 3 + 2], float4(0, 0, 0, 1));
-    float4x4 bone_3 = float4x4(u_bones[index_3 * 3], u_bones[index_3 * 3 + 1], u_bones[index_3 * 3 + 2], float4(0, 0, 0, 1));
+    float4x4 bone_0 = float4x4(u_bones[index_0 * 3], u_bones[index_0 * 3 + 1], u_bones[index_0 * 3 + 2], float4(0.0, 0.0, 0.0, 1.0));
+    float4x4 bone_1 = float4x4(u_bones[index_1 * 3], u_bones[index_1 * 3 + 1], u_bones[index_1 * 3 + 2], float4(0.0, 0.0, 0.0, 1.0));
+    float4x4 bone_2 = float4x4(u_bones[index_2 * 3], u_bones[index_2 * 3 + 1], u_bones[index_2 * 3 + 2], float4(0.0, 0.0, 0.0, 1.0));
+    float4x4 bone_3 = float4x4(u_bones[index_3 * 3], u_bones[index_3 * 3 + 1], u_bones[index_3 * 3 + 2], float4(0.0, 0.0, 0.0, 1.0));
     float4x4 model_matrix = transpose(bone_0 * weights_0 + bone_1 * weights_1 + bone_2 * weights_2 + bone_3 * weights_3);
 
     //o.uv.x = a.boneIndices.z / 10.0;

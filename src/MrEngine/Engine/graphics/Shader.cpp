@@ -170,10 +170,13 @@ namespace moonriver
                 CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
                 compile_arguments arg;
+
+                arg.version = 330;
+                arg.set_version = true;
 #if VR_ANDROID || VR_IOS
                 arg.set_es = true;
                 arg.es = true;
-                arg.version = 310;
+                arg.version = 300;
                 arg.set_version = true;
 #endif
                 std::string vs_glsl = spirv_converter(arg, vs_spriv);
@@ -237,12 +240,24 @@ namespace moonriver
 
             auto& driver = Engine::Instance()->GetDriverApi();
 
-            //Uniform u;
-            //u.name = "PerMaterialFragment";
-            //u.binding = (int)Shader::BindingPoint::PerMaterialFragment;
-            //u.members.push_back({ "u_view_matrix", 0, 64 });
-            //u.members.push_back({ "u_projection_matrix", 64, 64 });
-            //u.size = 128;
+			Uniform u;
+			u.name = "vpUniforms";
+            u.binding = 0;
+            pass.uniforms.push_back(u);
+            u.name = "mUniforms";
+            u.binding = 1;
+            pass.uniforms.push_back(u);
+			u.name = "boneUniforms";
+            u.binding = 2;
+			pass.uniforms.push_back(u);
+            u.name = "cbGLTFAttribs";
+			u.binding = 4;
+			pass.uniforms.push_back(u);
+
+			for (int i = 0; i < pass.uniforms.size(); ++i)
+			{
+				pb.setUniformBlock(pass.uniforms[i].binding, utils::CString(pass.uniforms[i].name.c_str()));
+			}
 
             SamplerGroup group;
             group.name = "PerMaterialFragment";
