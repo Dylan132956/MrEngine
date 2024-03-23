@@ -192,7 +192,7 @@ namespace moonriver
 #if VR_ANDROID || VR_IOS
             arg.set_es = true;
             arg.es = true;
-            arg.version = 310;
+            arg.version = 300;
             arg.set_version = true;
 #endif
             std::string vs_glsl = spirv_converter(arg, vs_spriv);

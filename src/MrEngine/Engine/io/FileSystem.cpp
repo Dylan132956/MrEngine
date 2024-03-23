@@ -1,7 +1,8 @@
 #include "FileSystem.h"
 #include "stdio.h"
 #include <memory>
-#ifdef VR_ANDROID
+#if VR_WINDOWS || VR_UWP
+#elif VR_IOS || VR_ANDROID || VR_MAC || VR_WASM
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
 #endif
 

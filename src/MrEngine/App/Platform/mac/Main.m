@@ -26,7 +26,7 @@ void initMenu(NSApplication* app) {
     NSMenu* appMenu = [NSMenu new];
     appMenuItem.submenu = appMenu;
     
-    NSMenuItem* quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit Viry3DApp" action:nil keyEquivalent:@"q"];
+    NSMenuItem* quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit Mr3DApp" action:nil keyEquivalent:@"q"];
     quitItem.target = app.delegate;
     quitItem.action = @selector(quit);
     [appMenu addItem:quitItem];

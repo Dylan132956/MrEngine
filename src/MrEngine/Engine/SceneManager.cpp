@@ -17,7 +17,7 @@ namespace moonriver
         m_instance = this;
         m_triangle = std::make_shared<triangle>();
         m_cube = std::make_shared<cube>();
-        m_gltfview = std::make_shared<gltfview>();   
+        m_gltfview = std::make_shared<gltfview>();
     }
 
     SceneManager* SceneManager::Instance()
@@ -50,7 +50,7 @@ namespace moonriver
 
     void SceneManager::Render()
     {
-        //m_triangle->Render();
-        //m_cube->Render();
+        m_triangle->Render();
+        m_cube->Render();
     }
 }

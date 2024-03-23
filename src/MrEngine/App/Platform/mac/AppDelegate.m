@@ -25,7 +25,7 @@
 - (void)applicationDidFinishLaunching:(NSNotification*)aNotification {
     // Insert code here to initialize your application
     
-    const char* name = "Viry3D";
+    const char* name = "Mr3D";
     NSRect window_rect = NSMakeRect(0, 0, 1280, 720);
     
     int style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;

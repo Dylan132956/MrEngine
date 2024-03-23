@@ -15,6 +15,7 @@
  */
 
 #include "MetalResourceTracker.h"
+#include <assert.h>
 
 namespace filament {
 namespace backend {

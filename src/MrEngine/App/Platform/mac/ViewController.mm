@@ -17,24 +17,24 @@
 
 #import "ViewController.h"
 #include "Engine.h"
-#include "Input.h"
-#include "container/List.h"
+//#include "Input.h"
+//#include "container/List.h"
 #include <QuartzCore/QuartzCore.h>
 
-using namespace Viry3D;
+using namespace moonriver;
 
-extern Vector<Touch> g_input_touches;
-extern List<Touch> g_input_touch_buffer;
-extern bool g_mouse_button_down[3];
-extern bool g_mouse_button_up[3];
-extern Vector3 g_mouse_position;
-extern bool g_mouse_button_held[3];
-
-struct MouseEvent
-{
-    Vector2 position;
-    float time;
-};
+//extern Vector<Touch> g_input_touches;
+//extern List<Touch> g_input_touch_buffer;
+//extern bool g_mouse_button_down[3];
+//extern bool g_mouse_button_up[3];
+//extern Vector3 g_mouse_position;
+//extern bool g_mouse_button_held[3];
+//
+//struct MouseEvent
+//{
+//    Vector2 position;
+//    float time;
+//};
 
 static bool g_mouse_down = false;
 
@@ -112,12 +112,12 @@ static bool g_mouse_down = false;
     m_frame_handler = nil;
     Engine::Destroy(&m_engine);
     
-#ifndef NDEBUG
-    int alloc_size = Memory::GetAllocSize();
-    int new_size = Memory::GetNewSize();
-    assert(alloc_size == 0);
-    assert(new_size == 0);
-#endif
+//#ifndef NDEBUG
+//    int alloc_size = Memory::GetAllocSize();
+//    int new_size = Memory::GetNewSize();
+//    assert(alloc_size == 0);
+//    assert(new_size == 0);
+//#endif
     
     [super dealloc];
 }
@@ -147,139 +147,139 @@ static bool g_mouse_down = false;
     m_engine->Execute();
 }
 
-- (void)onMouseDown:(const MouseEvent*)e {
-    if (!g_mouse_down) {
-        Touch t;
-        t.deltaPosition = Vector2(0, 0);
-        t.deltaTime = 0;
-        t.fingerId = 0;
-        t.phase = TouchPhase::Began;
-        t.position = e->position;
-        t.tapCount = 1;
-        t.time = e->time;
-        
-        if (!g_input_touches.Empty()) {
-            g_input_touch_buffer.AddLast(t);
-        } else {
-            g_input_touches.Add(t);
-        }
-        
-        g_mouse_down = true;
-    }
-    
-    g_mouse_button_down[0] = true;
-    g_mouse_position.x = e->position.x;
-    g_mouse_position.y = e->position.y;
-    g_mouse_button_held[0] = true;
-}
-
-- (void)onMouseUp:(const MouseEvent*)e {
-    if (g_mouse_down) {
-        Touch t;
-        t.deltaPosition = Vector2(0, 0);
-        t.deltaTime = 0;
-        t.fingerId = 0;
-        t.phase = TouchPhase::Ended;
-        t.position = e->position;
-        t.tapCount = 1;
-        t.time = e->time;
-        
-        if (!g_input_touches.Empty()) {
-            g_input_touch_buffer.AddLast(t);
-        } else {
-            g_input_touches.Add(t);
-        }
-        
-        g_mouse_down = false;
-    }
-    
-    g_mouse_button_up[0] = true;
-    g_mouse_position.x = e->position.x;
-    g_mouse_position.y = e->position.y;
-    g_mouse_button_held[0] = false;
-}
-
-- (void)onMouseMove:(const MouseEvent*)e {
-    g_mouse_position.x = e->position.x;
-    g_mouse_position.y = e->position.y;
-}
-
-- (void)onMouseDrag:(const MouseEvent*)e {
-    if (g_mouse_down) {
-        Touch t;
-        t.deltaPosition = Vector2(0, 0);
-        t.deltaTime = 0;
-        t.fingerId = 0;
-        t.phase = TouchPhase::Moved;
-        t.position = e->position;
-        t.tapCount = 1;
-        t.time = e->time;
-        
-        if (!g_input_touches.Empty()) {
-            if (g_input_touch_buffer.Empty()) {
-                g_input_touch_buffer.AddLast(t);
-            } else {
-                if (g_input_touch_buffer.Last().phase == TouchPhase::Moved) {
-                    g_input_touch_buffer.Last() = t;
-                } else {
-                    g_input_touch_buffer.AddLast(t);
-                }
-            }
-        } else {
-            g_input_touches.Add(t);
-        }
-    }
-    
-    g_mouse_position.x = e->position.x;
-    g_mouse_position.y = e->position.y;
-}
-
-- (void)mouseDown:(NSEvent*)event {
-    float scale = m_window.backingScaleFactor;
-    float x = [event locationInWindow].x * scale;
-    float y = [event locationInWindow].y * scale;
-    
-    MouseEvent e;
-    e.position = Vector2(x, y);
-    e.time = [event timestamp];
-    
-    [self onMouseDown:&e];
-}
-
-- (void)mouseUp:(NSEvent*)event {
-    float scale = m_window.backingScaleFactor;
-    float x = [event locationInWindow].x * scale;
-    float y = [event locationInWindow].y * scale;
-    
-    MouseEvent e;
-    e.position = Vector2(x, y);
-    e.time = [event timestamp];
-    
-    [self onMouseUp:&e];
-}
-
-- (void)mouseMoved:(NSEvent*)event {
-    float scale = m_window.backingScaleFactor;
-    float x = [event locationInWindow].x * scale;
-    float y = [event locationInWindow].y * scale;
-    
-    MouseEvent e;
-    e.position = Vector2(x, y);
-    e.time = [event timestamp];
-    
-    [self onMouseMove:&e];
-}
-
-- (void)mouseDragged:(NSEvent*)event {
-    float scale = m_window.backingScaleFactor;
-    float x = [event locationInWindow].x * scale;
-    float y = [event locationInWindow].y * scale;
-    
-    MouseEvent e;
-    e.position = Vector2(x, y);
-    e.time = [event timestamp];
-    
-    [self onMouseDrag:&e];
-}
-
+//- (void)onMouseDown:(const MouseEvent*)e {
+//    if (!g_mouse_down) {
+//        Touch t;
+//        t.deltaPosition = Vector2(0, 0);
+//        t.deltaTime = 0;
+//        t.fingerId = 0;
+//        t.phase = TouchPhase::Began;
+//        t.position = e->position;
+//        t.tapCount = 1;
+//        t.time = e->time;
+//        
+//        if (!g_input_touches.Empty()) {
+//            g_input_touch_buffer.AddLast(t);
+//        } else {
+//            g_input_touches.Add(t);
+//        }
+//        
+//        g_mouse_down = true;
+//    }
+//    
+//    g_mouse_button_down[0] = true;
+//    g_mouse_position.x = e->position.x;
+//    g_mouse_position.y = e->position.y;
+//    g_mouse_button_held[0] = true;
+//}
+//
+//- (void)onMouseUp:(const MouseEvent*)e {
+//    if (g_mouse_down) {
+//        Touch t;
+//        t.deltaPosition = Vector2(0, 0);
+//        t.deltaTime = 0;
+//        t.fingerId = 0;
+//        t.phase = TouchPhase::Ended;
+//        t.position = e->position;
+//        t.tapCount = 1;
+//        t.time = e->time;
+//        
+//        if (!g_input_touches.Empty()) {
+//            g_input_touch_buffer.AddLast(t);
+//        } else {
+//            g_input_touches.Add(t);
+//        }
+//        
+//        g_mouse_down = false;
+//    }
+//    
+//    g_mouse_button_up[0] = true;
+//    g_mouse_position.x = e->position.x;
+//    g_mouse_position.y = e->position.y;
+//    g_mouse_button_held[0] = false;
+//}
+//
+//- (void)onMouseMove:(const MouseEvent*)e {
+//    g_mouse_position.x = e->position.x;
+//    g_mouse_position.y = e->position.y;
+//}
+//
+//- (void)onMouseDrag:(const MouseEvent*)e {
+//    if (g_mouse_down) {
+//        Touch t;
+//        t.deltaPosition = Vector2(0, 0);
+//        t.deltaTime = 0;
+//        t.fingerId = 0;
+//        t.phase = TouchPhase::Moved;
+//        t.position = e->position;
+//        t.tapCount = 1;
+//        t.time = e->time;
+//        
+//        if (!g_input_touches.Empty()) {
+//            if (g_input_touch_buffer.Empty()) {
+//                g_input_touch_buffer.AddLast(t);
+//            } else {
+//                if (g_input_touch_buffer.Last().phase == TouchPhase::Moved) {
+//                    g_input_touch_buffer.Last() = t;
+//                } else {
+//                    g_input_touch_buffer.AddLast(t);
+//                }
+//            }
+//        } else {
+//            g_input_touches.Add(t);
+//        }
+//    }
+//    
+//    g_mouse_position.x = e->position.x;
+//    g_mouse_position.y = e->position.y;
+//}
+//
+//- (void)mouseDown:(NSEvent*)event {
+//    float scale = m_window.backingScaleFactor;
+//    float x = [event locationInWindow].x * scale;
+//    float y = [event locationInWindow].y * scale;
+//    
+//    MouseEvent e;
+//    e.position = Vector2(x, y);
+//    e.time = [event timestamp];
+//    
+//    [self onMouseDown:&e];
+//}
+//
+//- (void)mouseUp:(NSEvent*)event {
+//    float scale = m_window.backingScaleFactor;
+//    float x = [event locationInWindow].x * scale;
+//    float y = [event locationInWindow].y * scale;
+//    
+//    MouseEvent e;
+//    e.position = Vector2(x, y);
+//    e.time = [event timestamp];
+//    
+//    [self onMouseUp:&e];
+//}
+//
+//- (void)mouseMoved:(NSEvent*)event {
+//    float scale = m_window.backingScaleFactor;
+//    float x = [event locationInWindow].x * scale;
+//    float y = [event locationInWindow].y * scale;
+//    
+//    MouseEvent e;
+//    e.position = Vector2(x, y);
+//    e.time = [event timestamp];
+//    
+//    [self onMouseMove:&e];
+//}
+//
+//- (void)mouseDragged:(NSEvent*)event {
+//    float scale = m_window.backingScaleFactor;
+//    float x = [event locationInWindow].x * scale;
+//    float y = [event locationInWindow].y * scale;
+//    
+//    MouseEvent e;
+//    e.position = Vector2(x, y);
+//    e.time = [event timestamp];
+//    
+//    [self onMouseDrag:&e];
+//}
+//
 @end

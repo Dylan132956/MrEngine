@@ -396,6 +396,55 @@ namespace moonriver
 	{
 		m_data_path = path;
 	}
+#elif VR_IOS
+        const string& Engine::GetDataPath()
+        {
+            if (m_data_path.empty())
+            {
+                string path = [[[NSBundle mainBundle] bundlePath] UTF8String];
+                path += "/Assets";
+                m_data_path = path;
+            }
+            
+            return m_data_path;
+        }
+        
+//        const string& GetSavePath()
+//        {
+//            if (m_save_path.Empty())
+//            {
+//                NSArray* paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+//                NSString* doc_path = paths[0];
+//                m_save_path = [doc_path UTF8String];
+//            }
+//
+//            return m_save_path;
+//        }
+#elif VR_MAC
+        const string& Engine::GetDataPath()
+        {
+            if (m_data_path.empty())
+            {
+                string path = [[[NSBundle mainBundle] resourcePath] UTF8String];
+                path += "/Assets";
+                m_data_path = path;
+            }
+            
+            return m_data_path;
+        }
+        
+//        const string& GetSavePath()
+//        {
+//            if (m_save_path.Empty())
+//            {
+//                NSArray* paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+//                NSString* doc_path = [paths objectAtIndex:0];
+//                m_save_path = [doc_path UTF8String];
+//            }
+//
+//            return m_save_path;
+//        }
+
 #endif
     void Engine::Init()
     {
