@@ -406,7 +406,7 @@ elseif (${Target} MATCHES "Mac")
 
     set_target_properties(Mr3DApp PROPERTIES
                           MACOSX_BUNDLE TRUE
-                          MACOSX_BUNDLE_INFO_PLIST ${VIRY3D_APP_SRC_DIR}/Platform/mac/app/Info.plist
+                          MACOSX_BUNDLE_INFO_PLIST ${MR3D_APP_SRC_DIR}/Platform/mac/app/Info.plist
                           XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
                           )
 
@@ -443,7 +443,7 @@ elseif (${Target} MATCHES "iOS")
 
     source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_LIB_SRCS_IOS})
 
-    target_sources(MR3D PRIVATE ${MR3D_LIB_SRCS_IOS})
+    target_sources(Mr3D PRIVATE ${MR3D_LIB_SRCS_IOS})
 
     target_include_directories(Mr3D PRIVATE
                                )
@@ -459,6 +459,7 @@ elseif (${Target} MATCHES "iOS")
                    ${MR3D_APP_SRCS}
                    ${MR3D_APP_SRC_DIR}/Platform/ios/Main.m
                    ${MR3D_APP_SRC_DIR}/Platform/ios/AppDelegate.m
+                   ${MR3D_APP_SRC_DIR}/Platform/ios/HomeViewController.m
                    ${MR3D_APP_SRC_DIR}/Platform/ios/ViewController.mm
                    ${MR3D_APP_SRC_DIR}/Platform/ios/app/Assets.xcassets
                    ${MR3D_APP_SRC_DIR}/Platform/ios/app/Base.lproj/LaunchScreen.storyboard
@@ -479,7 +480,7 @@ elseif (${Target} MATCHES "iOS")
 
     set_target_properties(Mr3DApp PROPERTIES
                           MACOSX_BUNDLE TRUE
-                          MACOSX_BUNDLE_INFO_PLIST ${VIRY3D_APP_SRC_DIR}/Platform/ios/app/Info.plist
+                          MACOSX_BUNDLE_INFO_PLIST ${MR3D_APP_SRC_DIR}/Platform/ios/app/Info.plist
                           XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
                           )
 

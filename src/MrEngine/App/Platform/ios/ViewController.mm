@@ -208,11 +208,16 @@ using namespace moonriver;
 }
 
 - (void)dealloc {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-    delete m_app;
-    Engine::Destroy(&m_engine);
-    
+    NSLog(@"%s",__func__);
     [super dealloc];
+}
+
+- (void)viewDidDisappear:(BOOL)animated{
+    [super viewDidDisappear:animated];
+    Engine::Destroy(&m_engine);
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    [m_display_link removeFromRunLoop:NSRunLoop.currentRunLoop  forMode:NSDefaultRunLoopMode];
+    m_display_link = nil;
 }
 
 - (void)drawFrame {
