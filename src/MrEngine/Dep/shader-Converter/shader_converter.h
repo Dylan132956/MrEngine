@@ -7,10 +7,17 @@
 
 struct compile_arguments
 {
+    //gl gles
 	bool set_es = false;
 	bool es = false;
-	size_t version = 0;
+    unsigned int version = 0;
 	bool set_version = false;
+    //msl
+    bool msl = false;
+    bool msl_ios = false;
+    bool set_msl_version = false;
+    unsigned int msl_version = 0;
+    bool msl_decoration_binding = false;
 };
 
 void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],

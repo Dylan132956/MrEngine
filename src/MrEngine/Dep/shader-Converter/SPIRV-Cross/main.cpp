@@ -1937,10 +1937,17 @@ static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> 
 std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv_file)
 {
 	CLIArguments args;
+    //gl gles
 	args.set_es = arg.set_es;
 	args.es = arg.es;
 	args.version = arg.version;
 	args.set_version = arg.set_version;
+    //msl
+    args.msl = arg.msl;
+    args.msl_ios = arg.msl_ios;
+    args.set_msl_version = arg.set_msl_version;
+    args.msl_version = arg.msl_version;
+    args.msl_decoration_binding = arg.msl_decoration_binding;
 	return compile_iteration(args, spirv_file);
 }
 

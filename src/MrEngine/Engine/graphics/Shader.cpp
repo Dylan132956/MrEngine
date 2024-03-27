@@ -187,6 +187,51 @@ namespace moonriver
                 fs_data.resize(fs_glsl.size());
                 memcpy(&fs_data[0], &fs_glsl[0], fs_data.size());
             }
+            else if (Engine::Instance()->GetBackend() == filament::backend::Backend::METAL)
+            {
+                std::string vs_path[1];
+                std::string fs_path[1];
+                vs_path[0] = pass.vsPath;
+                fs_path[0] = pass.fsPath;
+                const char* c_vs_hlsl[1];
+                const char* c_fs_hlsl[1];
+                vs_hlsl = define + vs_hlsl;
+                fs_hlsl = define + fs_hlsl;
+                c_vs_hlsl[0] = vs_hlsl.c_str();
+                c_fs_hlsl[0] = fs_hlsl.c_str();
+
+                const char* c_vs_path[1];
+                const char* c_fs_path[1];
+                c_vs_path[0] = vs_path[0].c_str();
+                c_fs_path[0] = fs_path[0].c_str();
+
+                std::vector<unsigned int> vs_spriv;
+                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                std::string entryPointName = "vert";
+                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+                std::vector<unsigned int> fs_spriv;
+                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+                entryPointName = "frag";
+                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+                compile_arguments arg;
+
+#if VR_MAC || VR_IOS
+                arg.msl = true;
+                arg.msl_decoration_binding = true;
+#endif
+#if VR_IOS
+                arg.msl_ios = true;
+#endif
+                std::string vs_msl = spirv_converter(arg, vs_spriv);
+                std::string fs_msl = spirv_converter(arg, fs_spriv);
+
+                vs_data.resize(vs_msl.size());
+                memcpy(&vs_data[0], &vs_msl[0], vs_data.size());
+                fs_data.resize(fs_msl.size());
+                memcpy(&fs_data[0], &fs_msl[0], fs_data.size());
+            }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
             {
                 std::string vs = define + vs_hlsl;
@@ -234,7 +279,7 @@ namespace moonriver
             }
 
             filament::backend::Program pb;
-            pb.diagnostics(utils::CString("Assets/shader/HLSL/standard"))
+            pb.diagnostics(utils::CString("standard"))
                 .withVertexShader((void*)&vs_data[0], vs_data.size())
                 .withFragmentShader((void*)&fs_data[0], fs_data.size());
 

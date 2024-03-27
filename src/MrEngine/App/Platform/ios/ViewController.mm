@@ -214,6 +214,7 @@ using namespace moonriver;
 
 - (void)viewDidDisappear:(BOOL)animated{
     [super viewDidDisappear:animated];
+    delete m_app;
     Engine::Destroy(&m_engine);
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [m_display_link removeFromRunLoop:NSRunLoop.currentRunLoop  forMode:NSDefaultRunLoopMode];

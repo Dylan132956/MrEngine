@@ -240,7 +240,12 @@ MetalProgram::MetalProgram(id<MTLDevice> device, const Program& program) noexcep
         }
         ASSERT_POSTCONDITION(library != nil, "Unable to compile Metal shading library.");
 
-        *shaderFunctions[i] = [library newFunctionWithName:@"main0"];
+        if (i == (size_t)Program::Shader::VERTEX){
+            *shaderFunctions[i] = [library newFunctionWithName:@"vert"];
+        }
+        if (i == (size_t)Program::Shader::FRAGMENT) {
+            *shaderFunctions[i] = [library newFunctionWithName:@"frag"];
+        }
 
         [library release];
     }

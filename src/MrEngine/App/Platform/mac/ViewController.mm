@@ -17,6 +17,7 @@
 
 #import "ViewController.h"
 #include "Engine.h"
+#include "App.h"
 //#include "Input.h"
 //#include "container/List.h"
 #include <QuartzCore/QuartzCore.h>
@@ -61,6 +62,7 @@ static bool g_mouse_down = false;
 @implementation ViewController {
     NSWindow* m_window;
     Engine* m_engine;
+    App* m_app;
     NSTimer* m_timer;
     FrameHandler* m_frame_handler;
     int m_target_width;
@@ -95,6 +97,8 @@ static bool g_mouse_down = false;
 #endif
     
     m_engine = Engine::Create(window, window_width, window_height);
+    m_engine->Init();
+    m_app = new App(m_engine);
 
     m_frame_handler = [FrameHandler new];
     [m_frame_handler setViewController:self];
@@ -110,6 +114,7 @@ static bool g_mouse_down = false;
     m_timer = nil;
     [m_frame_handler release];
     m_frame_handler = nil;
+    delete m_app;
     Engine::Destroy(&m_engine);
     
 //#ifndef NDEBUG
@@ -118,7 +123,6 @@ static bool g_mouse_down = false;
 //    assert(alloc_size == 0);
 //    assert(new_size == 0);
 //#endif
-    
     [super dealloc];
 }
 
