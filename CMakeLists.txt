@@ -611,6 +611,7 @@ elseif (${Target} MATCHES "iOS")
 
     target_link_libraries(Mr3DApp
                           Mr3D Mr3DDep
+                          "-framework OpenAL"
                           "-framework UIKit"
                           "-framework Metal"
                           "-framework OpenGLES"
