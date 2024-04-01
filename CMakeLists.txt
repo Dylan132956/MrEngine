@@ -61,6 +61,12 @@ file(GLOB MR3D_DEP_SRCS
 	 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/Profiler.cpp
 	 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/sstream.cpp
      ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/Systrace.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.c
+     ${MR3D_LIB_SRC_DIR}/Engine/png/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/png/*.c
+     ${MR3D_LIB_SRC_DIR}/Engine/zlib/ioapi.c
+     ${MR3D_LIB_SRC_DIR}/Engine/zlib/unzip.c
      )
 
 source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS})
@@ -81,6 +87,8 @@ file(GLOB MR3D_LIB_SRCS
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/audio/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/audio/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/math/*.h
@@ -91,14 +99,10 @@ file(GLOB MR3D_LIB_SRCS
 	 ${MR3D_LIB_SRC_DIR}/Engine/postprocessing/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/string/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/string/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/thread/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/thread/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/time/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/time/*.cpp
-     ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.c
-     ${MR3D_LIB_SRC_DIR}/Engine/png/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/png/*.c
-     ${MR3D_LIB_SRC_DIR}/Engine/zlib/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/zlib/*.c
      )
 
 source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_LIB_SRCS})
@@ -108,6 +112,10 @@ add_library(Mr3D STATIC ${MR3D_LIB_SRCS})
 target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Engine
                            ${MR3D_LIB_SRC_DIR}/Engine/zlib
+                           ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad
+                           ${MR3D_LIB_SRC_DIR}/Engine/openal/include
+                           ${MR3D_LIB_SRC_DIR}/Engine/openal/android
+                           ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/Include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/math/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include
@@ -271,6 +279,128 @@ else()
     target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_GLSLANG_OSDEP})
 endif()
 
+
+# zlib
+if (${Target} MATCHES "Windows" OR
+    ${Target} MATCHES "UWP" OR
+    ${Target} MATCHES "WASM"
+    )
+
+    file(GLOB MR3D_DEP_SRCS_ZLIB
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/adler32.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/compress.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/crc32.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/deflate.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/gzclose.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/gzlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/gzread.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/gzwrite.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/infback.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/inffast.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/inflate.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/inftrees.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/trees.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/uncompr.c
+         ${MR3D_LIB_SRC_DIR}/Engine/zlib/zutil.c
+         )
+
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_ZLIB})
+
+    target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_ZLIB})
+
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/zlib
+                               )
+
+endif ()
+
+
+# mp3
+if (${Target} MATCHES "Windows" OR
+    ${Target} MATCHES "UWP" OR
+    ${Target} MATCHES "Android" OR
+    ${Target} MATCHES "Mac" OR
+    ${Target} MATCHES "iOS"
+    )
+
+    file(GLOB MR3D_DEP_SRCS_MP3
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/bit.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/decoder.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/fixed.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/frame.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/huffman.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/compat.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/crc.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/field.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/frametype.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/genre.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/id3_debug.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/id3_frame.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/id3_version.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/latin1.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/parse.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/render.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/tag.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/ucs4.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/utf8.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/utf16.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/id3tag/util.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/layer3.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/layer12.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/mad_stream.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/mad_timer.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/synth.c
+         ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad/version.c
+         )
+
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_MP3})
+
+    target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_MP3})
+
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/mp3/mad
+                               )
+
+endif ()
+
+# openal
+if (${Target} MATCHES "Windows" OR ${Target} MATCHES "UWP" OR ${Target} MATCHES "Android")
+
+    file(GLOB MR3D_DEP_SRCS_OPENAL
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/backends/loopback.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/backends/null.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/backends/thread_msg_queue_cpp11.cpp
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/ALc.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/ALc_cpp11.cpp
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcConfig.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcDedicated.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcEcho.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcModulator.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcReverb.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcRing.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/ALu.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/bs2b.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/helpers.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/hrtf.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/mixer.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/panning.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/alError.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/alExtension.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/alListener.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/alSource.c
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/alThunk.c
+         )
+
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_OPENAL})
+
+    target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_OPENAL})
+
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/openal/include
+                               ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/Include
+                               )
+endif ()
+
 if (${Target} MATCHES "Windows")
 
     set(CMAKE_CXX_FLAGS
@@ -281,6 +411,8 @@ if (${Target} MATCHES "Windows")
     set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTargets")
 
     file(GLOB MR3D_DEP_SRCS_WIN
+         ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/backends/xaudio2.cpp
+		 ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcThread.c
 		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/opengl/PlatformWGL.cpp
 		 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/bluegl/src/BlueGL.cpp
 		 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/bluegl/src/BlueGLWindows.cpp
@@ -296,7 +428,12 @@ if (${Target} MATCHES "Windows")
 
     target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_WIN})
 
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/openal/win
+                               )
+
     target_include_directories(Mr3D PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/zlib
 							   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/bluevk/include
                                )
 
@@ -337,6 +474,8 @@ elseif (${Target} MATCHES "Android")
     add_definitions(-Wall -DIOAPI_NO_64 -DHAVE_GCC_DESTRUCTOR)
 
     target_sources(Mr3DDep PRIVATE
+                   ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/backends/opensl.c
+				   ${MR3D_LIB_SRC_DIR}/Engine/openal/Alc/alcThread.c
                    ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/android/ExternalStreamManagerAndroid.cpp
                    ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/android/ExternalTextureManagerAndroid.cpp
                    ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/linux/Condition.cpp
@@ -346,6 +485,10 @@ elseif (${Target} MATCHES "Android")
 				   ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/vulkan/PlatformVkAndroid.cpp
 				   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/bluevk/src/BlueVKLinuxAndroid.cpp
                    )
+
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/openal/android
+                               )
 
     add_library(Mr3DApp SHARED
                 ${MR3D_APP_SRCS}

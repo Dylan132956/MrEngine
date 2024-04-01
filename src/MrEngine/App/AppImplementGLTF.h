@@ -1,4 +1,8 @@
 #include "AppInclude.h"
+#include "Audio/AudioManager.h"
+#include "Audio/AudioListener.h"
+#include "Audio/AudioClip.h"
+#include "Audio/AudioSource.h"
 
 namespace moonriver
 {
@@ -47,8 +51,29 @@ namespace moonriver
             auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
             light->GetTransform()->SetRotation(Quaternion::Euler(60, 90, 0));
             light->SetType(LightType::Directional);
+
+            InitAudio();
           
         }
+
+		void InitAudio()
+		{
+			auto listener = AudioManager::GetListener(m_pScene);
+			listener->GetTransform()->SetLocalPosition(Vector3(0, 0, 0));
+			listener->GetTransform()->SetLocalRotation(Quaternion::Euler(0, 0, 0));
+
+#if !VR_WASM
+			auto audio_path = "audio/Unite In The Sky (full).mp3";
+			auto audio_clip = AudioClip::LoadMp3FromFile(Engine::Instance()->GetDataPath() + "/" + audio_path);
+			auto audio_source = m_pScene->CreateEntity("as")->AddComponent<AudioSource>().get();
+			audio_source->SetClip(audio_clip);
+			audio_source->SetLoop(false);
+			audio_source->Play();
+#else
+			auto audio_path = "audio/Unite In The Sky (full).mp3";
+			AudioManager::PlayAudio(audio_path, false);
+#endif
+		}
 
         virtual ~AppImplementGLTF()
         {

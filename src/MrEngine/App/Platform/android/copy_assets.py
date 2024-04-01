@@ -33,7 +33,7 @@ def copy_assets(src, dest):
     return assets
 
 if __name__ == '__main__':
-    assets = copy_assets('bin/Debug/Assets', 'src/MrEngine/App/Platform/android/app/src/main/assets/Assets')
+    assets = copy_assets('src/MrEngine/App/bin/Assets', 'src/MrEngine/App/Platform/android/app/src/main/assets/Assets')
     file_list = open("src/MrEngine/App/Platform/android/app/src/main/assets/file_list.txt", "w")
     for i in range(0, len(assets)):
         file_list.write(assets[i] + '\n')

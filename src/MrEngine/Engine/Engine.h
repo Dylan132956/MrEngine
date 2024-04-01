@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
+#include "thread/ThreadPool.h"
 
 #define VR_VERSION_NAME "1.0.0"
 
@@ -38,6 +39,10 @@ namespace moonriver
         int GetWidth() const;
         int GetHeight() const;
         bool HasQuit() const;
+        ThreadPool* GetThreadPool() const;
+        void PostAction(Action action);
+        void SendMessage(int id, const std::string& msg);
+        void AddMessageHandler(int id, std::function<void(int id, const std::string&)> handler);
         const std::string& GetDataPath();
         void Init();
 #if VR_ANDROID

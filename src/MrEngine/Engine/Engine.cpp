@@ -16,6 +16,8 @@
 #include "graphics/Camera.h"
 #include "graphics/Renderer.h"
 #include "string/stringutils.h"
+#include <thread>
+#include "audio/AudioManager.h"
 
 #if VR_WINDOWS
 #include <Windows.h>
@@ -35,6 +37,23 @@ using namespace filament;
 
 namespace moonriver
 {
+	struct Message
+	{
+		int id;
+		std::string msg;
+	};
+
+	struct MessageHandler
+	{
+		int id;
+		std::function<void(int id, const std::string&)> handler;
+	};
+
+    void FreeBufferCallback(void* buffer, size_t size, void* user)
+    {
+        Memory::Free(buffer, (int)size);
+    };
+
     class MrEngine
     {
     public:
@@ -62,6 +81,11 @@ namespace moonriver
         std::unique_ptr<SceneManager> m_scene_manager;
 
         bool m_quit = false;
+		std::shared_ptr<ThreadPool> m_thread_pool;
+		std::list<Action> m_actions;
+		std::list<Message> m_messages;
+		std::map<int, std::list<MessageHandler>> m_message_handlers;
+		Mutex m_mutex;
 
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
@@ -106,18 +130,28 @@ namespace moonriver
             m_swap_chain = this->GetDriverApi().createSwapChain(m_native_window, m_window_flags);
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
+#if !VR_WASM
+			m_thread_pool = RefMake<ThreadPool>(4);
+#endif
+
             Shader::Init();
+            AudioManager::Init();
         }
 
         void Shutdown()
         {
+            AudioManager::DestroyListener();
             Mesh::Done();
+            AudioManager::Done();
             RenderTarget::Done();
             Material::Done();
             Camera::Done();
             Texture::Done();
             Shader::Done();
             m_scene_manager = nullptr;
+
+            m_thread_pool.reset();
+
             this->GetDriverApi().destroyRenderTarget(m_render_target);
 
             if (!UTILS_HAS_THREADING)
@@ -231,6 +265,75 @@ namespace moonriver
         void Quit()
         {
             m_quit = true;
+        }
+
+        void PostAction(Action action)
+        {
+            m_mutex.lock();
+            m_actions.push_back(action);
+            m_mutex.unlock();
+        }
+
+        void ProcessActions()
+        {
+            std::list<Action> actions;
+            std::list<Message> messages;
+
+            m_mutex.lock();
+            actions = m_actions;
+            m_actions.clear();
+            messages = m_messages;
+            m_messages.clear();
+            m_mutex.unlock();
+
+            for (const auto& action : actions)
+            {
+                if (action)
+                {
+                    action();
+                }
+            }
+
+            for (const auto& msg : messages)
+            {
+                if (m_message_handlers.count(msg.id) > 0)
+                {
+                    const auto& handlers = m_message_handlers[msg.id];
+                    for (const auto& handler : handlers)
+                    {
+                        if (handler.handler)
+                        {
+                            handler.handler(msg.id, msg.msg);
+                        }
+                    }
+                }
+            }
+        }
+
+        void SendMessage(int id, const std::string& msg)
+        {
+            m_mutex.lock();
+            m_messages.push_back({ id, msg });
+            m_mutex.unlock();
+        }
+
+        void AddMessageHandler(int id, std::function<void(int id, const std::string&)> handler)
+        {
+            m_mutex.lock();
+
+            if (m_message_handlers.count(id) > 0)
+            {
+                auto& handlers = m_message_handlers[id];
+                handlers.push_back({ id, handler });
+            }
+            else
+            {
+                std::list<MessageHandler> handlers;
+                handlers.push_back({ id, handler });
+                m_message_handlers[id] = handlers;
+            }
+
+            m_mutex.unlock();
         }
 
         void OnResize(void* native_window, int width, int height, uint64_t flags)
@@ -373,6 +476,27 @@ namespace moonriver
     {
         return m_pCore->m_quit;
     }
+
+    ThreadPool* Engine::GetThreadPool() const
+    {
+        return m_pCore->m_thread_pool.get();
+    }
+
+    void Engine::PostAction(Action action)
+    {
+        m_pCore->PostAction(action);
+    }
+
+    void Engine::SendMessage(int id, const std::string& msg)
+    {
+        m_pCore->SendMessage(id, msg);
+    }
+
+    void Engine::AddMessageHandler(int id, std::function<void(int id, const std::string&)> handler)
+    {
+        m_pCore->AddMessageHandler(id, handler);
+    }
+
 #if VR_WINDOWS
     const std::string& Engine::GetDataPath()
     {
@@ -454,10 +578,5 @@ namespace moonriver
     std::shared_ptr<Scene> Engine::CreateScene()
     {
         return m_pCore->m_scene_manager->CreateScene();
-    }
-
-    void FreeBufferCallback(void* buffer, size_t size, void* user)
-    {
-        Memory::Free(buffer, (int)size);
     }
 }
