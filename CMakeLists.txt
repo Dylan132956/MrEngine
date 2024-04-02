@@ -540,6 +540,7 @@ elseif (${Target} MATCHES "Mac")
 
     target_link_libraries(Mr3DApp
                           Mr3D Mr3DDep
+                          "-framework OpenAL"
                           "-framework AppKit"
                           "-framework Metal"
                           "-framework QuartzCore"
