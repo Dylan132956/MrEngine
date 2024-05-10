@@ -1,0 +1,12 @@
+#pragma once
+{{#include_headfiles}}
+#include "{{headfile_name}}"
+{{/include_headfiles}}
+
+namespace moonriver{
+    {{#class_defines}}template<>
+    Json Serializer::write(const {{class_name}}& instance);
+    template<>
+    {{class_name}}& Serializer::read(const Json& json_context, {{class_name}}& instance);
+    {{/class_defines}}
+}//namespace

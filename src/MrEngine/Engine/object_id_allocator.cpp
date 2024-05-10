@@ -17,4 +17,4 @@ namespace moonriver
         return new_object_ret;
     }
 
-} // namespace Piccolo
+} // namespace moonriver

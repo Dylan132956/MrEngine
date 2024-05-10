@@ -17,4 +17,4 @@ namespace moonriver
     private:
         static std::atomic<ObjectID> m_next_id;
     };
-} // namespace Piccolo
+} // namespace moonriver

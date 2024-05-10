@@ -27,7 +27,7 @@ namespace moonriver
 	{
 		if (m_size > 0)
 		{
-			m_ref_count = RefMake<bool>(true);
+			m_ref_count = std::make_shared<bool>(true);
 			m_bytes = Memory::Alloc<byte>(m_size);
 		}
 		else

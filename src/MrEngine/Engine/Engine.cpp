@@ -19,6 +19,9 @@
 #include <thread>
 #include "audio/AudioManager.h"
 
+#include "core/meta/reflection/reflection_register.h"
+//#include "core/meta/meta_example.h"
+
 #if VR_WINDOWS
 #include <Windows.h>
 #undef SendMessage
@@ -37,6 +40,7 @@ using namespace filament;
 
 namespace moonriver
 {
+    void metaExample();
 	struct Message
 	{
 		int id;
@@ -90,7 +94,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::OPENGL),
+            m_backend(backend::Backend::VULKAN),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -131,12 +135,16 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
 #if !VR_WASM
-			m_thread_pool = RefMake<ThreadPool>(4);
+			m_thread_pool = std::make_shared<ThreadPool>(4);
 #endif
 
             Shader::Init();
             AudioManager::Init();
-        }
+            
+            Reflection::TypeMetaRegister::metaRegister();
+            //test Reflection system
+            metaExample();
+		}
 
         void Shutdown()
         {
@@ -173,6 +181,8 @@ namespace moonriver
                 m_driver_thread.join();
             }
             Shader::Exit();
+
+            Reflection::TypeMetaRegister::metaUnregister();
         }
 
         void Loop()

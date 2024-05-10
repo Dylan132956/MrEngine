@@ -80,34 +80,43 @@ target_include_directories(Mr3DDep PRIVATE
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include
                            )
 
-file(GLOB MR3D_LIB_SRCS
+file(GLOB MR3D_LIB_SRCS_HEADER
      ${MR3D_LIB_SRC_DIR}/Engine/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/audio/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/audio/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/io/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/math/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/math/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/memory/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/memory/*.cpp
 	 ${MR3D_LIB_SRC_DIR}/Engine/postprocessing/*.h
-	 ${MR3D_LIB_SRC_DIR}/Engine/postprocessing/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/string/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/string/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/thread/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/thread/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/time/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/time/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.h
      )
 
-source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_LIB_SRCS})
+file(GLOB MR3D_LIB_SRCS_SOURCE
+     ${MR3D_LIB_SRC_DIR}/Engine/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/audio/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/io/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/math/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/memory/*.cpp
+	 ${MR3D_LIB_SRC_DIR}/Engine/postprocessing/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/string/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/thread/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/time/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.cpp
+     )
 
-add_library(Mr3D STATIC ${MR3D_LIB_SRCS})
+source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_LIB_SRCS_HEADER} ${MR3D_LIB_SRCS_SOURCE})
+
+add_library(Mr3D STATIC ${MR3D_LIB_SRCS_HEADER} ${MR3D_LIB_SRCS_SOURCE})
 
 target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Engine
@@ -125,6 +134,7 @@ target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/tinygltf
                            ${MR3D_LIB_SRC_DIR}/Dep/stb
                            ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter
+                           ${MR3D_LIB_SRC_DIR}/Dep/json11
                            )
 
 file(GLOB MR3D_APP_SRCS
@@ -451,6 +461,7 @@ if (${Target} MATCHES "Windows")
 						  d3dcompiler.lib
                           winmm.lib
                           Xaudio2.lib
+                          json11
                           )
 
     set_property(TARGET Mr3DApp PROPERTY LINK_FLAGS "/SUBSYSTEM:CONSOLE")
@@ -638,3 +649,16 @@ target_include_directories(Mr3DApp PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include
                            ${MR3D_LIB_SRC_DIR}
                            )
+
+set(ENGINE_TOOLS_DIR ${CMAKE_SOURCE_DIR}/src/MrEngine/Tools)
+
+add_subdirectory(src/MrEngine/Dep/json11)
+add_subdirectory(src/MrEngine/Tools/meta_parser)
+
+set(CODEGEN_TARGET "MrPreCompile")
+include(src/MrEngine/precompile/precompile.cmake)
+set_target_properties("${CODEGEN_TARGET}" PROPERTIES FOLDER "Engine" )
+
+add_dependencies(Mr3D "${CODEGEN_TARGET}")
+add_dependencies(Mr3D json11)
+add_dependencies("${CODEGEN_TARGET}" "MrParser")

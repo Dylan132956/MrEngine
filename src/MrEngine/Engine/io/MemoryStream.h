@@ -22,7 +22,6 @@
 #include "memory/Memory.h"
 #include <string>
 #include "Debug.h"
-#include "memory/ByteBuffer.h"
 
 namespace moonriver
 {
