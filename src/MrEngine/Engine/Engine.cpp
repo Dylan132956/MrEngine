@@ -238,7 +238,6 @@ namespace moonriver
 
         void BeginFrame()
         {
-            Time::Update();
             ++m_frame_id;
 
             auto& driver = this->GetDriverApi();
@@ -446,6 +445,7 @@ namespace moonriver
         if (m_pCore->m_scene_manager == nullptr) {
             m_pCore->m_scene_manager = std::make_unique<SceneManager>();
         }
+        Time::Update();
         m_pCore->m_scene_manager->Update();
         m_pCore->m_editor->Update();
 

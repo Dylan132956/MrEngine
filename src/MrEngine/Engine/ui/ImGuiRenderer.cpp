@@ -26,6 +26,7 @@
 #include "Input.h"
 #include "imgui/imgui.h"
 #include "string/stringutils.h"
+#include "debug.h"
 
 namespace moonriver
 {
@@ -71,6 +72,8 @@ namespace moonriver
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize = ImVec2((float) Engine::Instance()->GetWidth(), (float) Engine::Instance()->GetHeight());
         io.DeltaTime = Time::GetDeltaTime();
+
+        //Log("io.DeltaTime: %f", io.DeltaTime);
         
         // input
         for (int i = 0; i < 3; ++i)

@@ -42,6 +42,7 @@ namespace moonriver
         {
             OutputDebugStringA(str.c_str());
         }
+        printf("%s\n", str.c_str());
     }
 #elif VR_MAC || VR_IOS
     void Debug::LogString(const string& str, bool end_line)
