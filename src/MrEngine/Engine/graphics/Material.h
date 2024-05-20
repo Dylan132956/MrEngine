@@ -145,6 +145,8 @@ namespace moonriver
         static void Done();
         static const std::shared_ptr<Material>& GetSharedBoundsMaterial();
         const std::string& GetShaderName();
+		const Rect& GetScissorRect() const { return m_scissor_rect; }
+		void SetScissorRect(const Rect& rect);
         std::string EnableKeywords(const std::vector<std::string>& keywords);
         const std::shared_ptr<Shader>& GetShader();
         const std::shared_ptr<Shader>& GetShader(const std::string& key);
@@ -202,7 +204,6 @@ namespace moonriver
             }
         }
         void Prepare(int pass = -1);
-        void SetScissorRect(const Rect& rect);
         void SetScissor(int target_width, int target_height);
 
         void Bind(const std::shared_ptr<Shader>& shader, int pass);
@@ -292,6 +293,7 @@ namespace moonriver
         std::vector<std::vector<SamplerGroup>> m_samplers;
         //pbr material
         filament::backend::UniformBufferHandle m_pbr_uniform_buffer;
+        bool m_isPbr = false;
     };
 }
 

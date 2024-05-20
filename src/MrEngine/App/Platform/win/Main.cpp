@@ -1,9 +1,22 @@
 #include "Engine.h"
 #include "App.h"
+#include "Input.h"
 #include <Windows.h>
 #include <windowsx.h>
+#include "time/Time.h"
 
 using namespace moonriver;
+
+extern std::vector<Touch> g_input_touches;
+extern std::list<Touch> g_input_touch_buffer;
+extern bool g_key_down[(int)KeyCode::COUNT];
+extern bool g_key[(int)KeyCode::COUNT];
+extern bool g_key_up[(int)KeyCode::COUNT];
+extern bool g_mouse_button_down[3];
+extern bool g_mouse_button_up[3];
+extern Vector3 g_mouse_position;
+extern bool g_mouse_button_held[3];
+extern float g_mouse_scroll_wheel;
 
 static bool g_mouse_down = false;
 static bool g_minimized = false;
@@ -11,6 +24,134 @@ static int g_window_width;
 static int g_window_height;
 static Engine* g_engine;
 static App* g_App;
+
+static int GetKeyCode(int wParam)
+{
+	int key = -1;
+
+	if (wParam >= 48 && wParam < 48 + 10)
+	{
+		key = (int)KeyCode::Alpha0 + wParam - 48;
+	}
+	else if (wParam >= 96 && wParam < 96 + 10)
+	{
+		key = (int)KeyCode::Keypad0 + wParam - 96;
+	}
+	else if (wParam >= 65 && wParam < 65 + 'z' - 'a')
+	{
+		key = (int)KeyCode::A + wParam - 65;
+	}
+	else
+	{
+		switch (wParam)
+		{
+		case VK_CONTROL:
+		{
+			short state_l = ((unsigned short)GetKeyState(VK_LCONTROL)) >> 15;
+			short state_r = ((unsigned short)GetKeyState(VK_RCONTROL)) >> 15;
+			if (state_l)
+			{
+				key = (int)KeyCode::LeftControl;
+			}
+			else if (state_r)
+			{
+				key = (int)KeyCode::RightControl;
+			}
+			break;
+		}
+		case VK_SHIFT:
+		{
+			short state_l = ((unsigned short)GetKeyState(VK_LSHIFT)) >> 15;
+			short state_r = ((unsigned short)GetKeyState(VK_RSHIFT)) >> 15;
+			if (state_l)
+			{
+				key = (int)KeyCode::LeftShift;
+			}
+			else if (state_r)
+			{
+				key = (int)KeyCode::RightShift;
+			}
+			break;
+		}
+		case VK_MENU:
+		{
+			short state_l = ((unsigned short)GetKeyState(VK_LMENU)) >> 15;
+			short state_r = ((unsigned short)GetKeyState(VK_RMENU)) >> 15;
+			if (state_l)
+			{
+				key = (int)KeyCode::LeftAlt;
+			}
+			else if (state_r)
+			{
+				key = (int)KeyCode::RightAlt;
+			}
+			break;
+		}
+		case VK_UP:
+			key = (int)KeyCode::UpArrow;
+			break;
+		case VK_DOWN:
+			key = (int)KeyCode::DownArrow;
+			break;
+		case VK_LEFT:
+			key = (int)KeyCode::LeftArrow;
+			break;
+		case VK_RIGHT:
+			key = (int)KeyCode::RightArrow;
+			break;
+		case VK_BACK:
+			key = (int)KeyCode::Backspace;
+			break;
+		case VK_TAB:
+			key = (int)KeyCode::Tab;
+			break;
+		case VK_SPACE:
+			key = (int)KeyCode::Space;
+			break;
+		case VK_ESCAPE:
+			key = (int)KeyCode::Escape;
+			break;
+		case VK_RETURN:
+			key = (int)KeyCode::Return;
+			break;
+		case VK_OEM_3:
+			key = (int)KeyCode::BackQuote;
+			break;
+		case VK_OEM_MINUS:
+			key = (int)KeyCode::Minus;
+			break;
+		case VK_OEM_PLUS:
+			key = (int)KeyCode::Equals;
+			break;
+		case VK_OEM_4:
+			key = (int)KeyCode::LeftBracket;
+			break;
+		case VK_OEM_6:
+			key = (int)KeyCode::RightBracket;
+			break;
+		case VK_OEM_5:
+			key = (int)KeyCode::Backslash;
+			break;
+		case VK_OEM_1:
+			key = (int)KeyCode::Semicolon;
+			break;
+		case VK_OEM_7:
+			key = (int)KeyCode::Quote;
+			break;
+		case VK_OEM_COMMA:
+			key = (int)KeyCode::Comma;
+			break;
+		case VK_OEM_PERIOD:
+			key = (int)KeyCode::Period;
+			break;
+		case VK_OEM_2:
+			key = (int)KeyCode::Slash;
+			break;
+		}
+	}
+
+	return key;
+}
 
 static void SwitchFullScreen(HWND hWnd)
 {
@@ -47,135 +188,328 @@ static void SwitchFullScreen(HWND hWnd)
 
 static LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
-    {
-        case WM_CLOSE:
-            delete g_App;
-            Engine::Destroy(&g_engine);
-            DestroyWindow(hWnd);
-            break;
+	switch (uMsg)
+	{
+	case WM_CLOSE:
+		delete g_App;
+		Engine::Destroy(&g_engine);
+		DestroyWindow(hWnd);
+		break;
 
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
 
-        case WM_SIZE:
-            if (wParam == SIZE_MINIMIZED)
-            {
-                g_minimized = true;
-            }
-            else
-            {
-                if (!g_minimized)
-                {
-                    int width = lParam & 0xffff;
-                    int height = (lParam & 0xffff0000) >> 16;
+	case WM_SIZE:
+		if (wParam == SIZE_MINIMIZED)
+		{
+			g_minimized = true;
+		}
+		else
+		{
+			if (!g_minimized)
+			{
+				int width = lParam & 0xffff;
+				int height = (lParam & 0xffff0000) >> 16;
 
-                    g_window_width = width;
-                    g_window_height = height;
-                }
+				g_window_width = width;
+				g_window_height = height;
+			}
 
-                g_minimized = false;
-            }
-            break;
+			g_minimized = false;
+		}
+		break;
 
-        case WM_SYSKEYDOWN:
-        case WM_KEYDOWN:
-        {
+	case WM_SYSKEYDOWN:
+	case WM_KEYDOWN:
+	{
+		int key = GetKeyCode((int)wParam);
 
-            break;
-        }
+		if (key >= 0)
+		{
+			if (!g_key[key])
+			{
+				g_key_down[key] = true;
+				g_key[key] = true;
+			}
+		}
+		else
+		{
+			if (wParam == VK_CAPITAL)
+			{
+				short caps_on = ((unsigned short)GetKeyState(VK_CAPITAL)) & 1;
+				g_key[(int)KeyCode::CapsLock] = caps_on == 1;
+			}
+		}
+		break;
+	}
 
-        case WM_SYSKEYUP:
-        case WM_KEYUP:
-        {
+	case WM_SYSKEYUP:
+	case WM_KEYUP:
+	{
+		int key = GetKeyCode((int)wParam);
 
-            break;
-        }
+		if (key >= 0)
+		{
+			g_key_up[key] = true;
+			g_key[key] = false;
+		}
+		else
+		{
+			switch (wParam)
+			{
+			case VK_CONTROL:
+			{
+				if (g_key[(int)KeyCode::LeftControl])
+				{
+					g_key_up[(int)KeyCode::LeftControl] = true;
+					g_key[(int)KeyCode::LeftControl] = false;
+				}
+				if (g_key[(int)KeyCode::RightControl])
+				{
+					g_key_up[(int)KeyCode::RightControl] = true;
+					g_key[(int)KeyCode::RightControl] = false;
+				}
+				break;
+			}
+			case VK_SHIFT:
+			{
+				if (g_key[(int)KeyCode::LeftShift])
+				{
+					g_key_up[(int)KeyCode::LeftShift] = true;
+					g_key[(int)KeyCode::LeftShift] = false;
+				}
+				if (g_key[(int)KeyCode::RightShift])
+				{
+					g_key_up[(int)KeyCode::RightShift] = true;
+					g_key[(int)KeyCode::RightShift] = false;
+				}
+				break;
+			}
+			case VK_MENU:
+			{
+				if (g_key[(int)KeyCode::LeftAlt])
+				{
+					g_key_up[(int)KeyCode::LeftAlt] = true;
+					g_key[(int)KeyCode::LeftAlt] = false;
+				}
+				if (g_key[(int)KeyCode::RightAlt])
+				{
+					g_key_up[(int)KeyCode::RightAlt] = true;
+					g_key[(int)KeyCode::RightAlt] = false;
+				}
+				break;
+			}
+			}
+		}
+		break;
+	}
 
-        case WM_CHAR:
-            if (wParam > 0 && wParam < 0x10000)
-            {
-                unsigned short c = (unsigned short) wParam;
-            }
-            break;
+	case WM_CHAR:
+		if (wParam > 0 && wParam < 0x10000)
+		{
+			unsigned short c = (unsigned short)wParam;
+			Input::AddInputCharacter(c);
+		}
+		break;
 
-        case WM_SYSCHAR:
-            if (wParam == VK_RETURN)
-            {
-                // Alt + Enter
-                SwitchFullScreen(hWnd);
-            }
-            break;
+	case WM_SYSCHAR:
+		if (wParam == VK_RETURN)
+		{
+			// Alt + Enter
+			SwitchFullScreen(hWnd);
+		}
+		break;
 
-        case WM_LBUTTONDOWN:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+	case WM_LBUTTONDOWN:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 
-            break;
-        }
+		if (!g_mouse_down)
+		{
+			g_mouse_down = true;
 
-        case WM_RBUTTONDOWN:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+			Touch t;
+			t.deltaPosition = Vector2(0, 0);
+			t.deltaTime = 0;
+			t.fingerId = 0;
+			t.phase = TouchPhase::Began;
+			t.position = Vector2((float)x, (float)g_window_height - y - 1);
+			t.tapCount = 1;
+			t.time = Time::GetRealTimeSinceStartup();
 
-            break;
-        }
+			if (!g_input_touches.empty())
+			{
+				g_input_touch_buffer.push_back(t);
+			}
+			else
+			{
+				g_input_touches.push_back(t);
+			}
+		}
 
-        case WM_MBUTTONDOWN:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+		g_mouse_button_down[0] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[0] = true;
 
+		break;
+	}
 
-            break;
-        }
+	case WM_RBUTTONDOWN:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 
-        case WM_MOUSEMOVE:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+		g_mouse_button_down[1] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[1] = true;
 
-            break;
-        }
+		break;
+	}
 
-        case WM_LBUTTONUP:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+	case WM_MBUTTONDOWN:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 
-            break;
-        }
+		g_mouse_button_down[2] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[2] = true;
 
-        case WM_RBUTTONUP:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+		break;
+	}
 
-            break;
-        }
+	case WM_MOUSEMOVE:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
 
-        case WM_MBUTTONUP:
-        {
-            int x = GET_X_LPARAM(lParam);
-            int y = GET_Y_LPARAM(lParam);
+		if (g_mouse_down)
+		{
+			Touch t;
+			t.deltaPosition = Vector2(0, 0);
+			t.deltaTime = 0;
+			t.fingerId = 0;
+			t.phase = TouchPhase::Moved;
+			t.position = Vector2((float)x, (float)g_window_height - y - 1);
+			t.tapCount = 1;
+			t.time = Time::GetRealTimeSinceStartup();
 
-            break;
-        }
+			if (!g_input_touches.empty())
+			{
+				if (g_input_touch_buffer.empty())
+				{
+					if (g_input_touches[0].phase == TouchPhase::Moved)
+					{
+						g_input_touches[0] = t;
+					}
+					else
+					{
+						g_input_touch_buffer.push_back(t);
+					}
+				}
+				else
+				{
+					if (g_input_touch_buffer.back().phase == TouchPhase::Moved)
+					{
+						g_input_touch_buffer.back() = t;
+					}
+					else
+					{
+						g_input_touch_buffer.push_back(t);
+					}
+				}
+			}
+			else
+			{
+				g_input_touches.push_back(t);
+			}
+		}
 
-        case WM_MOUSEWHEEL:
-        {
-            int delta = GET_WHEEL_DELTA_WPARAM(wParam);
-            break;
-        }
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
 
-        default:
-            break;
-    }
+		break;
+	}
 
-    return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	case WM_LBUTTONUP:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+
+		if (g_mouse_down)
+		{
+			g_mouse_down = false;
+
+			Touch t;
+			t.deltaPosition = Vector2(0, 0);
+			t.deltaTime = 0;
+			t.fingerId = 0;
+			t.phase = TouchPhase::Ended;
+			t.position = Vector2((float)x, (float)g_window_height - y - 1);
+			t.tapCount = 1;
+			t.time = Time::GetRealTimeSinceStartup();
+
+			if (!g_input_touches.empty())
+			{
+				g_input_touch_buffer.push_back(t);
+			}
+			else
+			{
+				g_input_touches.push_back(t);
+			}
+		}
+
+		g_mouse_button_up[0] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[0] = false;
+
+		break;
+	}
+
+	case WM_RBUTTONUP:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+
+		g_mouse_button_up[1] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[1] = false;
+
+		break;
+	}
+
+	case WM_MBUTTONUP:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+
+		g_mouse_button_up[2] = true;
+		g_mouse_position.x = (float)x;
+		g_mouse_position.y = (float)g_window_height - y - 1;
+		g_mouse_button_held[2] = false;
+
+		break;
+	}
+
+	case WM_MOUSEWHEEL:
+	{
+		int delta = GET_WHEEL_DELTA_WPARAM(wParam);
+		g_mouse_scroll_wheel = delta / 120.0f;
+		break;
+	}
+
+	default:
+		break;
+	}
+
+	return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
 int CreateAppWindow()

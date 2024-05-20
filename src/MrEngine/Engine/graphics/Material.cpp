@@ -40,6 +40,15 @@ namespace moonriver
         this->SetTexture(MaterialProperty::TEXTURE, Texture::GetSharedWhiteTexture());
         this->SetVector(MaterialProperty::TEXTURE_SCALE_OFFSET, Vector4(1, 1, 0, 0));
         this->SetColor(MaterialProperty::COLOR, Color(1, 1, 1, 1));
+
+        std::string shaderName = shader->GetName();
+        if (shaderName == "standard") {
+            m_isPbr = true;
+        }
+        else
+        {
+            m_isPbr = false;
+        }
     }
 
     Material::~Material()
@@ -93,6 +102,11 @@ namespace moonriver
 
         return m_shared_bounds_material;
     }
+
+	void Material::SetScissorRect(const Rect& rect)
+	{
+		m_scissor_rect = rect;
+	}
 
     std::string Material::EnableKeywords(const std::vector<std::string>& keywords)
     {
@@ -192,8 +206,9 @@ namespace moonriver
                 }
             }
         }
-
-        UpdatePbrUniform();
+        if (m_isPbr) {
+            UpdatePbrUniform();
+        }
     }
 
     void Material::UpdateUniformMember(const std::string& name, const void* data, int size)
@@ -375,7 +390,9 @@ namespace moonriver
                 }
             }
         }
-        driver.bindUniformBuffer((size_t)Shader::BindingPoint::PerMaterialFragment, m_pbr_uniform_buffer);
+        if (m_isPbr) {
+            driver.bindUniformBuffer((size_t)Shader::BindingPoint::PerMaterialFragment, m_pbr_uniform_buffer);
+        }
     }
 
     const std::shared_ptr<Shader>& Material::GetShader()

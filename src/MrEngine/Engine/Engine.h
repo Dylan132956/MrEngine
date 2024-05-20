@@ -24,6 +24,7 @@ namespace moonriver
 {
     class MrEngine;
     class Scene;
+    class Editor;
     class Engine
     {
     public:
@@ -43,6 +44,7 @@ namespace moonriver
         void PostAction(Action action);
         void SendMessage(int id, const std::string& msg);
         void AddMessageHandler(int id, std::function<void(int id, const std::string&)> handler);
+        const std::shared_ptr<Editor>& GetEditor() const;
         const std::string& GetDataPath();
         void Init();
 #if VR_ANDROID

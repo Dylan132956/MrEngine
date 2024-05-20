@@ -121,6 +121,8 @@ namespace moonriver
         const Pass& GetPass(int index) const { return m_passes[index]; }
         int GetQueue() const { return m_queue; }
         void Compile();
+        //TODO: parse shader uniform
+        void SetUniform(Pass& pass, const std::string& shaderName, std::vector<char>& vs, std::vector<char>& fs);
 
         static void Init();
         static void Done();

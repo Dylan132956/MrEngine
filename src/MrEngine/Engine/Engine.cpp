@@ -18,6 +18,8 @@
 #include "string/stringutils.h"
 #include <thread>
 #include "audio/AudioManager.h"
+#include "Editor.h"
+#include "Input.h"
 
 #include "core/meta/reflection/reflection_register.h"
 //#include "core/meta/meta_example.h"
@@ -90,11 +92,12 @@ namespace moonriver
 		std::list<Message> m_messages;
 		std::map<int, std::list<MessageHandler>> m_message_handlers;
 		Mutex m_mutex;
+        std::shared_ptr<Editor> m_editor;
 
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::VULKAN),
+            m_backend(backend::Backend::OPENGL),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -137,7 +140,7 @@ namespace moonriver
 #if !VR_WASM
 			m_thread_pool = std::make_shared<ThreadPool>(4);
 #endif
-
+            m_editor = std::make_shared<Editor>();
             Shader::Init();
             AudioManager::Init();
             
@@ -270,6 +273,16 @@ namespace moonriver
                 m_frame_barrier.await();
                 m_frame_barrier.reset(1);
             }
+#if VR_ANDROID
+			if (Input::GetKeyDown(KeyCode::Backspace))
+#else
+			if (Input::GetKeyDown(KeyCode::Escape))
+#endif
+			{
+				this->Quit();
+			}
+
+			Input::Update();
         }
 
         void Quit()
@@ -434,6 +447,7 @@ namespace moonriver
             m_pCore->m_scene_manager = std::make_unique<SceneManager>();
         }
         m_pCore->m_scene_manager->Update();
+        m_pCore->m_editor->Update();
 
         m_pCore->BeginFrame();
         m_pCore->Render();
@@ -506,6 +520,11 @@ namespace moonriver
     {
         m_pCore->AddMessageHandler(id, handler);
     }
+
+	const std::shared_ptr<Editor>& Engine::GetEditor() const
+	{
+		return m_pCore->m_editor;
+	}
 
 #if VR_WINDOWS
     const std::string& Engine::GetDataPath()

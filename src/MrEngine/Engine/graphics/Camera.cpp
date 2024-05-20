@@ -879,8 +879,8 @@ namespace moonriver
                 else
                 {
                     //-z
-                    Vector3 target = this->GetTransform()->GetPosition() - this->GetTransform()->GetForward();
-                    m_view_matrix = Matrix4x4::LookAtRH(this->GetTransform()->GetPosition(), this->GetTransform()->GetForward(), this->GetTransform()->GetUp());
+                    Vector3 target = this->GetTransform()->GetPosition() + this->GetTransform()->GetForward();
+                    m_view_matrix = Matrix4x4::LookAtRH(this->GetTransform()->GetPosition(), target, this->GetTransform()->GetUp());
                 }
 			}
 		}

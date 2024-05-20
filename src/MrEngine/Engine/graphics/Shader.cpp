@@ -278,32 +278,37 @@ namespace moonriver
                 memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
             }
 
-            filament::backend::Program pb;
-            pb.diagnostics(utils::CString("standard"))
-                .withVertexShader((void*)&vs_data[0], vs_data.size())
-                .withFragmentShader((void*)&fs_data[0], fs_data.size());
+            SetUniform(pass, GetName(), vs_data, fs_data);
+        }
+    }
 
-            auto& driver = Engine::Instance()->GetDriverApi();
-
-			Uniform u;
-			u.name = "vpUniforms";
-            u.binding = 0;
-            pass.uniforms.push_back(u);
-            u.name = "mUniforms";
-            u.binding = 1;
-            pass.uniforms.push_back(u);
-			u.name = "boneUniforms";
-            u.binding = 2;
-			pass.uniforms.push_back(u);
-            u.name = "cbGLTFAttribs";
-			u.binding = 4;
-			pass.uniforms.push_back(u);
-
-			for (int i = 0; i < pass.uniforms.size(); ++i)
-			{
-				pb.setUniformBlock(pass.uniforms[i].binding, utils::CString(pass.uniforms[i].name.c_str()));
-			}
-
+    void Shader::SetUniform(Pass& pass, const std::string& shaderName, std::vector<char>& vs_data, std::vector<char>& fs_data)
+    {
+        if (shaderName == "standard") {
+            {
+                Uniform u;
+                u.name = "PerView";
+                u.binding = 0;
+                pass.uniforms.push_back(u);
+            }
+            {
+                Uniform u;
+				u.name = "PerRenderer";
+				u.binding = 1;
+				pass.uniforms.push_back(u);
+            }
+            {
+                Uniform u;
+				u.name = "PerMaterialVertex";
+				u.binding = 2;
+				pass.uniforms.push_back(u);
+            }
+            {
+                Uniform u;
+				u.name = "PerMaterialFragment";
+				u.binding = 4;
+				pass.uniforms.push_back(u);
+            }
             SamplerGroup group;
             group.name = "PerMaterialFragment";
             group.binding = 4;
@@ -331,28 +336,101 @@ namespace moonriver
 
             pass.samplers.push_back(group);
 
-            for (int i = 0; i < pass.samplers.size(); ++i)
-            {
-                const auto& group = pass.samplers[i];
-
-                std::vector<filament::backend::Program::Sampler> samplers;
-                for (int j = 0; j < group.samplers.size(); ++j)
-                {
-                    filament::backend::Program::Sampler sampler;
-                    sampler.name = utils::CString(group.samplers[j].name.c_str());
-                    sampler.binding = group.samplers[j].binding;
-                    samplers.push_back(sampler);
-                }
-                pb.setSamplerGroup((size_t)group.binding, &samplers[0], samplers.size());
-            }
             //material: TODO
             pass.pipeline.rasterState.depthWrite = true;
             pass.pipeline.rasterState.colorWrite = true;
 
             pass.pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::BACK;
-
-            pass.pipeline.program = driver.createProgram(std::move(pb));
         }
+        else if (shaderName == "ui")
+        {
+            {
+                Uniform u;
+                u.name = "PerView";
+                u.binding = 0;
+                pass.uniforms.push_back(u);
+            }
+            {
+                Uniform u;
+				u.name = "PerRenderer";
+				u.binding = 1;
+				pass.uniforms.push_back(u);
+            }
+            {
+
+                Uniform u;
+                u.name = "PerMaterialVertex";
+                u.binding = 3;
+                Member member;
+                member.name = "u_texture_scale_offset";
+                member.size = 16;
+                member.offset = 0;
+                u.members.push_back(member);
+                u.size = 16;
+                pass.uniforms.push_back(u);
+            }
+            {
+				Uniform u;
+                Member member;
+				u.name = "PerMaterialFragment";
+				u.binding = 4;
+				member.name = "u_color";
+				member.size = 16;
+				member.offset = 0;
+				u.members.push_back(member);
+				u.size = 16;
+				pass.uniforms.push_back(u);
+            }
+			SamplerGroup group;
+			group.name = "PerMaterialFragment";
+			group.binding = 4;
+			Sampler sampler;
+			sampler.name = "SPIRV_Cross_Combinedg_ColorMapg_ColorSampler";
+			sampler.binding = 0;
+			group.samplers.push_back(sampler);
+			pass.samplers.push_back(group);
+
+			//material: TODO
+			pass.pipeline.rasterState.depthWrite = false;
+			pass.pipeline.rasterState.colorWrite = true;
+            //blend
+			pass.pipeline.rasterState.blendFunctionSrcRGB = filament::backend::BlendFunction::SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionSrcAlpha = filament::backend::BlendFunction::SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
+			//disable depthtest
+            pass.pipeline.rasterState.depthFunc = filament::backend::RasterState::DepthFunc::A;
+            pass.pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::NONE;
+        }
+
+		auto& driver = Engine::Instance()->GetDriverApi();
+
+		filament::backend::Program pb;
+		pb.diagnostics(utils::CString(shaderName.c_str()))
+			.withVertexShader((void*)&vs_data[0], vs_data.size())
+			.withFragmentShader((void*)&fs_data[0], fs_data.size());
+
+		for (int i = 0; i < pass.uniforms.size(); ++i)
+		{
+			pb.setUniformBlock(pass.uniforms[i].binding, utils::CString(pass.uniforms[i].name.c_str()));
+		}
+
+		for (int i = 0; i < pass.samplers.size(); ++i)
+		{
+			const auto& group = pass.samplers[i];
+
+			std::vector<filament::backend::Program::Sampler> samplers;
+			for (int j = 0; j < group.samplers.size(); ++j)
+			{
+				filament::backend::Program::Sampler sampler;
+				sampler.name = utils::CString(group.samplers[j].name.c_str());
+				sampler.binding = group.samplers[j].binding;
+				samplers.push_back(sampler);
+			}
+			pb.setSamplerGroup((size_t)group.binding, &samplers[0], samplers.size());
+		}
+
+		pass.pipeline.program = driver.createProgram(std::move(pb));
     }
 
     std::shared_ptr<Shader>Shader::Find(const std::string& name, const std::vector<std::string>& keywords)

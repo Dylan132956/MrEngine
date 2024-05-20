@@ -28,7 +28,7 @@ namespace moonriver
 
             auto model = m_pScene->LoadGLTF("/model/BrainStem/glTF/BrainStem.gltf");
             AABB aabb = model->RecalculateBoundsInternal();
-            //model->GetTransform()->SetPosition(Vector3(0, 0, 0));
+            //model->GetTransform()->SetPosition(Vector3(0, 0, 1));
             model->GetTransform()->SetPosition(-aabb.GetCenter());
             model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
             //model->GetTransform()->SetScale(Vector3(1, 1, 1));
@@ -67,7 +67,7 @@ namespace moonriver
 			auto audio_source = m_pScene->CreateEntity("as")->AddComponent<AudioSource>().get();
 			audio_source->SetClip(audio_clip);
 			audio_source->SetLoop(false);
-			audio_source->Play();
+			//audio_source->Play();
 #else
 			auto audio_path = "audio/Unite In The Sky (full).mp3";
 			AudioManager::PlayAudio(audio_path, false);

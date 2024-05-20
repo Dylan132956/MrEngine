@@ -53,18 +53,18 @@ namespace moonriver
             instance.setTypeName(type_name);
             return readPointer(json_context, instance.getPtrReference());
         }
-
+        //modify for c++14
         template<typename T>
         static Json write(const T& instance)
         {
 
-            if constexpr (std::is_pointer<T>::value)
+            if (std::is_pointer<T>::value)
             {
                 return writePointer((T)instance);
             }
             else
             {
-                static_assert(always_false<T>, "Serializer::write<T> has not been implemented yet!");
+                //static_assert(always_false<T>, "Serializer::write<T> has not been implemented yet!");
                 return Json();
             }
         }
@@ -72,13 +72,13 @@ namespace moonriver
         template<typename T>
         static T& read(const Json& json_context, T& instance)
         {
-            if constexpr (std::is_pointer<T>::value)
+            if (std::is_pointer<T>::value)
             {
                 return readPointer(json_context, instance);
             }
             else
             {
-                static_assert(always_false<T>, "Serializer::read<T> has not been implemented yet!");
+                //static_assert(always_false<T>, "Serializer::read<T> has not been implemented yet!");
                 return instance;
             }
         }

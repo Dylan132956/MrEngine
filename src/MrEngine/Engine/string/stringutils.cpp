@@ -6,6 +6,9 @@
 #include <cstring>
 #include <algorithm>
 #include <memory/Memory.h>
+#if VR_WINDOWS
+#include <Windows.h>
+#endif
 
 namespace moonriver {
 
@@ -237,6 +240,28 @@ std::string str_format(const char* format, ...)
 	Memory::Free(buffer, size + 1);
 
 	return result;
+}
+
+std::string Gb2312ToUtf8(const std::string& str)
+{
+#if VR_WINDOWS
+	int size = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), nullptr, 0);
+	wchar_t* wstr = (wchar_t*)calloc(1, (size + 1) * 2);
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.size(), wstr, size);
+
+	size = WideCharToMultiByte(CP_UTF8, 0, wstr, size, nullptr, 0, nullptr, false);
+	char* cstr = (char*)calloc(1, size + 1);
+	WideCharToMultiByte(CP_UTF8, 0, wstr, size, cstr, size, nullptr, false);
+
+	std::string ret = cstr;
+
+	free(cstr);
+	free(wstr);
+
+	return ret;
+#else
+	return str;
+#endif
 }
 
 }

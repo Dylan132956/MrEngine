@@ -95,6 +95,8 @@ file(GLOB MR3D_LIB_SRCS_HEADER
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/imgui/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/ui/*.h
      )
 
 file(GLOB MR3D_LIB_SRCS_SOURCE
@@ -112,6 +114,8 @@ file(GLOB MR3D_LIB_SRCS_SOURCE
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/imgui/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/ui/*.cpp
      )
 
 source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_LIB_SRCS_HEADER} ${MR3D_LIB_SRCS_SOURCE})
