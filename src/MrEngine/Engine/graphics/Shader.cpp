@@ -405,8 +405,10 @@ namespace moonriver
 
 		auto& driver = Engine::Instance()->GetDriverApi();
 
+        std::string asset_path = Engine::Instance()->GetDataPath();
+        std::string shaderPath = asset_path + "/shader/HLSL/" + shaderName;
 		filament::backend::Program pb;
-		pb.diagnostics(utils::CString(shaderName.c_str()))
+		pb.diagnostics(utils::CString(shaderPath.c_str()))
 			.withVertexShader((void*)&vs_data[0], vs_data.size())
 			.withFragmentShader((void*)&fs_data[0], fs_data.size());
 

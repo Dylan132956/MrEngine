@@ -284,8 +284,9 @@ namespace moonriver
             memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
         }
 
+        std::string shaderPath = asset_path + "/shader/HLSL/triangle";
         filament::backend::Program pb;
-        pb.diagnostics(utils::CString("Assets/shader/HLSL/cube"))
+        pb.diagnostics(utils::CString(shaderPath.c_str()))
             .withVertexShader((void*)&vs_data[0], vs_data.size())
             .withFragmentShader((void*)&fs_data[0], fs_data.size());
 
