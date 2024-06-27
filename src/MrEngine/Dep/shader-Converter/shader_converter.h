@@ -20,7 +20,10 @@ struct compile_arguments
     bool msl_decoration_binding = false;
 };
 
+//void converter_spirv(EShLanguage stage, const char* text[], const std::string fileName[],
+//    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+
 void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
-    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv);
+    const char* fileNameList[], const char* entryPointName, int count, int option, std::vector<unsigned int>& spirv, glslang::TProgram& program);
 std::string spirv_converter(compile_arguments& arg, std::vector<uint32_t>& spirv_file);
 

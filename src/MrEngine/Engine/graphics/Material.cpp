@@ -258,7 +258,7 @@ namespace moonriver
         }
     }
 
-    void Material::UpdateUniformTexture(const std::string& name, const Ref<Texture>& texture)
+    void Material::UpdateUniformTexture(const std::string& name, const std::shared_ptr<Texture>& texture)
     {
         auto& driver = Engine::Instance()->GetDriverApi();
         const auto& shader = m_shader_variants.begin()->second.shader;

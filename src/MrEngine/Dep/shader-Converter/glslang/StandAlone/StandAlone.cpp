@@ -1266,7 +1266,7 @@ bool writeDepFile(std::string depfile, std::vector<std::string>& binaryFiles, co
 
 void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::string fileName[],
                           const char* fileNameList[], const char* entryPointName, int count, int option,
-                          std::vector<unsigned int>& spirv)
+                          std::vector<unsigned int>& spirv, glslang::TProgram& program)
 {
     // keep track of what to free
     //std::list<glslang::TShader*> shaders;
@@ -1285,7 +1285,6 @@ void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::stri
     //
 
     //glslang::TProgram& program = *new glslang::TProgram;
-    glslang::TProgram program;
     //for (auto it = compUnits.cbegin(); it != compUnits.cend(); ++it)
     //{
     //const auto& compUnit = *it;
@@ -1458,6 +1457,7 @@ void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::stri
 
 #ifndef GLSLANG_WEB
     // Reflect
+    ReflectOptions = EShReflectionAllBlockVariables;
     if (Options & EOptionDumpReflection) {
         program.buildReflection(ReflectOptions);
         program.dumpReflection();

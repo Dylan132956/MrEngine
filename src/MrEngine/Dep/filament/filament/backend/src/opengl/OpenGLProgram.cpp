@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -95,6 +95,51 @@ OpenGLProgram::OpenGLProgram(OpenGLDriver* gl, const Program& programBuilder) no
         this->gl.program = program;
 
         // Associate each UniformBlock in the program to a known binding.
+		GLint numBlocks;
+		GLint nameLen;
+
+		std::vector<std::string> nameList;
+
+		glGetProgramiv(program, GL_ACTIVE_UNIFORM_BLOCKS, &numBlocks);
+		nameList.reserve(numBlocks);
+
+		std::array<GLenum, 3> blockProperties{ GL_NAME_LENGTH, GL_NUM_ACTIVE_VARIABLES, GL_BUFFER_DATA_SIZE };
+		std::array<GLint, 3> blockData{};
+
+		for (int blockIx = 0; blockIx < numBlocks; ++blockIx)
+		{
+			glGetProgramResourceiv(program, GL_UNIFORM_BLOCK, blockIx, blockProperties.size(), blockProperties.data(), blockData.size(), nullptr, blockData.data());
+
+			//Retrieve name
+			//std::string blockName(blockData[0]);
+			//glGetProgramResourceName(program, GL_UNIFORM_BLOCK, blockIx, blockName.size() + 1, nullptr, blockName​.data());
+
+			//Retrieve indices of uniforms that are a member of this block.
+			std::vector<GLint> uniformIxs(blockData[1]);
+			GLenum member = GL_ACTIVE_VARIABLES;
+
+			glGetProgramResourceiv(program, GL_UNIFORM_BLOCK, blockIx, 1, &member, uniformIxs.size(), nullptr, uniformIxs.data());
+
+			//We already retrieved the size.
+			auto bufferDataSize = blockData[2];
+
+
+			for (auto unifIx : uniformIxs)
+			{
+				GLint nameLength = 0;
+				GLenum nameProp = GL_NAME_LENGTH;
+				glGetProgramResourceiv(program, GL_UNIFORM, unifIx, 1, &nameProp, 1, nullptr, &nameLength);
+
+				std::string unifName;
+                unifName.resize(nameLength);
+				glGetProgramResourceName(program, GL_UNIFORM, unifIx, unifName.size() + 1, nullptr, (GLchar*)unifName.data());
+			}
+		}
+
+
+
+
+
         auto const& uniformBlockInfo = programBuilder.getUniformBlockInfo();
         #pragma nounroll
         for (GLuint binding = 0, n = (GLuint) uniformBlockInfo.size(); binding < n; binding++) {

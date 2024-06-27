@@ -6,6 +6,7 @@
 #include "math/Vector4.h"
 #include "math/Vector2.h"
 #include "shader_converter.h"
+#include "graphics/sprivShader/spirv_shader.h"
 
 // triangle vertices
 
@@ -96,12 +97,12 @@ namespace moonriver
             std::vector<unsigned int> vs_spriv;
             int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
             std::string entryPointName = "vert";
-            CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+            converter_spirv(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
 
             std::vector<unsigned int> fs_spriv;
             option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
             entryPointName = "frag";
-            CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+            converter_spirv(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
             compile_arguments arg;
 #if VR_ANDROID || VR_IOS
@@ -146,12 +147,12 @@ namespace moonriver
             std::vector<unsigned int> vs_spriv;
             int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
             std::string entryPointName = "vert";
-            CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+            converter_spirv(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
 
             std::vector<unsigned int> fs_spriv;
             option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
             entryPointName = "frag";
-            CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+            converter_spirv(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
 
             //std::string vs_glsl = compile_iteration(vs_spriv);
 

@@ -84,6 +84,7 @@ file(GLOB MR3D_LIB_SRCS_HEADER
      ${MR3D_LIB_SRC_DIR}/Engine/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/graphics/sprivShader/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/audio/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/math/*.h
@@ -103,6 +104,7 @@ file(GLOB MR3D_LIB_SRCS_SOURCE
      ${MR3D_LIB_SRC_DIR}/Engine/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/graphics/sprivShader/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/audio/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/math/*.cpp
@@ -264,6 +266,8 @@ file(GLOB MR3D_DEP_SRCS_GLSLANG
         ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter/glslang/SPIRV/CInterface/*.cpp
         ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter/SPIRV-Cross/*.h
         ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter/SPIRV-Cross/*.cpp
+        ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter/*.h
+        ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter/*.cpp
         )
 
 source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_GLSLANG})

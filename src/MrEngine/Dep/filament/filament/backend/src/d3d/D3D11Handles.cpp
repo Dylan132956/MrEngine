@@ -1,4 +1,5 @@
 
+#define INITGUID
 #include "D3D11Handles.h"
 #include <d3dcompiler.h>
 #include <assert.h>
@@ -146,6 +147,7 @@ namespace filament
 		D3D11Program::D3D11Program(D3D11Context* context, Program&& program):
 			HwProgram(program.getName())
 		{
+			//program.withFragmentShader(NULL, 0);
 			const auto& sources = program.getShadersSource();
 			for (int i = 0; i < sources.size(); ++i)
 			{
@@ -199,6 +201,38 @@ namespace filament
 					assert(SUCCEEDED(hr));
 
 					vertex_binary = binary;
+					//reflection
+					ID3D11ShaderReflection* pReflector = NULL;
+					D3DReflect(binary->GetBufferPointer(), binary->GetBufferSize(),
+						IID_ID3D11ShaderReflection, (void**)&pReflector);
+
+					D3D11_SHADER_DESC shaderDesc;
+					pReflector->GetDesc(&shaderDesc); 
+					for (int i = 0; i != shaderDesc.ConstantBuffers; ++i)
+					{
+						ID3D11ShaderReflectionConstantBuffer* cb = pReflector->GetConstantBufferByIndex(i);
+						D3D11_SHADER_BUFFER_DESC cbDesc;
+						cb->GetDesc(&cbDesc);    
+						//for (int j = 0; j != shaderDesc.BoundResources; ++j)
+						//{
+						//	D3D11_SHADER_INPUT_BIND_DESC bindDesc;
+						//	pReflector->GetResourceBindingDesc(j, &bindDesc);
+						//	if (strcmp(cbDesc.Name, bindDesc.Name) == 0)
+						//	{
+						//		std::cout << cbDesc.Name << " " << bindDesc.BindPoint << std::endl;
+						//		break;
+						//	}
+						//}
+						for (UINT j = 0; j < cbDesc.Variables; j++)
+						{
+							ID3D11ShaderReflectionVariable* pVariable = cb->GetVariableByIndex(j);
+							D3D11_SHADER_VARIABLE_DESC var_desc;
+							pVariable->GetDesc(&var_desc);
+							std::cout << " Name: " << var_desc.Name;
+							std::cout << " Size: " << var_desc.Size;
+							std::cout << " Offset: " << var_desc.StartOffset << "\n";
+						}
+					}
 				}
 				else if (type == Program::Shader::FRAGMENT)
 				{
@@ -208,8 +242,39 @@ namespace filament
 						nullptr,
 						&pixel_shader);
 					assert(SUCCEEDED(hr));
-
 					pixel_binary = binary;
+					//reflection
+					ID3D11ShaderReflection* pReflector = NULL;
+					D3DReflect(binary->GetBufferPointer(), binary->GetBufferSize(),
+						IID_ID3D11ShaderReflection, (void**)&pReflector);
+
+					D3D11_SHADER_DESC shaderDesc;
+					pReflector->GetDesc(&shaderDesc);
+					for (int i = 0; i != shaderDesc.ConstantBuffers; ++i)
+					{
+						ID3D11ShaderReflectionConstantBuffer* cb = pReflector->GetConstantBufferByIndex(i);
+						D3D11_SHADER_BUFFER_DESC cbDesc;
+						cb->GetDesc(&cbDesc);
+						for (int j = 0; j != shaderDesc.BoundResources; ++j)
+						{
+							D3D11_SHADER_INPUT_BIND_DESC bindDesc;
+							pReflector->GetResourceBindingDesc(j, &bindDesc);
+							if (strcmp(cbDesc.Name, bindDesc.Name) == 0)
+							{
+								std::cout << cbDesc.Name << " " << bindDesc.BindPoint << std::endl;
+								break;
+							}
+						}
+						for (UINT j = 0; j < cbDesc.Variables; j++)
+						{
+							ID3D11ShaderReflectionVariable* pVariable = cb->GetVariableByIndex(j);
+							D3D11_SHADER_VARIABLE_DESC var_desc;
+							pVariable->GetDesc(&var_desc);
+							std::cout << " Name: " << var_desc.Name;
+							std::cout << " Size: " << var_desc.Size;
+							std::cout << " Offset: " << var_desc.StartOffset << "\n";
+						}
+					}
 				}
 
 				SAFE_RELEASE(error);

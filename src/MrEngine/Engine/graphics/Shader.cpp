@@ -7,6 +7,7 @@
 #include "io/File.h"
 #include "Debug.h"
 #include "shader_converter.h"
+#include "graphics/sprivShader/spirv_shader.h"
 
 namespace moonriver
 {
@@ -142,33 +143,34 @@ namespace moonriver
             std::string fs_hlsl = pass.fs;
             std::vector<char> vs_data;
             std::vector<char> fs_data;
+            //spriv shader compile and shader reflection
+			std::string vs_path[1];
+			std::string fs_path[1];
+			vs_path[0] = pass.vsPath;
+			fs_path[0] = pass.fsPath;
+			const char* c_vs_hlsl[1];
+			const char* c_fs_hlsl[1];
+			vs_hlsl = define + vs_hlsl;
+			fs_hlsl = define + fs_hlsl;
+			c_vs_hlsl[0] = vs_hlsl.c_str();
+			c_fs_hlsl[0] = fs_hlsl.c_str();
+
+			const char* c_vs_path[1];
+			const char* c_fs_path[1];
+			c_vs_path[0] = vs_path[0].c_str();
+			c_fs_path[0] = fs_path[0].c_str();
+
+			std::vector<unsigned int> vs_spriv;
+			int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17) | (1 << 8);
+			std::string entryPointName = "vert";
+			converter_spirv(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv, &pass);
+
+			std::vector<unsigned int> fs_spriv;
+			option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17) | (1 << 8);
+			entryPointName = "frag";
+			converter_spirv(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv, &pass);
+
             if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
-                std::string vs_path[1];
-                std::string fs_path[1];
-                vs_path[0] = pass.vsPath;
-                fs_path[0] = pass.fsPath;
-                const char* c_vs_hlsl[1];
-                const char* c_fs_hlsl[1];
-                vs_hlsl = define + vs_hlsl;
-                fs_hlsl = define + fs_hlsl;
-                c_vs_hlsl[0] = vs_hlsl.c_str();
-                c_fs_hlsl[0] = fs_hlsl.c_str();
-
-                const char* c_vs_path[1];
-                const char* c_fs_path[1];
-                c_vs_path[0] = vs_path[0].c_str();
-                c_fs_path[0] = fs_path[0].c_str();
-
-                std::vector<unsigned int> vs_spriv;
-                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                std::string entryPointName = "vert";
-                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
-
-                std::vector<unsigned int> fs_spriv;
-                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                entryPointName = "frag";
-                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
-
                 compile_arguments arg;
 
                 arg.version = 330;
@@ -189,34 +191,7 @@ namespace moonriver
             }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::METAL)
             {
-                std::string vs_path[1];
-                std::string fs_path[1];
-                vs_path[0] = pass.vsPath;
-                fs_path[0] = pass.fsPath;
-                const char* c_vs_hlsl[1];
-                const char* c_fs_hlsl[1];
-                vs_hlsl = define + vs_hlsl;
-                fs_hlsl = define + fs_hlsl;
-                c_vs_hlsl[0] = vs_hlsl.c_str();
-                c_fs_hlsl[0] = fs_hlsl.c_str();
-
-                const char* c_vs_path[1];
-                const char* c_fs_path[1];
-                c_vs_path[0] = vs_path[0].c_str();
-                c_fs_path[0] = fs_path[0].c_str();
-
-                std::vector<unsigned int> vs_spriv;
-                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                std::string entryPointName = "vert";
-                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
-
-                std::vector<unsigned int> fs_spriv;
-                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                entryPointName = "frag";
-                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
-
                 compile_arguments arg;
-
 #if VR_MAC || VR_IOS
                 arg.msl = true;
                 arg.msl_decoration_binding = true;
@@ -243,99 +218,19 @@ namespace moonriver
             }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
             {
-                const char* c_vs_hlsl[1];
-                const char* c_fs_hlsl[1];
-
-                std::string vs_path[1];
-                std::string fs_path[1];
-                vs_path[0] = pass.vsPath;
-                fs_path[0] = pass.fsPath;
-
-                vs_hlsl = define + vs_hlsl;
-                fs_hlsl = define + fs_hlsl;
-
-                c_vs_hlsl[0] = vs_hlsl.c_str();
-                c_fs_hlsl[0] = fs_hlsl.c_str();
-
-                const char* c_vs_path[1];
-                const char* c_fs_path[1];
-                c_vs_path[0] = vs_path[0].c_str();
-                c_fs_path[0] = fs_path[0].c_str();
-
-                std::vector<unsigned int> vs_spriv;
-                int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                std::string entryPointName = "vert";
-                CompileAndLinkShader(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
-
-                std::vector<unsigned int> fs_spriv;
-                option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
-                entryPointName = "frag";
-                CompileAndLinkShader(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
-
                 vs_data.resize(vs_spriv.size() * 4);
                 memcpy(&vs_data[0], &vs_spriv[0], vs_data.size());
                 fs_data.resize(fs_spriv.size() * 4);
                 memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
             }
 
-            SetUniform(pass, GetName(), vs_data, fs_data);
+            SetRenderState(pass, GetName(), vs_data, fs_data);
         }
     }
 
-    void Shader::SetUniform(Pass& pass, const std::string& shaderName, std::vector<char>& vs_data, std::vector<char>& fs_data)
+    void Shader::SetRenderState(Pass& pass, const std::string& shaderName, std::vector<char>& vs_data, std::vector<char>& fs_data)
     {
         if (shaderName == "standard") {
-            {
-                Uniform u;
-                u.name = "PerView";
-                u.binding = 0;
-                pass.uniforms.push_back(u);
-            }
-            {
-                Uniform u;
-				u.name = "PerRenderer";
-				u.binding = 1;
-				pass.uniforms.push_back(u);
-            }
-            {
-                Uniform u;
-				u.name = "PerMaterialVertex";
-				u.binding = 2;
-				pass.uniforms.push_back(u);
-            }
-            {
-                Uniform u;
-				u.name = "PerMaterialFragment";
-				u.binding = 4;
-				pass.uniforms.push_back(u);
-            }
-            SamplerGroup group;
-            group.name = "PerMaterialFragment";
-            group.binding = 4;
-
-            Sampler sampler;
-            sampler.name = "SPIRV_Cross_Combinedg_ColorMapg_ColorSampler";
-            sampler.binding = 0;
-            group.samplers.push_back(sampler);
-
-            sampler.name = "SPIRV_Cross_Combinedg_PhysicalDescriptorMapg_PhysicalDescriptorSampler";
-            sampler.binding = 1;
-            group.samplers.push_back(sampler);
-
-            sampler.name = "SPIRV_Cross_Combinedg_NormalMapg_NormalSampler";
-            sampler.binding = 2;
-            group.samplers.push_back(sampler);
-
-            sampler.name = "SPIRV_Cross_Combinedg_AOMapg_AOSampler";
-            sampler.binding = 3;
-            group.samplers.push_back(sampler);
-
-            sampler.name = "SPIRV_Cross_Combinedg_EmissiveMapg_EmissiveSampler";
-            sampler.binding = 4;
-            group.samplers.push_back(sampler);
-
-            pass.samplers.push_back(group);
-
             //material: TODO
             pass.pipeline.rasterState.depthWrite = true;
             pass.pipeline.rasterState.colorWrite = true;
@@ -344,52 +239,6 @@ namespace moonriver
         }
         else if (shaderName == "ui")
         {
-            {
-                Uniform u;
-                u.name = "PerView";
-                u.binding = 0;
-                pass.uniforms.push_back(u);
-            }
-            {
-                Uniform u;
-				u.name = "PerRenderer";
-				u.binding = 1;
-				pass.uniforms.push_back(u);
-            }
-            {
-
-                Uniform u;
-                u.name = "PerMaterialVertex";
-                u.binding = 3;
-                Member member;
-                member.name = "u_texture_scale_offset";
-                member.size = 16;
-                member.offset = 0;
-                u.members.push_back(member);
-                u.size = 16;
-                pass.uniforms.push_back(u);
-            }
-            {
-				Uniform u;
-                Member member;
-				u.name = "PerMaterialFragment";
-				u.binding = 4;
-				member.name = "u_color";
-				member.size = 16;
-				member.offset = 0;
-				u.members.push_back(member);
-				u.size = 16;
-				pass.uniforms.push_back(u);
-            }
-			SamplerGroup group;
-			group.name = "PerMaterialFragment";
-			group.binding = 4;
-			Sampler sampler;
-			sampler.name = "SPIRV_Cross_Combinedg_ColorMapg_ColorSampler";
-			sampler.binding = 0;
-			group.samplers.push_back(sampler);
-			pass.samplers.push_back(group);
-
 			//material: TODO
 			pass.pipeline.rasterState.depthWrite = false;
 			pass.pipeline.rasterState.colorWrite = true;
