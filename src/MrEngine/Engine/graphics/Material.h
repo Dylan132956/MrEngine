@@ -292,7 +292,7 @@ namespace moonriver
         std::vector<std::vector<UniformBuffer >> m_unifrom_buffers;
         std::vector<std::vector<SamplerGroup>> m_samplers;
         //pbr material
-        filament::backend::UniformBufferHandle m_pbr_uniform_buffer;
+        std::vector<filament::backend::UniformBufferHandle> m_pbr_uniform_buffers;
         bool m_isPbr = false;
     };
 }

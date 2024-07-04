@@ -297,6 +297,58 @@ else()
     target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_GLSLANG_OSDEP})
 endif()
 
+# lua
+if (TRUE)
+    file(GLOB MR3D_DEP_SRCS_LUA
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lpeg/lpcap.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lpeg/lpcode.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lpeg/lpprint.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lpeg/lptree.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lpeg/lpvm.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lapi.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lauxlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lbaselib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lbitlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lcode.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lcorolib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lctype.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ldblib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ldebug.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ldo.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ldump.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lfunc.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lgc.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/linit.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/liolib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/llex.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lmathlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lmem.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/loadlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lobject.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lopcodes.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/loslib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lparser.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lstate.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lstring.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lstrlib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ltable.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ltablib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/ltm.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lundump.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lutf8lib.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lvm.c
+         ${MR3D_LIB_SRC_DIR}/Engine/lua/lzio.c
+         )
+
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_LUA})
+
+    target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_LUA})
+
+    target_include_directories(Mr3DDep PRIVATE
+                               ${MR3D_LIB_SRC_DIR}/Engine/lua
+                               )
+
+endif ()
 
 # zlib
 if (${Target} MATCHES "Windows" OR

@@ -8,11 +8,51 @@
 #include "Debug.h"
 #include "shader_converter.h"
 #include "graphics/sprivShader/spirv_shader.h"
+#include "string/Utils.h"
+#include "lua/lua.hpp"
+#include "Debug.h"
 
 namespace moonriver
 {
     std::map<std::string, std::shared_ptr<Shader>> Shader::m_shaders;
 
+	static void SetGlobalInt(lua_State* L, const char* key, int value)
+	{
+		lua_pushinteger(L, value);
+		lua_setglobal(L, key);
+	}
+
+	static void GetTableString(lua_State* L, const char* key, std::string& str)
+	{
+		lua_pushstring(L, key);
+		lua_gettable(L, -2);
+		if (lua_isstring(L, -1))
+		{
+			str = lua_tostring(L, -1);
+		}
+		lua_pop(L, 1);
+	}
+
+	template <class T>
+	static void GetTableInt(lua_State* L, const char* key, T& num)
+	{
+		lua_pushstring(L, key);
+		lua_gettable(L, -2);
+		if (lua_isinteger(L, -1))
+		{
+			num = (T)lua_tointeger(L, -1);
+		}
+		lua_pop(L, 1);
+	}
+
+	static void ReadTableFromIndex(lua_State* L, const char* lpszTableName, int index)
+	{
+		lua_getglobal(L, lpszTableName);
+		printf("it2 = %d\n", lua_gettop(L));
+		lua_rawgeti(L, -1, index);
+		printf("%s[%d]=%d\n", lpszTableName, index, (int)lua_tonumber(L, -1));
+		lua_pop(L, 2);
+	}
     Shader::Shader(const std::string& name) :
         m_queue(0)
     {
@@ -68,9 +108,154 @@ namespace moonriver
         //opts.enable_storage_image_qualifier_deduction = true;
         //opts.enable_row_major_load_workaround = true;
         //fs_compiler.set_common_options(opts);
-
-
         //std::string fs_glsl = fs_compiler.compile();
+
+        //test .shader files
+		//std::string shader_path[1];
+		//std::string asset_path = Engine::Instance()->GetDataPath();
+		//shader_path[0] = asset_path + "/shader/HLSL/standard.shader";
+		//char* shader_buffer = FileSystem::ReadFileData(shader_path[0].c_str());
+  //      std::string str_shader = shader_buffer;
+  //      FileSystem::FreeFileData(shader_buffer);
+  //      RemoveUTF8BOM(str_shader);
+
+		//// 处理pass
+		//size_t beginToken = std::string::npos;
+		//size_t endToken = std::string::npos;
+		//std::vector<std::string> totalPassNames;
+		//const std::string beginPass = "#DEF_PASSES";
+		//const std::string endPass = "#END_PASSES";
+		//bool bfind = FindInTokensString(str_shader, beginPass,
+		//	endPass, 0, beginToken, endToken);
+
+		//while (bfind)
+		//{
+  //          //str_shader.erase(endToken, endPass.length());
+  //          //str_shader.insert(endToken, "end");
+		//	std::string passname = FindNextWord(str_shader, beginToken + beginPass.length() + 1);
+		//	size_t passNamePos = FindTokenInText(str_shader, passname, beginToken + beginPass.length() + 1);
+		//	size_t passNameEndPos = passNamePos + passname.length();
+		//	//std::string passDef;
+		//	//passDef = Format("function %s()\n", passname.c_str());
+  //          //str_shader.erase(beginToken, passNameEndPos - beginToken);
+  //          //str_shader.insert(beginToken, passDef);
+  //          std::string str_pass = str_shader.substr(passNameEndPos, endToken - passNameEndPos);
+  //          const std::string beginParam = "#DEF_PARAMS";
+  //          const std::string endParam = "#END_PARAMS";
+		//	bfind = FindInTokensString(str_pass, beginParam,
+  //              endParam, 0, beginToken, endToken);
+  //          std::string str_param = str_pass.substr(beginToken + beginParam.length(), endToken - beginToken - beginParam.length());
+
+
+		//	const std::string cgprogram("CGPROGRAM");
+		//	const std::string endcg("ENDCG");
+		//	bfind = FindInTokensString(str_pass, cgprogram,
+  //              endcg, 0, beginToken, endToken);
+  //          std::string str_program = str_pass.substr(beginToken + beginParam.length(), endToken - beginToken - beginParam.length());
+		//	totalPassNames.push_back(passname);
+		//	// 查找新的pass
+		//	bfind = FindInTokensString(str_shader, beginPass,
+		//		endPass, endToken, beginToken, endToken);
+		//}
+
+		//lua_State* L = luaL_newstate();
+		//luaL_openlibs(L);
+		//SetGlobalInt(L, "Off", 0);
+		//SetGlobalInt(L, "On", 1);
+
+		//SetGlobalInt(L, "Back", (int)filament::backend::CullingMode::BACK);
+		//SetGlobalInt(L, "Front", (int)filament::backend::CullingMode::FRONT);
+
+		//SetGlobalInt(L, "Less", (int)filament::backend::SamplerCompareFunc::L);
+		//SetGlobalInt(L, "Greater", (int)filament::backend::SamplerCompareFunc::G);
+		//SetGlobalInt(L, "LEqual", (int)filament::backend::SamplerCompareFunc::LE);
+		//SetGlobalInt(L, "GEqual", (int)filament::backend::SamplerCompareFunc::GE);
+		//SetGlobalInt(L, "Equal", (int)filament::backend::SamplerCompareFunc::E);
+		//SetGlobalInt(L, "NotEqual", (int)filament::backend::SamplerCompareFunc::NE);
+		//SetGlobalInt(L, "Always", (int)filament::backend::SamplerCompareFunc::A);
+
+		//SetGlobalInt(L, "Zero", (int)filament::backend::BlendFunction::ZERO);
+		//SetGlobalInt(L, "One", (int)filament::backend::BlendFunction::ONE);
+		//SetGlobalInt(L, "SrcColor", (int)filament::backend::BlendFunction::SRC_COLOR);
+		//SetGlobalInt(L, "SrcAlpha", (int)filament::backend::BlendFunction::SRC_ALPHA);
+		//SetGlobalInt(L, "DstColor", (int)filament::backend::BlendFunction::DST_COLOR);
+		//SetGlobalInt(L, "DstAlpha", (int)filament::backend::BlendFunction::DST_ALPHA);
+		//SetGlobalInt(L, "OneMinusSrcColor", (int)filament::backend::BlendFunction::ONE_MINUS_SRC_COLOR);
+		//SetGlobalInt(L, "OneMinusSrcAlpha", (int)filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA);
+		//SetGlobalInt(L, "OneMinusDstColor", (int)filament::backend::BlendFunction::ONE_MINUS_DST_COLOR);
+		//SetGlobalInt(L, "OneMinusDstAlpha", (int)filament::backend::BlendFunction::ONE_MINUS_DST_ALPHA);
+
+		//SetGlobalInt(L, "Background", (int)Queue::Background);
+		//SetGlobalInt(L, "Geometry", (int)Queue::Geometry);
+		//SetGlobalInt(L, "AlphaTest", (int)Queue::AlphaTest);
+		//SetGlobalInt(L, "Transparent", (int)Queue::Transparent);
+		//SetGlobalInt(L, "Overlay", (int)Queue::Overlay);
+
+		//if (luaL_dostring(L, str_pass.c_str()) != 0)
+		//{
+		//	std::string error = lua_tostring(L, -1);
+		//	lua_pop(L, 1);
+		//	Log("do lua error: %s\n", error.c_str());
+		//	assert(false);
+		//}
+		////int num;
+		//Pass pass;
+		//lua_getglobal(L, "rs");
+		//// rs
+		//filament::backend::CullingMode culling = filament::backend::CullingMode::BACK;
+		//GetTableInt(L, "Cull", culling);
+		//pass.pipeline.rasterState.culling = culling;
+
+		//filament::backend::SamplerCompareFunc depth_func = filament::backend::SamplerCompareFunc::LE;
+		//GetTableInt(L, "ZTest", depth_func);
+		//pass.pipeline.rasterState.depthFunc = depth_func;
+
+		//bool depth_write = true;
+		//GetTableInt(L, "ZWrite", depth_write);
+		//pass.pipeline.rasterState.depthWrite = depth_write;
+
+		//filament::backend::BlendFunction src_color_blend = filament::backend::BlendFunction::ONE;
+		//filament::backend::BlendFunction dst_color_blend = filament::backend::BlendFunction::ZERO;
+		//filament::backend::BlendFunction src_alpha_blend = filament::backend::BlendFunction::ONE;
+		//filament::backend::BlendFunction dst_alpha_blend = filament::backend::BlendFunction::ZERO;
+		//GetTableInt(L, "SrcBlendMode", src_color_blend);
+		//GetTableInt(L, "DstBlendMode", dst_color_blend);
+		//GetTableInt(L, "SrcBlendMode", src_alpha_blend);
+		//GetTableInt(L, "DstBlendMode", dst_alpha_blend);
+		//GetTableInt(L, "SrcColorBlendMode", src_color_blend);
+		//GetTableInt(L, "DstColorBlendMode", dst_color_blend);
+		//GetTableInt(L, "SrcAlphaBlendMode", src_alpha_blend);
+		//GetTableInt(L, "DstAlphaBlendMode", dst_alpha_blend);
+		//pass.pipeline.rasterState.blendFunctionSrcRGB = src_color_blend;
+		//pass.pipeline.rasterState.blendFunctionSrcAlpha = src_alpha_blend;
+		//pass.pipeline.rasterState.blendFunctionDstRGB = dst_color_blend;
+		//pass.pipeline.rasterState.blendFunctionDstAlpha = dst_alpha_blend;
+
+		//bool color_write = true;
+		//GetTableInt(L, "CWrite", color_write);
+		//pass.pipeline.rasterState.colorWrite = color_write;
+
+		//GetTableInt(L, "Queue", pass.queue);
+
+		//if (m_queue < pass.queue)
+		//{
+		//	m_queue = pass.queue;
+		//}
+
+		//GetTableInt(L, "LightMode", pass.light_mode);
+
+		//std::vector<std::string>::iterator it = std::find(m_keywords.begin(), m_keywords.end(), "LIGHT_ADD_ON");
+		//if (pass.light_mode == LightMode::Forward && it != m_keywords.end())
+		//{
+		//	pass.pipeline.rasterState.depthWrite = false;
+		//	pass.pipeline.rasterState.blendFunctionSrcRGB = src_color_blend;
+		//	pass.pipeline.rasterState.blendFunctionSrcAlpha = src_alpha_blend;
+		//	pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE;
+		//	pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE;
+		//}
+		//lua_pop(L, 1);
+  //      lua_close(L);
+
     }
 
     Shader::~Shader()
@@ -224,34 +409,111 @@ namespace moonriver
                 memcpy(&fs_data[0], &fs_spriv[0], fs_data.size());
             }
 
-            SetRenderState(pass, GetName(), vs_data, fs_data);
+			Apply(pass, GetName(), vs_data, fs_data);
         }
     }
 
-    void Shader::SetRenderState(Pass& pass, const std::string& shaderName, std::vector<char>& vs_data, std::vector<char>& fs_data)
-    {
-        if (shaderName == "standard") {
-            //material: TODO
-            pass.pipeline.rasterState.depthWrite = true;
-            pass.pipeline.rasterState.colorWrite = true;
+	void Shader::SetRenderState(Pass& pass, const std::string& str_param)
+	{
+		lua_State* L = luaL_newstate();
+		luaL_openlibs(L);
+		SetGlobalInt(L, "Off", 0);
+		SetGlobalInt(L, "On", 1);
 
-            pass.pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::BACK;
-        }
-        else if (shaderName == "ui")
-        {
-			//material: TODO
+		SetGlobalInt(L, "Back", (int)filament::backend::CullingMode::BACK);
+		SetGlobalInt(L, "Front", (int)filament::backend::CullingMode::FRONT);
+
+		SetGlobalInt(L, "Less", (int)filament::backend::SamplerCompareFunc::L);
+		SetGlobalInt(L, "Greater", (int)filament::backend::SamplerCompareFunc::G);
+		SetGlobalInt(L, "LEqual", (int)filament::backend::SamplerCompareFunc::LE);
+		SetGlobalInt(L, "GEqual", (int)filament::backend::SamplerCompareFunc::GE);
+		SetGlobalInt(L, "Equal", (int)filament::backend::SamplerCompareFunc::E);
+		SetGlobalInt(L, "NotEqual", (int)filament::backend::SamplerCompareFunc::NE);
+		SetGlobalInt(L, "Always", (int)filament::backend::SamplerCompareFunc::A);
+
+		SetGlobalInt(L, "Zero", (int)filament::backend::BlendFunction::ZERO);
+		SetGlobalInt(L, "One", (int)filament::backend::BlendFunction::ONE);
+		SetGlobalInt(L, "SrcColor", (int)filament::backend::BlendFunction::SRC_COLOR);
+		SetGlobalInt(L, "SrcAlpha", (int)filament::backend::BlendFunction::SRC_ALPHA);
+		SetGlobalInt(L, "DstColor", (int)filament::backend::BlendFunction::DST_COLOR);
+		SetGlobalInt(L, "DstAlpha", (int)filament::backend::BlendFunction::DST_ALPHA);
+		SetGlobalInt(L, "OneMinusSrcColor", (int)filament::backend::BlendFunction::ONE_MINUS_SRC_COLOR);
+		SetGlobalInt(L, "OneMinusSrcAlpha", (int)filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA);
+		SetGlobalInt(L, "OneMinusDstColor", (int)filament::backend::BlendFunction::ONE_MINUS_DST_COLOR);
+		SetGlobalInt(L, "OneMinusDstAlpha", (int)filament::backend::BlendFunction::ONE_MINUS_DST_ALPHA);
+
+		SetGlobalInt(L, "Background", (int)Queue::Background);
+		SetGlobalInt(L, "Geometry", (int)Queue::Geometry);
+		SetGlobalInt(L, "AlphaTest", (int)Queue::AlphaTest);
+		SetGlobalInt(L, "Transparent", (int)Queue::Transparent);
+		SetGlobalInt(L, "Overlay", (int)Queue::Overlay);
+
+		if (luaL_dostring(L, str_param.c_str()) != 0)
+		{
+			std::string error = lua_tostring(L, -1);
+			lua_pop(L, 1);
+			Log("do lua error: %s\n", error.c_str());
+			assert(false);
+		}
+		lua_getglobal(L, "rs");
+		// rs
+		filament::backend::CullingMode culling = filament::backend::CullingMode::BACK;
+		GetTableInt(L, "Cull", culling);
+		pass.pipeline.rasterState.culling = culling;
+
+		filament::backend::SamplerCompareFunc depth_func = filament::backend::SamplerCompareFunc::LE;
+		GetTableInt(L, "ZTest", depth_func);
+		pass.pipeline.rasterState.depthFunc = depth_func;
+
+		bool depth_write = true;
+		GetTableInt(L, "ZWrite", depth_write);
+		pass.pipeline.rasterState.depthWrite = depth_write;
+
+		filament::backend::BlendFunction src_color_blend = filament::backend::BlendFunction::ONE;
+		filament::backend::BlendFunction dst_color_blend = filament::backend::BlendFunction::ZERO;
+		filament::backend::BlendFunction src_alpha_blend = filament::backend::BlendFunction::ONE;
+		filament::backend::BlendFunction dst_alpha_blend = filament::backend::BlendFunction::ZERO;
+		GetTableInt(L, "SrcBlendMode", src_color_blend);
+		GetTableInt(L, "DstBlendMode", dst_color_blend);
+		GetTableInt(L, "SrcBlendMode", src_alpha_blend);
+		GetTableInt(L, "DstBlendMode", dst_alpha_blend);
+		GetTableInt(L, "SrcColorBlendMode", src_color_blend);
+		GetTableInt(L, "DstColorBlendMode", dst_color_blend);
+		GetTableInt(L, "SrcAlphaBlendMode", src_alpha_blend);
+		GetTableInt(L, "DstAlphaBlendMode", dst_alpha_blend);
+		pass.pipeline.rasterState.blendFunctionSrcRGB = src_color_blend;
+		pass.pipeline.rasterState.blendFunctionSrcAlpha = src_alpha_blend;
+		pass.pipeline.rasterState.blendFunctionDstRGB = dst_color_blend;
+		pass.pipeline.rasterState.blendFunctionDstAlpha = dst_alpha_blend;
+
+		bool color_write = true;
+		GetTableInt(L, "CWrite", color_write);
+		pass.pipeline.rasterState.colorWrite = color_write;
+
+		GetTableInt(L, "Queue", pass.queue);
+
+		if (m_queue < pass.queue)
+		{
+			m_queue = pass.queue;
+		}
+
+		GetTableInt(L, "LightMode", pass.light_mode);
+
+		std::vector<std::string>::iterator it = std::find(m_keywords.begin(), m_keywords.end(), "LIGHT_ADD_ON");
+		if (pass.light_mode == LightMode::Forward && it != m_keywords.end())
+		{
 			pass.pipeline.rasterState.depthWrite = false;
-			pass.pipeline.rasterState.colorWrite = true;
-            //blend
-			pass.pipeline.rasterState.blendFunctionSrcRGB = filament::backend::BlendFunction::SRC_ALPHA;
-			pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
-			pass.pipeline.rasterState.blendFunctionSrcAlpha = filament::backend::BlendFunction::SRC_ALPHA;
-			pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
-			//disable depthtest
-            pass.pipeline.rasterState.depthFunc = filament::backend::RasterState::DepthFunc::A;
-            pass.pipeline.rasterState.culling = filament::backend::RasterState::CullingMode::NONE;
-        }
+			pass.pipeline.rasterState.blendFunctionSrcRGB = src_color_blend;
+			pass.pipeline.rasterState.blendFunctionSrcAlpha = src_alpha_blend;
+			pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE;
+			pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE;
+		}
+		lua_pop(L, 1);
+		lua_close(L);
+	}
 
+    void Shader::Apply(Pass& pass, const std::string& shaderName, std::vector<char>& vs_data, std::vector<char>& fs_data)
+    {
 		auto& driver = Engine::Instance()->GetDriverApi();
 
         std::string asset_path = Engine::Instance()->GetDataPath();
@@ -295,30 +557,68 @@ namespace moonriver
         else
         {
             shader = std::make_shared<Shader>(name);
-            std::string vs_path[1];
-            std::string fs_path[1];
+            //std::string vs_path[1];
+            //std::string fs_path[1];
+			std::string shader_path[1];
+			std::string asset_path = Engine::Instance()->GetDataPath();
+            //vs_path[0] = asset_path + "/shader/HLSL/" + name + ".vert.hlsl";
+            //fs_path[0] = asset_path + "/shader/HLSL/" + name + ".frag.hlsl";
+			shader_path[0] = asset_path + "/shader/HLSL/" + name + ".shader";
 
-            std::string asset_path = Engine::Instance()->GetDataPath();
-
-            vs_path[0] = asset_path + "/shader/HLSL/" + name + ".vert.hlsl";
-            fs_path[0] = asset_path + "/shader/HLSL/" + name + ".frag.hlsl";
-
-            if (File::Exist(vs_path[0]) && File::Exist(fs_path[0]))
+            if (File::Exist(shader_path[0]))
             {
-                //only one pass current
-                shader->m_passes.resize(1);
-                char* vs_buffer = FileSystem::ReadFileData(vs_path[0].c_str());
-                char* fs_buffer = FileSystem::ReadFileData(fs_path[0].c_str());
-                shader->m_passes[0].vs = vs_buffer;
-                shader->m_passes[0].fs = fs_buffer;
-                FileSystem::FreeFileData(vs_buffer);
-                FileSystem::FreeFileData(fs_buffer);
-                shader->m_passes[0].vsPath = vs_path[0];
-                shader->m_passes[0].fsPath = fs_path[0];
-                shader->m_shader_key = key;
-                shader->m_keywords = keywords;
-                shader->Compile();
-                m_shaders[key] = shader;
+				char* shader_buffer = FileSystem::ReadFileData(shader_path[0].c_str());
+				std::string str_shader = shader_buffer;
+				FileSystem::FreeFileData(shader_buffer);
+				RemoveUTF8BOM(str_shader);
+				// 处理pass
+				size_t beginToken = std::string::npos;
+				size_t endToken = std::string::npos;
+				std::vector<std::string> totalPassNames;
+				const std::string beginPass = "#DEF_PASSES";
+				const std::string endPass = "#END_PASSES";
+				bool bfind = FindInTokensString(str_shader, beginPass,
+					endPass, 0, beginToken, endToken);
+
+				while (bfind)
+				{
+					Pass pass;
+					std::string passname = FindNextWord(str_shader, beginToken + beginPass.length() + 1);
+					size_t passNamePos = FindTokenInText(str_shader, passname, beginToken + beginPass.length() + 1);
+					size_t passNameEndPos = passNamePos + passname.length();
+					std::string str_pass = str_shader.substr(passNameEndPos, endToken - passNameEndPos);
+					const std::string beginParam = "#DEF_PARAMS";
+					const std::string endParam = "#END_PARAMS";
+					size_t beginTokenParam = std::string::npos;
+					size_t endTokenParam = std::string::npos;
+					bfind = FindInTokensString(str_pass, beginParam,
+						endParam, 0, beginTokenParam, endTokenParam);
+					std::string str_param = str_pass.substr(beginTokenParam + beginParam.length(), endTokenParam - beginTokenParam - beginParam.length());
+					shader->SetRenderState(pass, str_param);
+
+					const std::string cgprogram("CGPROGRAM");
+					const std::string endcg("ENDCG");
+					size_t beginTokenProgram = std::string::npos;
+					size_t endTokenProgram = std::string::npos;
+					bfind = FindInTokensString(str_pass, cgprogram,
+						endcg, 0, beginTokenProgram, endTokenProgram);
+					std::string str_program = str_pass.substr(beginTokenProgram + cgprogram.length(), endTokenProgram - beginTokenProgram - cgprogram.length());
+
+					pass.vs = str_program;
+					pass.fs = str_program;
+					pass.vsPath = shader_path[0];
+					pass.fsPath = shader_path[0];
+					shader->m_passes.push_back(pass);
+					//totalPassNames.push_back(passname);
+					// 查找新的pass
+					bfind = FindInTokensString(str_shader, beginPass,
+						endPass, endToken, beginToken, endToken);
+				}
+
+				shader->m_shader_key = key;
+				shader->m_keywords = keywords;
+				m_shaders[key] = shader;
+				shader->Compile();
             }
         }
 

@@ -121,8 +121,9 @@ namespace moonriver
         const Pass& GetPass(int index) const { return m_passes[index]; }
         int GetQueue() const { return m_queue; }
         void Compile();
-        //TODO: parse material renderstate
-        void SetRenderState(Pass& pass, const std::string& shaderName, std::vector<char>& vs, std::vector<char>& fs);
+
+        void SetRenderState(Pass& pass, const std::string& str_program);
+        void Apply(Pass& pass, const std::string& shaderName, std::vector<char>& vs, std::vector<char>& fs);
 
         static void Init();
         static void Done();

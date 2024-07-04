@@ -36,6 +36,7 @@ namespace moonriver
         {
             m_samplers[i].resize((int)Shader::BindingPoint::Count);
         }
+        m_pbr_uniform_buffers.resize(shader->GetPassCount());
 
         this->SetTexture(MaterialProperty::TEXTURE, Texture::GetSharedWhiteTexture());
         this->SetVector(MaterialProperty::TEXTURE_SCALE_OFFSET, Vector4(1, 1, 0, 0));
@@ -81,10 +82,10 @@ namespace moonriver
         }
         m_samplers.clear();
 
-        if (m_pbr_uniform_buffer)
+        for (int i=0; i< m_pbr_uniform_buffers.size(); ++i)
         {
-            driver.destroyUniformBuffer(m_pbr_uniform_buffer);
-            m_pbr_uniform_buffer.clear();
+			driver.destroyUniformBuffer(m_pbr_uniform_buffers[i]);
+			m_pbr_uniform_buffers[i].clear();
         }
     }
 
@@ -298,13 +299,16 @@ namespace moonriver
     void Material::UpdatePbrUniform()
     {
         auto& driver = Engine::Instance()->GetDriverApi();
-        if (!m_pbr_uniform_buffer)
+        for (int i=0; i< m_pbr_uniform_buffers.size(); ++i)
         {
-            m_pbr_uniform_buffer = driver.createUniformBuffer(sizeof(ShaderAttribs), filament::backend::BufferUsage::DYNAMIC);
+			if (!m_pbr_uniform_buffers[i])
+			{
+				m_pbr_uniform_buffers[i] = driver.createUniformBuffer(sizeof(ShaderAttribs), filament::backend::BufferUsage::DYNAMIC);
+			}
+			void* buffer = driver.allocate(sizeof(ShaderAttribs));
+			Memory::Copy(buffer, &Attribs, sizeof(ShaderAttribs));
+			driver.loadUniformBuffer(m_pbr_uniform_buffers[i], filament::backend::BufferDescriptor(buffer, sizeof(ShaderAttribs)));
         }
-        void* buffer = driver.allocate(sizeof(ShaderAttribs));
-        Memory::Copy(buffer, &Attribs, sizeof(ShaderAttribs));
-        driver.loadUniformBuffer(m_pbr_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(ShaderAttribs)));
     }
 
     void Material::SetScissor(int target_width, int target_height)
@@ -391,7 +395,7 @@ namespace moonriver
             }
         }
         if (m_isPbr) {
-            driver.bindUniformBuffer((size_t)Shader::BindingPoint::PerMaterialFragment, m_pbr_uniform_buffer);
+            driver.bindUniformBuffer((size_t)Shader::BindingPoint::PerMaterialFragment, m_pbr_uniform_buffers[pass]);
         }
     }
 
