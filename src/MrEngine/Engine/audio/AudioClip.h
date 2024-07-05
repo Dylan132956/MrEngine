@@ -1,6 +1,6 @@
 /*
-* Viry3D
-* Copyright 2014-2019 by Stack - stackos@qq.com
+* moonriver
+* Copyright 2023-2024 by Dylan - 13227110@qq.com
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 #include "memory/ByteBuffer.h"
 #include <functional>
 
-#define STREAM_BUFFER_MAX 100
+#define STREAM_BUFFER_MAX 16
 
 namespace moonriver
 {

@@ -1,6 +1,6 @@
 /*
-* Viry3D
-* Copyright 2014-2019 by Stack - stackos@qq.com
+* moonriver
+* Copyright 2023-2024 by Dylan - 13227110@qq.com
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -302,17 +302,13 @@ namespace moonriver
             {
                 m_private->QueueBuffers(m_clip->GetStreamBuffers());
             }
-            else
-            {
-                if (m_private->m_wait_for_play)
-                {
-                    m_private->m_wait_for_play = false;
-                    m_private->Play();
-                }
-            }
-            
-            if (!m_private->m_wait_for_play)
-            {
+
+			if (m_private->m_wait_for_play && m_private->m_stream_buffers.size() >= 4)
+			{
+				m_private->m_wait_for_play = false;
+				m_private->Play();
+			}
+			else {
                 m_private->UnqueueBuffers();
             }
         }

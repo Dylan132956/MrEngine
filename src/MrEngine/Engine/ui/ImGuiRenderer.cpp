@@ -1,6 +1,6 @@
 /*
-* Viry3D
-* Copyright 2014-2019 by Stack - stackos@qq.com
+* moonriver
+* Copyright 2023-2024 by Dylan - 13227110@qq.com
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -171,9 +171,10 @@ namespace moonriver
 
                 for (int j = 0; j < cmd->CmdBuffer.size(); ++j)
                 {
+
                     const auto& dc = cmd->CmdBuffer[j];
 
-                    submeshes.push_back({ indices.size(), (unsigned int) dc.ElemCount });
+                    submeshes.push_back({ (unsigned int)indices.size(), (unsigned int) dc.ElemCount });
                     clip_rects.push_back(Rect(
                         dc.ClipRect.x / io.DisplaySize.x,
                         dc.ClipRect.y / io.DisplaySize.y,
