@@ -49,8 +49,9 @@ namespace moonriver
 				animations[0]->Play(0);
 			}
             auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
-            light->GetTransform()->SetRotation(Quaternion::Euler(60, 90, 0));
+            light->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
             light->SetType(LightType::Directional);
+            light->SetAmbientColor(Color(0.22, 0.22, 0.22, 1.0));
 
             InitAudio(); 
         }

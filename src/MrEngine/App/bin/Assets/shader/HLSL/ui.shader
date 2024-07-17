@@ -12,18 +12,18 @@ rs = {
 #END_PARAMS
 CGPROGRAM
 #include "vso.h.hlsl"
-cbuffer vpUniforms : register(b0)
+cbuffer PerView : register(b0)
 {
     float4x4 u_view_matrix;
     float4x4 u_projection_matrix;
 }
 
-cbuffer mUniforms : register(b1)
+cbuffer PerRenderer : register(b1)
 {
     float4x4 u_model_matrix;
 }
 
-cbuffer vertexUniforms : register(b3)
+cbuffer PerMaterialVertex : register(b3)
 {
     float4 u_texture_scale_offset;
 }
