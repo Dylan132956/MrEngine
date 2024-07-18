@@ -18,6 +18,8 @@ Support GLTF Loading and Rendering
 
 Support PBR Rendering
 
+Support Skeleton Animation
+
 Support C++ Reflection(https://github.com/BoomingTech/Piccolo)
 
 Support Rendering frame、Imgui Rendering、OpenAl Audio Player(https://github.com/stackos/Viry3D)
