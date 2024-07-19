@@ -1,5 +1,6 @@
-# MrEngine
-![mr_log](https://github.com/user-attachments/assets/cd15264e-549b-4e79-978a-7c4847afcdc2)
+
+# MrEngine![moon-stars-sun-with-river-icon_835895-3479_512](https://github.com/user-attachments/assets/1e0af34d-5f7a-4892-a109-f607a5d4ac1a)
+![53C46B79-EEB1-42C0-99F7-BFA21E0C3E8C](https://github.com/user-attachments/assets/afb88d8d-43ac-484a-8159-9313037af639)
 
 Cross-platform 3D Rendering Engine
 
