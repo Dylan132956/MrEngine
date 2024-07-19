@@ -534,7 +534,7 @@ int CreateAppWindow()
     win_class.lpszMenuName = nullptr;
     win_class.lpszClassName = name;
     win_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    win_class.hIcon = (HICON)LoadImage(nullptr, "icon.ico", IMAGE_ICON, SM_CXICON, SM_CYICON, LR_LOADFROMFILE);
+    win_class.hIcon = (HICON)LoadImage(nullptr, "icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
     win_class.hIconSm = win_class.hIcon;
 
     if (!RegisterClassEx(&win_class))
