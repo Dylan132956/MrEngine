@@ -583,6 +583,17 @@ int CreateAppWindow()
     g_engine->Init();
     g_App = new App(g_engine);
 
+	const char* BackEndString[] = {
+		"DEFAULT",
+		"OPENGL",
+		"VULKAN",
+		"METAL",
+		"D3D11",
+		"D3D12",
+		"NOOP"
+	};
+	std::string wTitleText = std::string("MrEngine ") + BackEndString[int(g_engine->GetBackend())];
+	SetWindowTextA(hwnd, wTitleText.c_str());
     bool exit = false;
     MSG msg;
 

@@ -22,6 +22,9 @@ bool EndsWith(const std::string& strOri, const std::string& strCmp);
 
 double StringToDouble(const char* text, double defaultValue = 0.0, bool* successed = nullptr);
 std::string str_format(const char* format, ...);
+std::string convertToUTF8(const std::wstring& wstr);
+std::wstring convertToUTF16(const std::string& str);
 std::string Gb2312ToUtf8(const std::string& str);
+
 
 }

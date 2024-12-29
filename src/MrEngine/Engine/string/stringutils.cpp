@@ -242,6 +242,24 @@ std::string str_format(const char* format, ...)
 	return result;
 }
 
+#if VR_WINDOWS
+std::string convertToUTF8(const std::wstring& wstr)
+{
+	const int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+	const std::unique_ptr<char[]> buffer(new char[bufferSize]);
+	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, buffer.get(), bufferSize, nullptr, nullptr);
+	return std::string(buffer.get());
+}
+
+std::wstring convertToUTF16(const std::string& str)
+{
+	const int bufferSize = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+	const std::unique_ptr<wchar_t[]> buffer(new wchar_t[bufferSize]);
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer.get(), bufferSize);
+	return std::wstring(buffer.get());
+}
+#endif
+
 std::string Gb2312ToUtf8(const std::string& str)
 {
 #if VR_WINDOWS

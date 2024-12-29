@@ -63,8 +63,12 @@
     #include "metal/PlatformMetal.h"
 #endif
 
-#if VR_D3D
-	#include "d3d/PlatformD3D11.h"
+#if VR_D3D11
+	#include "d3d11/PlatformD3D11.h"
+#endif
+
+#if VR_D3D12
+    #include "d3d12/PlatformD3D12.h"
 #endif
 
 #include "noop/PlatformNoop.h"
@@ -113,8 +117,15 @@ DefaultPlatform* DefaultPlatform::create(Backend* backend) noexcept {
 #endif
     }
 	if (*backend == Backend::D3D11) {
-#if VR_D3D
+#if VR_D3D11
 		return new PlatformD3D11();
+#else
+		return nullptr;
+#endif
+	}
+	if (*backend == Backend::D3D12) {
+#if VR_D3D12
+		return new PlatformD3D12();
 #else
 		return nullptr;
 #endif

@@ -97,7 +97,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::D3D11),
+            m_backend(backend::Backend::D3D12),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -360,9 +360,8 @@ namespace moonriver
 
         void OnResize(void* native_window, int width, int height, uint64_t flags)
         {
-            this->GetDriverApi().destroyRenderTarget(m_render_target);
-            this->GetDriverApi().destroySwapChain(m_swap_chain);
-
+			this->GetDriverApi().destroyRenderTarget(m_render_target);
+			this->GetDriverApi().destroySwapChain(m_swap_chain);
             m_native_window = native_window;
             m_width = width;
             m_height = height;
@@ -448,7 +447,6 @@ namespace moonriver
         Time::Update();
         m_pCore->m_scene_manager->Update();
         m_pCore->m_editor->Update();
-
         m_pCore->BeginFrame();
         m_pCore->Render();
         m_pCore->m_scene_manager->Render();

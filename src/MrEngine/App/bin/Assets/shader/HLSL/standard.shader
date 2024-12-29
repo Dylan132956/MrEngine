@@ -105,6 +105,7 @@ void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
     PBRMaterial mat = pbrMaterial(uv);
 #if (_NORMALMAP_ON == 1)
     float3 N = convertTangentNormal(_entryPointOutput.vfnormal.xyz, _entryPointOutput.vftangent.xyz, mat.normal);
+    N = mat.normal;
 #else
     float3 N = _entryPointOutput.vfnormal.xyz;
 #endif
@@ -123,6 +124,7 @@ void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
     radianceOut += u_ambient_color.rgb * mat.diffuseColor * mat.occlusion;
     radianceOut += mat.emissive;
     outColor = float4(toGammaAccurate(tonemap_aces_luminance(radianceOut)), 1.0);
+    //outColor = float4(1.0, 0.0, 0.0, 1.0);
 }
 ENDCG
 #END_PASSES

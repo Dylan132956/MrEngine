@@ -185,7 +185,7 @@ namespace moonriver
                 fs_data.resize(fs_msl.size());
                 memcpy(&fs_data[0], &fs_msl[0], fs_data.size());
             }
-            else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+            else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D12)
             {
                 std::string vs = define + vs_hlsl;
                 std::string fs = define + fs_hlsl;

@@ -226,21 +226,28 @@ if (${Target} MATCHES "Mac" OR
 
 endif ()
 
-# filament d3d
+# filament d3d11
 if (${Target} MATCHES "Windows" OR
     ${Target} MATCHES "UWP")
 
     file(GLOB MR3D_DEP_SRCS_FILAMENT_D3D11
-		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d/D3D11Context.cpp
-		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d/D3D11Driver.cpp
-		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d/D3D11Handles.cpp
-		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d/PlatformD3D11.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d11/D3D11Context.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d11/D3D11Driver.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d11/D3D11Handles.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d11/PlatformD3D11.cpp
          )
-
     source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_FILAMENT_D3D11})
-
     target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_FILAMENT_D3D11})
 
+    file(GLOB MR3D_DEP_SRCS_FILAMENT_D3D12
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Context.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Driver.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Handles.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/PlatformD3D12.cpp
+		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/utils.cpp
+         )
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_FILAMENT_D3D12})
+    target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_FILAMENT_D3D12})
 endif ()
 
 # glslang
@@ -474,7 +481,7 @@ endif ()
 if (${Target} MATCHES "Windows")
 
     set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -DVR_WINDOWS -DVR_VULKAN=1 -DVR_GLES=1 -DVR_D3D=1 -DVK_USE_PLATFORM_WIN32_KHR -DFILAMENT_DRIVER_SUPPORTS_VULKAN")
+        "${CMAKE_CXX_FLAGS} -DVR_WINDOWS -DVR_VULKAN=1 -DVR_GLES=1 -DVR_D3D11=1 -DVR_D3D12=1 -DVK_USE_PLATFORM_WIN32_KHR -DFILAMENT_DRIVER_SUPPORTS_VULKAN")
     add_definitions(-W3 -D_CRT_SECURE_NO_WARNINGS -D_CRT_RAND_S -D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES -DGLEW_STATIC -DENABLE_HLSL)
 
     set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -518,6 +525,8 @@ if (${Target} MATCHES "Windows")
                           Mr3D Mr3DDep
                           opengl32.lib
 						  d3d11.lib
+                          D3D12.lib
+                          dxgi.lib
 						  d3dcompiler.lib
                           winmm.lib
                           Xaudio2.lib
