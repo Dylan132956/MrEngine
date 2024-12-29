@@ -1460,7 +1460,7 @@ void CompileAndLinkShader(EShLanguage stage, const char* text[], const std::stri
     ReflectOptions = EShReflectionAllBlockVariables;
     if (Options & EOptionDumpReflection) {
         program.buildReflection(ReflectOptions);
-        program.dumpReflection();
+        //program.dumpReflection();
     }
 #endif
 

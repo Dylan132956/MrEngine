@@ -52,8 +52,10 @@ SamplerState g_ColorSampler : reg(s0, space1);
 Texture2D g_PhysicalDescriptorMap : reg(t1, space1);
 SamplerState g_PhysicalDescriptorSampler : reg(s1, space1);
 
+#if (_NORMALMAP_ON == 1)
 Texture2D g_NormalMap : reg(t2, space1);
 SamplerState g_NormalSampler : reg(s2, space1);
+#endif
 
 Texture2D g_AOMap : reg(t3, space1);
 SamplerState g_AOSampler : reg(s3, space1);
@@ -141,12 +143,12 @@ float2 pbrMetallicRoughness(float2 texcoord)
 {
     return g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, texcoord).rg * float2(g_MaterialInfo.MetallicFactor, g_MaterialInfo.RoughnessFactor);
 }
-
+#if (_NORMALMAP_ON == 1)
 float3 pbrNormal(float2 texcoord)
 {
     return normalize((g_NormalMap.Sample(g_NormalSampler, texcoord).rgb * 2.0) - 1.0);
 }
-
+#endif
 float pbrOcclusion(float2 texcoord)
 {
     float occlusion = g_AOMap.Sample(g_AOSampler, texcoord).r;
@@ -166,7 +168,9 @@ PBRMaterial pbrMaterial(float2 texcoord)
     float2 metallicRoughness = pbrMetallicRoughness(texcoord);
     mat.metallic = metallicRoughness.r;
     mat.roughness = metallicRoughness.g;
+#if (_NORMALMAP_ON == 1)
     mat.normal = pbrNormal(texcoord);
+#endif
     mat.occlusion = pbrOcclusion(texcoord);
     mat.emissive = pbrEmissive(texcoord);
     mat = pbrInitMaterial(mat);
