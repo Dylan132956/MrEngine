@@ -245,6 +245,20 @@ if (${Target} MATCHES "Windows" OR
 		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Handles.cpp
          ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/PlatformD3D12.cpp
 		 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/utils.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Buffer.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12DescriptorCache.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12DescriptorCache.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12HeapSlotAllocator.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12HeapSlotAllocator.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12MemoryAllocator.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12MemoryAllocator.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12MemoryAllocator.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Resource.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Resource.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12View.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12View.h
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Utils.cpp
+         ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/d3d12/D3D12Utils.h
          )
     source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_DEP_SRCS_FILAMENT_D3D12})
     target_sources(Mr3DDep PRIVATE ${MR3D_DEP_SRCS_FILAMENT_D3D12})

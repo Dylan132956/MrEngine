@@ -20,6 +20,7 @@
 #include "D3D12Driver.h"
 #include "D3D12Context.h"
 #include "d3d12shader.h"
+#include "D3D12Buffer.h"
 #include <map>
 
 namespace filament
@@ -55,13 +56,10 @@ namespace filament
 
 			ComPtr<ID3D12Resource> colorTexture;
 			ComPtr<ID3D12Resource> depthStencilTexture;
-			Descriptor rtv;
-			Descriptor dsv;
-			Descriptor srv;
+			std::unique_ptr<TD3D12ShaderResourceView> SRV;
+			std::unique_ptr<TD3D12DepthStencilView> DSV;
 			UINT width, height;
 			UINT samples;
-			//ID3D12RenderTargetView1* color_view = nullptr;
-			//ID3D12DepthStencilView* depth_view = nullptr;
 		};
 
 		struct D3D12Program : public HwProgram
@@ -87,14 +85,10 @@ namespace filament
 
 			std::vector<D3D12_INPUT_ELEMENT_DESC> meshInputLayout;
 
-			ComPtr<ID3D12PipelineState> GetPSO(D3D12Context* context);
+			ComPtr<ID3D12PipelineState> GetPSO(D3D12Context* context, const backend::PipelineState& ps);
 
 			ComPtr<ID3D12RootSignature> m_RootSignature;
 			ComPtr<ID3D12PipelineState> m_PipelineState;
-
-			//ID3D12VertexShader* vertex_shader = nullptr;
-			//ID3D12PixelShader* pixel_shader = nullptr;
-			//ID3D12InputLayout* input_layout = nullptr;
 		};
 
 		struct D3D12UniformBuffer : public HwUniformBuffer
@@ -102,9 +96,7 @@ namespace filament
 			D3D12UniformBuffer(D3D12Context* context, size_t size, BufferUsage usage);
 			~D3D12UniformBuffer();
 			void Load(D3D12Context* context, const BufferDescriptor& data);
-			//ID3D12Buffer* buffer = nullptr;
-			UploadBufferRegion updata;
-			Descriptor cbv;
+			TD3D12ConstantBufferRef cb;
 			size_t size;
 			BufferUsage usage;
 			template<typename T> T* as() const
@@ -169,11 +161,10 @@ namespace filament
 			void GenerateMipmaps(D3D12Context* context);
 
 			ComPtr<ID3D12Resource> texture;
-			Descriptor srv;
-			Descriptor dsv;
-			Descriptor uav;
-			//ID3D12Texture2D1* texture = nullptr;
-			//ID3D12ShaderResourceView1* image_view = nullptr;
+
+			std::unique_ptr<TD3D12ShaderResourceView> SRV;
+			std::unique_ptr<TD3D12DepthStencilView> DSV;
+			std::unique_ptr<TD3D12UnorderedAccessView> UAV;
 		};
 
 		struct D3D12VertexBuffer : public HwVertexBuffer
@@ -192,10 +183,9 @@ namespace filament
 				const BufferDescriptor& data,
 				uint32_t offset);
 
-			std::vector<ComPtr<ID3D12Resource>> buffers;
-			std::vector<D3D12_VERTEX_BUFFER_VIEW> vbvs;
+			std::vector<TD3D12VertexBufferRef> VertexBufferRefArray;
 			uint32_t stride;
-			//std::vector<ID3D12Buffer*> buffers;
+			UINT size;
 			BufferUsage usage;
 		};
 
@@ -212,9 +202,12 @@ namespace filament
 				const BufferDescriptor& data,
 				uint32_t offset);
 
+			TD3D12IndexBufferRef IndexBufferRef;
+
 			ComPtr<ID3D12Resource> buffer;
-			D3D12_INDEX_BUFFER_VIEW ibv;
-			//ID3D12Buffer* buffer = nullptr;
+			size_t indexDataSize;
+			ElementType indexElement_type;
+			DXGI_FORMAT indexFormat;
 			BufferUsage usage;
 		};
 

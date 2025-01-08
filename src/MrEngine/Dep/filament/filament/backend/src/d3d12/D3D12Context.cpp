@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "utils.hpp"
 #include <d3dcompiler.h>
+#include "D3D12DescriptorCache.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -67,11 +68,6 @@ namespace filament
 				m_rootSignatureVersion = rootSignatureFeature.HighestVersion;
 			}
 
-			// Create descriptor heaps.
-			m_descHeapRTV = createDescriptorHeap({ D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 16, D3D12_DESCRIPTOR_HEAP_FLAG_NONE });
-			m_descHeapDSV = createDescriptorHeap({ D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16, D3D12_DESCRIPTOR_HEAP_FLAG_NONE });
-			m_descHeapCBV_SRV_UAV = createDescriptorHeap({ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 256, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE });
-
 			// Create frame synchronization objects.
 			{
 				if (FAILED(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)))) {
@@ -107,47 +103,87 @@ namespace filament
 			}
 
 			// Create 64kB host-mapped buffer in the upload heap for shader constants.
-			m_constantBuffer = createUploadBuffer(64 * 1024);
+			//m_constantBuffer = createUploadBuffer(640 * 1024);
+
+			//Create memory allocator
+			UploadBufferAllocator = std::make_unique<TD3D12UploadBufferAllocator>(m_device.Get());
+
+			DefaultBufferAllocator = std::make_unique<TD3D12DefaultBufferAllocator>(m_device.Get());
+
+			TextureResourceAllocator = std::make_unique<TD3D3TextureResourceAllocator>(m_device.Get());
+
+			//Create heapSlot allocator
+			RTVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 200);
+
+			DSVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 200);
+
+			SRVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 200);
+
+			DescriptorCache = std::make_unique<TD3D12DescriptorCache>(this);
 
 		}
 
-		UploadBufferRegion D3D12Context::allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const
+		//UploadBufferRegion D3D12Context::allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const
+		//{
+		//	const UINT alignedSize = Utility::roundToPowerOfTwo(size, align);
+		//	if (buffer.cursor + alignedSize > buffer.capacity) {
+		//		throw std::overflow_error("Out of upload buffer capacity while allocating memory");
+		//	}
+
+		//	UploadBufferRegion region;
+		//	region.cpuAddress = reinterpret_cast<void*>(buffer.cpuAddress + buffer.cursor);
+		//	region.gpuAddress = buffer.gpuAddress + buffer.cursor;
+		//	region.size = alignedSize;
+		//	buffer.cursor += alignedSize;
+		//	return region;
+		//}
+
+		TD3D12HeapSlotAllocator* D3D12Context::GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType)
 		{
-			const UINT alignedSize = Utility::roundToPowerOfTwo(size, align);
-			if (buffer.cursor + alignedSize > buffer.capacity) {
-				throw std::overflow_error("Out of upload buffer capacity while allocating memory");
-			}
-
-			UploadBufferRegion region;
-			region.cpuAddress = reinterpret_cast<void*>(buffer.cpuAddress + buffer.cursor);
-			region.gpuAddress = buffer.gpuAddress + buffer.cursor;
-			region.size = alignedSize;
-			buffer.cursor += alignedSize;
-			return region;
-		}
-
-		UploadBuffer D3D12Context::createUploadBuffer(UINT capacity) const
-		{
-			UploadBuffer buffer;
-			buffer.cursor = 0;
-			buffer.capacity = capacity;
-
-			if (FAILED(m_device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(capacity),
-				D3D12_RESOURCE_STATE_GENERIC_READ,
-				nullptr,
-				IID_PPV_ARGS(&buffer.buffer))))
+			switch (HeapType)
 			{
-				throw std::runtime_error("Failed to create GPU upload buffer");
+			case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
+				return SRVHeapSlotAllocator.get();
+				break;
+
+				//case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
+				//	break;
+
+			case D3D12_DESCRIPTOR_HEAP_TYPE_RTV:
+				return RTVHeapSlotAllocator.get();
+				break;
+
+			case D3D12_DESCRIPTOR_HEAP_TYPE_DSV:
+				return DSVHeapSlotAllocator.get();
+				break;
+
+			default:
+				return nullptr;
 			}
-			if (FAILED(buffer.buffer->Map(0, &CD3DX12_RANGE{ 0, 0 }, reinterpret_cast<void**>(&buffer.cpuAddress)))) {
-				throw std::runtime_error("Failed to map GPU upload buffer to host address space");
-			}
-			buffer.gpuAddress = buffer.buffer->GetGPUVirtualAddress();
-			return buffer;
 		}
+
+		//UploadBuffer D3D12Context::createUploadBuffer(UINT capacity) const
+		//{
+		//	UploadBuffer buffer;
+		//	buffer.cursor = 0;
+		//	buffer.capacity = capacity;
+
+		//	if (FAILED(m_device->CreateCommittedResource(
+		//		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		//		D3D12_HEAP_FLAG_NONE,
+		//		&CD3DX12_RESOURCE_DESC::Buffer(capacity),
+		//		D3D12_RESOURCE_STATE_GENERIC_READ,
+		//		nullptr,
+		//		IID_PPV_ARGS(&buffer.buffer))))
+		//	{
+		//		throw std::runtime_error("Failed to create GPU upload buffer");
+		//	}
+		//	if (FAILED(buffer.buffer->Map(0, &CD3DX12_RANGE{ 0, 0 }, reinterpret_cast<void**>(&buffer.cpuAddress)))) {
+		//		throw std::runtime_error("Failed to map GPU upload buffer to host address space");
+		//	}
+		//	buffer.gpuAddress = buffer.buffer->GetGPUVirtualAddress();
+		//	return buffer;
+		//}
 
 		ComPtr<ID3DBlob> D3D12Context::compileShader(const std::string& filename, const std::string& entryPoint, const std::string& profile)
 		{
@@ -251,80 +287,137 @@ namespace filament
 			return heap;
 		}
 
-		FrameBuffer D3D12Context::createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat)
+		//FrameBuffer D3D12Context::createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat)
+		//{
+		//	FrameBuffer fb = {};
+		//	fb.width = width;
+		//	fb.height = height;
+		//	fb.samples = samples;
+
+		//	D3D12_RESOURCE_DESC desc = {};
+		//	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		//	desc.Width = width;
+		//	desc.Height = height;
+		//	desc.DepthOrArraySize = 1;
+		//	desc.MipLevels = 1;
+		//	desc.SampleDesc.Count = samples;
+
+		//	if (colorFormat != DXGI_FORMAT_UNKNOWN) {
+		//		desc.Format = colorFormat;
+		//		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+		//		const float optimizedClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		//		if (FAILED(m_device->CreateCommittedResource(
+		//			&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+		//			D3D12_HEAP_FLAG_NONE,
+		//			&desc,
+		//			D3D12_RESOURCE_STATE_RENDER_TARGET,
+		//			&CD3DX12_CLEAR_VALUE{ colorFormat, optimizedClearColor },
+		//			IID_PPV_ARGS(&fb.colorTexture))))
+		//		{
+		//			throw std::runtime_error("Failed to create FrameBuffer color texture");
+		//		}
+
+		//		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+		//		rtvDesc.Format = desc.Format;
+		//		rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
+
+		//		fb.rtv = m_descHeapRTV.alloc();
+		//		m_device->CreateRenderTargetView(fb.colorTexture.Get(), &rtvDesc, fb.rtv.cpuHandle);
+
+		//		if (samples <= 1) {
+		//			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		//			srvDesc.Format = desc.Format;
+		//			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		//			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		//			srvDesc.Texture2D.MostDetailedMip = 0;
+		//			srvDesc.Texture2D.MipLevels = 1;
+
+		//			fb.srv = m_descHeapCBV_SRV_UAV.alloc();
+		//			m_device->CreateShaderResourceView(fb.colorTexture.Get(), &srvDesc, fb.srv.cpuHandle);
+		//		}
+		//	}
+
+		//	if (depthstencilFormat != DXGI_FORMAT_UNKNOWN) {
+		//		desc.Format = depthstencilFormat;
+		//		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+		//		if (FAILED(m_device->CreateCommittedResource(
+		//			&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+		//			D3D12_HEAP_FLAG_NONE,
+		//			&desc,
+		//			D3D12_RESOURCE_STATE_DEPTH_WRITE,
+		//			&CD3DX12_CLEAR_VALUE{ depthstencilFormat, 1.0f, 0 },
+		//			IID_PPV_ARGS(&fb.depthStencilTexture))))
+		//		{
+		//			throw std::runtime_error("Failed to create FrameBuffer depth-stencil texture");
+		//		}
+
+		//		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+		//		dsvDesc.Format = desc.Format;
+		//		dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+
+		//		fb.dsv = m_descHeapDSV.alloc();
+		//		m_device->CreateDepthStencilView(fb.depthStencilTexture.Get(), &dsvDesc, fb.dsv.cpuHandle);
+		//	}
+		//	return fb;
+		//}
+
+		void D3D12Context::TransitionResource(TD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter)
 		{
-			FrameBuffer fb = {};
-			fb.width = width;
-			fb.height = height;
-			fb.samples = samples;
+			D3D12_RESOURCE_STATES StateBefore = Resource->CurrentState;
 
-			D3D12_RESOURCE_DESC desc = {};
-			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			desc.Width = width;
-			desc.Height = height;
-			desc.DepthOrArraySize = 1;
-			desc.MipLevels = 1;
-			desc.SampleDesc.Count = samples;
+			if (StateBefore != StateAfter)
+			{
+				m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(Resource->D3DResource.Get(), StateBefore, StateAfter));
 
-			if (colorFormat != DXGI_FORMAT_UNKNOWN) {
-				desc.Format = colorFormat;
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-				const float optimizedClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				if (FAILED(m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_RENDER_TARGET,
-					&CD3DX12_CLEAR_VALUE{ colorFormat, optimizedClearColor },
-					IID_PPV_ARGS(&fb.colorTexture))))
-				{
-					throw std::runtime_error("Failed to create FrameBuffer color texture");
-				}
-
-				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-				rtvDesc.Format = desc.Format;
-				rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
-
-				fb.rtv = m_descHeapRTV.alloc();
-				m_device->CreateRenderTargetView(fb.colorTexture.Get(), &rtvDesc, fb.rtv.cpuHandle);
-
-				if (samples <= 1) {
-					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-					srvDesc.Format = desc.Format;
-					srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-					srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-					srvDesc.Texture2D.MostDetailedMip = 0;
-					srvDesc.Texture2D.MipLevels = 1;
-
-					fb.srv = m_descHeapCBV_SRV_UAV.alloc();
-					m_device->CreateShaderResourceView(fb.colorTexture.Get(), &srvDesc, fb.srv.cpuHandle);
-				}
+				Resource->CurrentState = StateAfter;
 			}
+		}
 
-			if (depthstencilFormat != DXGI_FORMAT_UNKNOWN) {
-				desc.Format = depthstencilFormat;
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		void D3D12Context::CopyResource(TD3D12Resource* DstResource, TD3D12Resource* SrcResource)
+		{
+			m_commandList->CopyResource(DstResource->D3DResource.Get(), SrcResource->D3DResource.Get());
+		}
 
-				if (FAILED(m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_DEPTH_WRITE,
-					&CD3DX12_CLEAR_VALUE{ depthstencilFormat, 1.0f, 0 },
-					IID_PPV_ARGS(&fb.depthStencilTexture))))
-				{
-					throw std::runtime_error("Failed to create FrameBuffer depth-stencil texture");
-				}
+		void D3D12Context::CopyBufferRegion(TD3D12Resource* DstResource, UINT64 DstOffset, TD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size)
+		{
+			m_commandList->CopyBufferRegion(DstResource->D3DResource.Get(), DstOffset, SrcResource->D3DResource.Get(), SrcOffset, Size);
+		}
 
-				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-				dsvDesc.Format = desc.Format;
-				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+		void D3D12Context::CopyTextureRegion(const D3D12_TEXTURE_COPY_LOCATION* Dst, UINT DstX, UINT DstY, UINT DstZ, const D3D12_TEXTURE_COPY_LOCATION* Src, const D3D12_BOX* SrcBox)
+		{
+			m_commandList->CopyTextureRegion(Dst, DstX, DstY, DstZ, Src, SrcBox);
+		}
 
-				fb.dsv = m_descHeapDSV.alloc();
-				m_device->CreateDepthStencilView(fb.depthStencilTexture.Get(), &dsvDesc, fb.dsv.cpuHandle);
-			}
-			return fb;
+		void D3D12Context::SetVertexBuffer(const TD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size)
+		{
+			// Transition resource state
+			const TD3D12ResourceLocation& ResourceLocation = VertexBuffer->ResourceLocation;
+			TD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
+			TransitionResource(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+			// Set vertex buffer
+			D3D12_VERTEX_BUFFER_VIEW VBV;
+			VBV.BufferLocation = ResourceLocation.GPUVirtualAddress + Offset;
+			VBV.StrideInBytes = Stride;
+			VBV.SizeInBytes = Size;
+			m_commandList->IASetVertexBuffers(0, 1, &VBV);
+		}
+
+		void D3D12Context::SetIndexBuffer(const TD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size)
+		{
+			// Transition resource state
+			const TD3D12ResourceLocation& ResourceLocation = IndexBuffer->ResourceLocation;
+			TD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
+			TransitionResource(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+			// Set vertex buffer
+			D3D12_INDEX_BUFFER_VIEW IBV;
+			IBV.BufferLocation = ResourceLocation.GPUVirtualAddress + Offset;
+			IBV.Format = Format;
+			IBV.SizeInBytes = Size;
+			m_commandList->IASetIndexBuffer(&IBV);
 		}
 
 		D3D12Context::~D3D12Context()
@@ -332,9 +425,127 @@ namespace filament
 
 		}
 
-		void D3D12Context::SetState(const backend::PipelineState& ps)
+		void D3D12Context::SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc)
 		{
+			auto rs = rasterizer_states.find(ps.rasterState.u);
+			if (rs == rasterizer_states.end())
+			{
+				D3D12_RASTERIZER_DESC raster_desc = { };
+				raster_desc.FillMode = D3D12_FILL_MODE_SOLID;
+				raster_desc.FrontCounterClockwise = !ps.rasterState.inverseFrontFaces;
+				raster_desc.DepthClipEnable = TRUE;
+				//raster_desc.ScissorEnable = TRUE;
 
+				switch (ps.rasterState.culling)
+				{
+				case CullingMode::NONE:
+					raster_desc.CullMode = D3D12_CULL_MODE_NONE;
+					break;
+				case CullingMode::FRONT:
+					raster_desc.CullMode = D3D12_CULL_MODE_FRONT;
+					break;
+				case CullingMode::BACK:
+					raster_desc.CullMode = D3D12_CULL_MODE_BACK;
+					break;
+				default:
+					assert(false);
+					break;
+				}
+
+				//ID3D11RasterizerState* raster = nullptr;
+				//HRESULT hr = device->CreateRasterizerState(&raster_desc, &raster);
+				//assert(SUCCEEDED(hr));
+
+				auto get_blend_func = [](BlendFunction func) {
+					switch (func)
+					{
+					case BlendFunction::ZERO: return D3D12_BLEND_ZERO;
+					case BlendFunction::ONE: return D3D12_BLEND_ONE;
+					case BlendFunction::SRC_COLOR: return D3D12_BLEND_SRC_COLOR;
+					case BlendFunction::ONE_MINUS_SRC_COLOR: return D3D12_BLEND_INV_SRC_COLOR;
+					case BlendFunction::DST_COLOR: return D3D12_BLEND_DEST_COLOR;
+					case BlendFunction::ONE_MINUS_DST_COLOR: return D3D12_BLEND_INV_DEST_COLOR;
+					case BlendFunction::SRC_ALPHA: return D3D12_BLEND_SRC_ALPHA;
+					case BlendFunction::ONE_MINUS_SRC_ALPHA: return D3D12_BLEND_INV_SRC_ALPHA;
+					case BlendFunction::DST_ALPHA: return D3D12_BLEND_DEST_ALPHA;
+					case BlendFunction::ONE_MINUS_DST_ALPHA: return D3D12_BLEND_INV_DEST_ALPHA;
+					case BlendFunction::SRC_ALPHA_SATURATE: return D3D12_BLEND_SRC_ALPHA_SAT;
+					default: assert(false);
+					}
+					return D3D12_BLEND_ZERO;
+				};
+				auto get_blend_op = [](BlendEquation op) {
+					switch (op)
+					{
+					case BlendEquation::ADD: return D3D12_BLEND_OP_ADD;
+					case BlendEquation::SUBTRACT: return D3D12_BLEND_OP_SUBTRACT;
+					case BlendEquation::REVERSE_SUBTRACT: return D3D12_BLEND_OP_REV_SUBTRACT;
+					case BlendEquation::MIN: return D3D12_BLEND_OP_MIN;
+					case BlendEquation::MAX: return D3D12_BLEND_OP_MAX;
+					default: assert(false);
+					}
+					return D3D12_BLEND_OP_ADD;
+				};
+
+				D3D12_BLEND_DESC blend_desc = { };
+				blend_desc.AlphaToCoverageEnable = ps.rasterState.alphaToCoverage;
+				for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+				{
+					auto& target = blend_desc.RenderTarget[i];
+					target.BlendEnable = ps.rasterState.hasBlending();
+					target.SrcBlend = get_blend_func(ps.rasterState.blendFunctionSrcRGB);
+					target.DestBlend = get_blend_func(ps.rasterState.blendFunctionDstRGB);
+					target.SrcBlendAlpha = get_blend_func(ps.rasterState.blendFunctionSrcAlpha);
+					target.DestBlendAlpha = get_blend_func(ps.rasterState.blendFunctionDstAlpha);
+					target.BlendOp = get_blend_op(ps.rasterState.blendEquationRGB);
+					target.BlendOpAlpha = get_blend_op(ps.rasterState.blendEquationAlpha);
+					target.RenderTargetWriteMask = ps.rasterState.colorWrite ? D3D12_COLOR_WRITE_ENABLE_ALL : 0;
+				}
+
+				//ID3D11BlendState* blend = nullptr;
+				//hr = device->CreateBlendState(&blend_desc, &blend);
+				//assert(SUCCEEDED(hr));
+
+				auto get_depth_func = [](SamplerCompareFunc func) {
+					switch (func)
+					{
+					case SamplerCompareFunc::LE: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+					case SamplerCompareFunc::GE: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+					case SamplerCompareFunc::L: return D3D12_COMPARISON_FUNC_LESS;
+					case SamplerCompareFunc::G: return D3D12_COMPARISON_FUNC_GREATER;
+					case SamplerCompareFunc::E: return D3D12_COMPARISON_FUNC_EQUAL;
+					case SamplerCompareFunc::NE: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+					case SamplerCompareFunc::A: return D3D12_COMPARISON_FUNC_ALWAYS;
+					case SamplerCompareFunc::N: return D3D12_COMPARISON_FUNC_NEVER;
+					default: assert(false);
+					}
+					return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+				};
+
+				D3D12_DEPTH_STENCIL_DESC depth_desc = { };
+				depth_desc.DepthEnable = TRUE;
+				depth_desc.DepthWriteMask = ps.rasterState.depthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+				depth_desc.DepthFunc = get_depth_func(ps.rasterState.depthFunc);
+
+				//ID3D11DepthStencilState* depth = nullptr;
+				//hr = device->CreateDepthStencilState(&depth_desc, &depth);
+				//assert(SUCCEEDED(hr));
+
+				D3D12Context::RenderState state;
+				state.raster = raster_desc;
+				state.blend = blend_desc;
+				state.depth = depth_desc;
+				rasterizer_states.insert({ ps.rasterState.u, state });
+
+				rs = rasterizer_states.find(ps.rasterState.u);
+			}
+			psoDesc.RasterizerState = rs->second.raster;
+			psoDesc.BlendState = rs->second.blend;
+			psoDesc.DepthStencilState = rs->second.depth;
+
+			//context->RSSetState(rs->second.raster);
+			//context->OMSetBlendState(rs->second.blend, nullptr, D3D11_DEFAULT_SAMPLE_MASK);
+			//context->OMSetDepthStencilState(rs->second.depth, D3D11_DEFAULT_STENCIL_REFERENCE);
 		}
 
 		DXGI_FORMAT D3D12Context::GetTextureFormat(TextureFormat format)

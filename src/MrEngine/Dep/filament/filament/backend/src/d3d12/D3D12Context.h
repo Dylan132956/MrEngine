@@ -22,6 +22,9 @@
 #include <dxgi1_4.h>
 #include "d3dx12.h"
 #include <wrl.h>
+#include "D3D12MemoryAllocator.h"
+#include "D3D12HeapSlotAllocator.h"
+#include "D3D12Buffer.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -117,12 +120,6 @@ struct FrameBuffer
 	UINT samples;
 };
 
-struct SwapChainBuffer
-{
-	ComPtr<ID3D12Resource> buffer;
-	Descriptor rtv;
-};
-
 struct ConstantBufferView
 {
 	UploadBufferRegion data;
@@ -147,8 +144,16 @@ namespace filament
 {
 	namespace backend
 	{
+		struct SwapChainBuffer
+		{
+			ComPtr<ID3D12Resource> buffer;
+			std::unique_ptr<TD3D12RenderTargetView> RTV;
+			//Descriptor rtv;
+		};
+
 		struct D3D12SwapChain;
 		struct D3D12RenderTarget;
+		class TD3D12DescriptorCache;
 
 		class D3D12Context
 		{
@@ -157,21 +162,44 @@ namespace filament
 			~D3D12Context();
 			ComPtr<IDXGIAdapter1> getAdapter(const ComPtr<IDXGIFactory4>& factory);
 			DescriptorHeap createDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_DESC& desc) const;
-			FrameBuffer createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat);
+			//FrameBuffer createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat);
 			void executeCommandList(bool reset=true) const;
 			void waitForGPU() const;
-			void SetState(const backend::PipelineState& ps);
+			void SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc);
 			DXGI_FORMAT GetTextureFormat(TextureFormat format);
 			DXGI_FORMAT GetTextureViewFormat(TextureFormat format);
 			DXGI_FORMAT GetDepthViewFormat(TextureFormat format);
 			ComPtr<ID3D12RootSignature> createRootSignature(D3D12_VERSIONED_ROOT_SIGNATURE_DESC& desc) const;
 			ComPtr<ID3DBlob> compileShader(const std::string& filename, const std::string& entryPoint, const std::string& profile);
-			UploadBuffer createUploadBuffer(UINT capacity) const;
-			UploadBufferRegion allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const;
+			//UploadBuffer createUploadBuffer(UINT capacity) const;
+			//UploadBufferRegion allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const;
+			void SetVertexBuffer(const TD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size);
+
+			void SetIndexBuffer(const TD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size);
+
+			void TransitionResource(TD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter);
+
+			void CopyResource(TD3D12Resource* DstResource, TD3D12Resource* SrcResource);
+
+			void CopyBufferRegion(TD3D12Resource* DstResource, UINT64 DstOffset, TD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size);
+
+			void CopyTextureRegion(const D3D12_TEXTURE_COPY_LOCATION* Dst, UINT DstX, UINT DstY, UINT DstZ, const D3D12_TEXTURE_COPY_LOCATION* Src, const D3D12_BOX* SrcBox);
+
+			TD3D12UploadBufferAllocator* GetUploadBufferAllocator() { return UploadBufferAllocator.get(); }
+
+			TD3D12DefaultBufferAllocator* GetDefaultBufferAllocator() { return DefaultBufferAllocator.get(); }
+
+			TD3D3TextureResourceAllocator* GetTextureResourceAllocator() { return TextureResourceAllocator.get(); }
+
+			TD3D12HeapSlotAllocator* GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
+
+			TD3D12DescriptorCache* GetDescriptorCache() { return DescriptorCache.get(); }
 
 			struct UniformBufferBinding
 			{
-				Descriptor cbv;
+				TD3D12ConstantBufferRef ConstantBufferRef;
+				//UploadBufferRegion updata;
+				//Descriptor cbv;
 				size_t offset = 0;
 				size_t size = 0;
 			};
@@ -183,7 +211,9 @@ namespace filament
 
 			struct RenderState
 			{
-
+				D3D12_RASTERIZER_DESC raster;
+				D3D12_BLEND_DESC blend;
+				D3D12_DEPTH_STENCIL_DESC depth;
 			};
 
 			struct {
@@ -199,13 +229,6 @@ namespace filament
 			ComPtr<ID3D12CommandQueue> m_commandQueue;
 			ComPtr<IDXGISwapChain3> m_swapChain;
 			ComPtr<ID3D12GraphicsCommandList> m_commandList;
-
-			DescriptorHeap m_descHeapRTV;
-			DescriptorHeap m_descHeapDSV;
-			DescriptorHeap m_descHeapCBV_SRV_UAV;
-
-			UploadBuffer m_constantBuffer;
-
 			static const UINT NumFrames = 2;
 			ComPtr<ID3D12CommandAllocator> m_commandAllocators[NumFrames];
 			FrameBuffer m_framebuffers[NumFrames];
@@ -228,6 +251,21 @@ namespace filament
 			std::array<UniformBufferBinding, CONFIG_UNIFORM_BINDING_COUNT> uniform_buffer_bindings;
 			std::array<SamplerGroupBinding, CONFIG_SAMPLER_BINDING_COUNT> sampler_group_binding;
 			std::unordered_map<uint32_t, RenderState> rasterizer_states;
+
+		private:
+			std::unique_ptr<TD3D12UploadBufferAllocator> UploadBufferAllocator = nullptr;
+
+			std::unique_ptr<TD3D12DefaultBufferAllocator> DefaultBufferAllocator = nullptr;
+
+			std::unique_ptr<TD3D3TextureResourceAllocator> TextureResourceAllocator = nullptr;
+
+			std::unique_ptr<TD3D12HeapSlotAllocator> RTVHeapSlotAllocator = nullptr;
+
+			std::unique_ptr<TD3D12HeapSlotAllocator> DSVHeapSlotAllocator = nullptr;
+
+			std::unique_ptr<TD3D12HeapSlotAllocator> SRVHeapSlotAllocator = nullptr;
+
+			std::unique_ptr<TD3D12DescriptorCache> DescriptorCache = nullptr;
 		};
 	}
 }

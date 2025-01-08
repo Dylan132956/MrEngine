@@ -29,9 +29,9 @@ namespace filament
 			window_width = rect.right - rect.left;
 			window_height = rect.bottom - rect.top;
 			// Create per-frame resources.
-			context->m_descHeapRTV.numDescriptorsAllocated = 0;
-			context->m_descHeapDSV.numDescriptorsAllocated = 0;
-			context->m_descHeapCBV_SRV_UAV.numDescriptorsAllocated = 0;
+			//context->m_descHeapRTV.numDescriptorsAllocated = 0;
+			//context->m_descHeapDSV.numDescriptorsAllocated = 0;
+			//context->m_descHeapCBV_SRV_UAV.numDescriptorsAllocated = 0;
 			{
 				DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 				swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -55,8 +55,14 @@ namespace filament
 					throw std::runtime_error("Failed to retrieve swap chain back buffer");
 				}
 
-				m_backbuffers[frameIndex].rtv = context->m_descHeapRTV.alloc();
-				context->m_device->CreateRenderTargetView(m_backbuffers[frameIndex].buffer.Get(), nullptr, m_backbuffers[frameIndex].rtv.cpuHandle);
+				//m_backbuffers[frameIndex].rtv = context->m_descHeapRTV.alloc();
+				D3D12_RENDER_TARGET_VIEW_DESC RtvDesc = {};
+				RtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+				RtvDesc.Texture2D.MipSlice = 0;
+				RtvDesc.Texture2D.PlaneSlice = 0;
+				RtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				m_backbuffers[frameIndex].RTV = std::make_unique<TD3D12RenderTargetView>(context, RtvDesc, m_backbuffers[frameIndex].buffer.Get());
+				//context->m_device->CreateRenderTargetView(m_backbuffers[frameIndex].buffer.Get(), nullptr, m_backbuffers[frameIndex].rtv.cpuHandle);
 
 				//context->m_framebuffers[frameIndex] = context->createFrameBuffer(window_width, window_height, samples, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT);
 				//if (samples > 1) {
@@ -126,8 +132,9 @@ namespace filament
 				dsvDesc.Format = desc.Format;
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 
-				dsv = context->m_descHeapDSV.alloc();
-				context->m_device->CreateDepthStencilView(depthStencilTexture.Get(), &dsvDesc, dsv.cpuHandle);
+				DSV = std::make_unique<TD3D12DepthStencilView>(context, dsvDesc, depthStencilTexture.Get());
+				//dsv = context->m_descHeapDSV.alloc();
+				//context->m_device->CreateDepthStencilView(depthStencilTexture.Get(), &dsvDesc, dsv.cpuHandle);
 			}
 		}
 
@@ -326,7 +333,7 @@ namespace filament
 			info = std::move(program);
 		}
 
-		ComPtr<ID3D12PipelineState> D3D12Program::GetPSO(D3D12Context* context)
+		ComPtr<ID3D12PipelineState> D3D12Program::GetPSO(D3D12Context* context, const backend::PipelineState& ps)
 		{
 			if (m_PipelineState == nullptr) {
 				UINT total_size = vert_cbv.size() + vert_srv.size() + frag_cbv.size() + frag_srv.size();
@@ -339,16 +346,17 @@ namespace filament
 				for (size_t i = 0; i < vert_cbv.size(); ++i)
 				{
 					D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_cbv[i];
-					CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
-					descriptorRanges[index] = descriptor;
-					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
+					//CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
+					//descriptorRanges[index] = descriptor;
+					//rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
+					rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_VERTEX);
 					vert_cbv_map[bind_desc.BindPoint] = index;
 					index++;
 				}
 				for (size_t i = 0; i < vert_srv.size(); ++i)
 				{
 					D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_srv[i];
-					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
+					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
 					descriptorRanges[index] = descriptor;
 					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
 					vert_srv_map[bind_desc.BindPoint] = index;
@@ -358,16 +366,17 @@ namespace filament
 				for (size_t i = 0; i < frag_cbv.size(); ++i)
 				{
 					D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_cbv[i];
-					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
-					descriptorRanges[index] = descriptor;
-					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
+					//const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
+					//descriptorRanges[index] = descriptor;
+					//rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
+					rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
 					frag_cbv_map[bind_desc.BindPoint] = index;
 					index++;
 				}
 				for (size_t i = 0; i < frag_srv.size(); ++i)
 				{
 					D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_srv[i];
-					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
+					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
 					descriptorRanges[index] = descriptor;
 					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
 					frag_srv_map[bind_desc.BindPoint] = index;
@@ -405,10 +414,7 @@ namespace filament
 				psoDesc.InputLayout = { meshInputLayout.data(), (UINT)meshInputLayout.size() };
 				psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertex_binary);
 				psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixel_binary);
-				psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-				psoDesc.RasterizerState.FrontCounterClockwise = true;
-				psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-				psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+				context->SetState(ps, psoDesc);
 				psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 				psoDesc.NumRenderTargets = 1;
 				psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -433,13 +439,9 @@ namespace filament
 			size(size),
 			usage(usage)
 		{
-			updata = context->allocFromUploadBuffer(context->m_constantBuffer, size, 256);
-			cbv = context->m_descHeapCBV_SRV_UAV.alloc();
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC desc = {};
-			desc.BufferLocation = updata.gpuAddress;
-			desc.SizeInBytes = updata.size;
-			context->m_device->CreateConstantBufferView(&desc, cbv.cpuHandle);
+			cb = std::make_shared<TD3D12ConstantBuffer>();
+			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
+			UploadBufferAllocator->AllocUploadResource(size, UPLOAD_RESOURCE_ALIGNMENT, cb->ResourceLocation);
 		}
 
 		D3D12UniformBuffer::~D3D12UniformBuffer()
@@ -450,7 +452,7 @@ namespace filament
 		void D3D12UniformBuffer::Load(D3D12Context* context, const BufferDescriptor& data)
 		{
 			if (data.buffer) {
-				std::memcpy(updata.cpuAddress, data.buffer, data.size);
+				std::memcpy(cb->ResourceLocation.MappedAddress, data.buffer, data.size);
 			}
 		}
 
@@ -497,7 +499,6 @@ namespace filament
 
 			if (data) {
 				assert(resourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_TEXTURE3D);
-
 				void* bufferMemory;
 				if (FAILED(stagingBuffer.buffer->Map(0, &CD3DX12_RANGE{ 0, 0 }, &bufferMemory))) {
 					throw std::runtime_error("Failed to map GPU staging buffer to host address space");
@@ -529,8 +530,6 @@ namespace filament
 			const UINT effectiveMipLevels = (mipLevels > 0) ? mipLevels : (desc.MipLevels - mostDetailedMip);
 			assert(!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
 
-			srv = context->m_descHeapCBV_SRV_UAV.alloc();
-
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Format = desc.Format;
 			srvDesc.ViewDimension = dimension;
@@ -554,15 +553,13 @@ namespace filament
 			default:
 				assert(0);
 			}
-			context->m_device->CreateShaderResourceView(texture.Get(), &srvDesc, srv.cpuHandle);
+			SRV = std::make_unique<TD3D12ShaderResourceView>(context, srvDesc, texture.Get());
 		}
 
 		void D3D12Texture::createTextureUAV(D3D12Context* context, UINT mipSlice)
 		{
 			const D3D12_RESOURCE_DESC desc = texture->GetDesc();
 			assert(desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-
-			uav = context->m_descHeapCBV_SRV_UAV.alloc();
 
 			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 			uavDesc.Format = desc.Format;
@@ -576,7 +573,7 @@ namespace filament
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 				uavDesc.Texture2D.MipSlice = mipSlice;
 			}
-			context->m_device->CreateUnorderedAccessView(texture.Get(), nullptr, &uavDesc, uav.cpuHandle);
+			UAV = std::make_unique<TD3D12UnorderedAccessView>(context, uavDesc, texture.Get());
 		}
 
 		void D3D12Texture::CreateDepth(D3D12Context* context, DXGI_FORMAT format, uint32_t samples, uint32_t width, uint32_t height)
@@ -606,9 +603,8 @@ namespace filament
 				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 				dsvDesc.Format = desc.Format;
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
-
-				dsv = context->m_descHeapDSV.alloc();
-				context->m_device->CreateDepthStencilView(texture.Get(), &dsvDesc, dsv.cpuHandle);
+				
+				DSV = std::make_unique<TD3D12DepthStencilView>(context, dsvDesc, texture.Get());
 			}
 		}
 
@@ -751,113 +747,113 @@ namespace filament
 
 		void D3D12Texture::GenerateMipmaps(D3D12Context* context)
 		{
-			assert(width == height);
-			assert(Utility::isPowerOfTwo(width));
+			//assert(width == height);
+			//assert(Utility::isPowerOfTwo(width));
 
-			if (!context->m_mipmapGeneration.rootSignature) {
-				const CD3DX12_DESCRIPTOR_RANGE1 descriptorRanges[] = {
-					{D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE},
-					{D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE},
-				};
-				CD3DX12_ROOT_PARAMETER1 rootParameters[2];
-				rootParameters[0].InitAsDescriptorTable(1, &descriptorRanges[0]);
-				rootParameters[1].InitAsDescriptorTable(1, &descriptorRanges[1]);
+			//if (!context->m_mipmapGeneration.rootSignature) {
+			//	const CD3DX12_DESCRIPTOR_RANGE1 descriptorRanges[] = {
+			//		{D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE},
+			//		{D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE},
+			//	};
+			//	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
+			//	rootParameters[0].InitAsDescriptorTable(1, &descriptorRanges[0]);
+			//	rootParameters[1].InitAsDescriptorTable(1, &descriptorRanges[1]);
 
-				CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-				rootSignatureDesc.Init_1_1(2, rootParameters);
-				context->m_mipmapGeneration.rootSignature = context->createRootSignature(rootSignatureDesc);
-			}
+			//	CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+			//	rootSignatureDesc.Init_1_1(2, rootParameters);
+			//	context->m_mipmapGeneration.rootSignature = context->createRootSignature(rootSignatureDesc);
+			//}
 
-			ID3D12PipelineState* pipelineState = nullptr;
+			//ID3D12PipelineState* pipelineState = nullptr;
 
-			const D3D12_RESOURCE_DESC desc = texture->GetDesc();
-			if (desc.DepthOrArraySize == 1 && desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
-				if (!context->m_mipmapGeneration.gammaTexturePipelineState) {
-					ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample.hlsl", "downsample_gamma", "cs_5_0");
-					D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
-					psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
-					psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
-					if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.gammaTexturePipelineState)))) {
-						throw std::runtime_error("Failed to create compute pipeline state (gamma correct downsample filter)");
-					}
-				}
-				pipelineState = context->m_mipmapGeneration.gammaTexturePipelineState.Get();
-			}
-			else if (desc.DepthOrArraySize > 1 && desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
-				if (!context->m_mipmapGeneration.arrayTexturePipelineState) {
-					ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample_array.hlsl", "downsample_linear", "cs_5_0");
-					D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
-					psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
-					psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
-					if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.arrayTexturePipelineState)))) {
-						throw std::runtime_error("Failed to create compute pipeline state (array downsample filter)");
-					}
-				}
-				pipelineState = context->m_mipmapGeneration.arrayTexturePipelineState.Get();
-			}
-			else {
-				assert(desc.DepthOrArraySize == 1);
-				if (!context->m_mipmapGeneration.linearTexturePipelineState) {
-					ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample.hlsl", "downsample_linear", "cs_5_0");
-					D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
-					psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
-					psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
-					if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.linearTexturePipelineState)))) {
-						throw std::runtime_error("Failed to create compute pipeline state (linear downsample filter)");
-					}
-				}
-				pipelineState = context->m_mipmapGeneration.linearTexturePipelineState.Get();
-			}
+			//const D3D12_RESOURCE_DESC desc = texture->GetDesc();
+			//if (desc.DepthOrArraySize == 1 && desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
+			//	if (!context->m_mipmapGeneration.gammaTexturePipelineState) {
+			//		ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample.hlsl", "downsample_gamma", "cs_5_0");
+			//		D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+			//		psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
+			//		psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
+			//		if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.gammaTexturePipelineState)))) {
+			//			throw std::runtime_error("Failed to create compute pipeline state (gamma correct downsample filter)");
+			//		}
+			//	}
+			//	pipelineState = context->m_mipmapGeneration.gammaTexturePipelineState.Get();
+			//}
+			//else if (desc.DepthOrArraySize > 1 && desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
+			//	if (!context->m_mipmapGeneration.arrayTexturePipelineState) {
+			//		ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample_array.hlsl", "downsample_linear", "cs_5_0");
+			//		D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+			//		psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
+			//		psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
+			//		if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.arrayTexturePipelineState)))) {
+			//			throw std::runtime_error("Failed to create compute pipeline state (array downsample filter)");
+			//		}
+			//	}
+			//	pipelineState = context->m_mipmapGeneration.arrayTexturePipelineState.Get();
+			//}
+			//else {
+			//	assert(desc.DepthOrArraySize == 1);
+			//	if (!context->m_mipmapGeneration.linearTexturePipelineState) {
+			//		ComPtr<ID3DBlob> computeShader = context->compileShader("shaders/hlsl/downsample.hlsl", "downsample_linear", "cs_5_0");
+			//		D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
+			//		psoDesc.pRootSignature = context->m_mipmapGeneration.rootSignature.Get();
+			//		psoDesc.CS = CD3DX12_SHADER_BYTECODE(computeShader.Get());
+			//		if (FAILED(context->m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&context->m_mipmapGeneration.linearTexturePipelineState)))) {
+			//			throw std::runtime_error("Failed to create compute pipeline state (linear downsample filter)");
+			//		}
+			//	}
+			//	pipelineState = context->m_mipmapGeneration.linearTexturePipelineState.Get();
+			//}
 
-			DescriptorHeapMark mark(context->m_descHeapCBV_SRV_UAV);
+			//DescriptorHeapMark mark(context->m_descHeapCBV_SRV_UAV);
 
-			D3D12Texture linearTexture = *this;
-			if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
-				pipelineState = context->m_mipmapGeneration.gammaTexturePipelineState.Get();
-				D3D12Texture lt(context, filament::backend::SamplerType::SAMPLER_2D, 1, filament::backend::TextureFormat::RGBA8, levels, width, height, 1, (filament::backend::TextureUsage)0);
-				linearTexture = lt;
+			//D3D12Texture linearTexture = *this;
+			//if (desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB) {
+			//	pipelineState = context->m_mipmapGeneration.gammaTexturePipelineState.Get();
+			//	D3D12Texture lt(context, filament::backend::SamplerType::SAMPLER_2D, 1, filament::backend::TextureFormat::RGBA8, levels, width, height, 1, (filament::backend::TextureUsage)0);
+			//	linearTexture = lt;
 
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
-				context->m_commandList->CopyResource(linearTexture.texture.Get(), texture.Get());
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
-			}
+			//	context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+			//	context->m_commandList->CopyResource(linearTexture.texture.Get(), texture.Get());
+			//	context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
+			//}
 
-			ID3D12DescriptorHeap* descriptorHeaps[] = {
-				context->m_descHeapCBV_SRV_UAV.heap.Get()
-			};
+			//ID3D12DescriptorHeap* descriptorHeaps[] = {
+			//	context->m_descHeapCBV_SRV_UAV.heap.Get()
+			//};
 
-			context->m_commandList->SetComputeRootSignature(context->m_mipmapGeneration.rootSignature.Get());
-			context->m_commandList->SetDescriptorHeaps(1, descriptorHeaps);
-			context->m_commandList->SetPipelineState(pipelineState);
+			//context->m_commandList->SetComputeRootSignature(context->m_mipmapGeneration.rootSignature.Get());
+			//context->m_commandList->SetDescriptorHeaps(1, descriptorHeaps);
+			//context->m_commandList->SetPipelineState(pipelineState);
 
 
-			std::vector<CD3DX12_RESOURCE_BARRIER> preDispatchBarriers{ desc.DepthOrArraySize };
-			std::vector<CD3DX12_RESOURCE_BARRIER> postDispatchBarriers{ desc.DepthOrArraySize };
-			for (UINT level = 1, levelWidth = width / 2, levelHeight = height / 2; level < levels; ++level, levelWidth /= 2, levelHeight /= 2) {
-				linearTexture.createTextureSRV(context, desc.DepthOrArraySize > 1 ? D3D12_SRV_DIMENSION_TEXTURE2DARRAY : D3D12_SRV_DIMENSION_TEXTURE2D, level - 1, 1);
-				linearTexture.createTextureUAV(context, level);
+			//std::vector<CD3DX12_RESOURCE_BARRIER> preDispatchBarriers{ desc.DepthOrArraySize };
+			//std::vector<CD3DX12_RESOURCE_BARRIER> postDispatchBarriers{ desc.DepthOrArraySize };
+			//for (UINT level = 1, levelWidth = width / 2, levelHeight = height / 2; level < levels; ++level, levelWidth /= 2, levelHeight /= 2) {
+			//	linearTexture.createTextureSRV(context, desc.DepthOrArraySize > 1 ? D3D12_SRV_DIMENSION_TEXTURE2DARRAY : D3D12_SRV_DIMENSION_TEXTURE2D, level - 1, 1);
+			//	linearTexture.createTextureUAV(context, level);
 
-				for (UINT arraySlice = 0; arraySlice < desc.DepthOrArraySize; ++arraySlice) {
-					const UINT subresourceIndex = D3D12CalcSubresource(level, arraySlice, 0, levels, desc.DepthOrArraySize);
-					preDispatchBarriers[arraySlice] = CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, subresourceIndex);
-					postDispatchBarriers[arraySlice] = CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, subresourceIndex);
-				}
+			//	for (UINT arraySlice = 0; arraySlice < desc.DepthOrArraySize; ++arraySlice) {
+			//		const UINT subresourceIndex = D3D12CalcSubresource(level, arraySlice, 0, levels, desc.DepthOrArraySize);
+			//		preDispatchBarriers[arraySlice] = CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, subresourceIndex);
+			//		postDispatchBarriers[arraySlice] = CD3DX12_RESOURCE_BARRIER::Transition(linearTexture.texture.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON, subresourceIndex);
+			//	}
 
-				context->m_commandList->ResourceBarrier(desc.DepthOrArraySize, preDispatchBarriers.data());
-				context->m_commandList->SetComputeRootDescriptorTable(0, linearTexture.srv.gpuHandle);
-				context->m_commandList->SetComputeRootDescriptorTable(1, linearTexture.uav.gpuHandle);
-				context->m_commandList->Dispatch((std::max)(UINT(1), levelWidth / 8), (std::max)(UINT(1), levelHeight / 8), desc.DepthOrArraySize);
-				context->m_commandList->ResourceBarrier(desc.DepthOrArraySize, postDispatchBarriers.data());
-			}
+			//	context->m_commandList->ResourceBarrier(desc.DepthOrArraySize, preDispatchBarriers.data());
+			//	//context->m_commandList->SetComputeRootDescriptorTable(0, linearTexture.srv.gpuHandle);
+			//	//context->m_commandList->SetComputeRootDescriptorTable(1, linearTexture.uav.gpuHandle);
+			//	context->m_commandList->Dispatch((std::max)(UINT(1), levelWidth / 8), (std::max)(UINT(1), levelHeight / 8), desc.DepthOrArraySize);
+			//	context->m_commandList->ResourceBarrier(desc.DepthOrArraySize, postDispatchBarriers.data());
+			//}
 
-			if (texture == linearTexture.texture) {
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON));
-			}
-			else {
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
-				context->m_commandList->CopyResource(texture.Get(), linearTexture.texture.Get());
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
-			}
+			//if (texture == linearTexture.texture) {
+			//	context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON));
+			//}
+			//else {
+			//	context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST));
+			//	context->m_commandList->CopyResource(texture.Get(), linearTexture.texture.Get());
+			//	context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON));
+			//}
 		}
 
 		D3D12VertexBuffer::D3D12VertexBuffer(
@@ -868,12 +864,11 @@ namespace filament
 			AttributeArray attributes,
 			BufferUsage usage):
 			HwVertexBuffer(buffer_count, attribute_count, vertex_count, attributes),
-			buffers(buffer_count, nullptr),
+			VertexBufferRefArray(buffer_count, nullptr),
 			usage(usage)
 		{
 			assert(attribute_count > 0);
 			stride = attributes[0].stride;
-			vbvs.resize(buffer_count);
 		}
 
 		D3D12VertexBuffer::~D3D12VertexBuffer()
@@ -886,44 +881,30 @@ namespace filament
 			const BufferDescriptor& data,
 			uint32_t offset)
 		{
-			assert(index < buffers.size());
-			if (buffers[index] == nullptr)
+			assert(index < VertexBufferRefArray.size());
+			if (VertexBufferRefArray[index] == nullptr) 
 			{
-				const size_t vertexDataSize = offset + data.size;
-				// Create GPU resources & initialize view structures.
-				if (FAILED(context->m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&CD3DX12_RESOURCE_DESC::Buffer(vertexDataSize),
-					D3D12_RESOURCE_STATE_COPY_DEST,
-					nullptr,
-					IID_PPV_ARGS(&buffers[index]))))
-				{
-					throw std::runtime_error("Failed to create vertex buffer");
-				}
-				vbvs[index].BufferLocation = buffers[index]->GetGPUVirtualAddress();
-				vbvs[index].SizeInBytes = static_cast<UINT>(vertexDataSize);
-				vbvs[index].StrideInBytes = stride;
+				VertexBufferRefArray[index] = std::make_shared<TD3D12VertexBuffer>();
+				D3D12_RESOURCE_DESC ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(data.size, D3D12_RESOURCE_FLAG_NONE);
+				auto DefaultBufferAllocator = context->GetDefaultBufferAllocator();
+				DefaultBufferAllocator->AllocDefaultResource(ResourceDesc, UPLOAD_RESOURCE_ALIGNMENT, VertexBufferRefArray[index]->ResourceLocation);
+				size = offset + data.size;
 			}
+			//Create upload resource 
+			TD3D12ResourceLocation UploadResourceLocation;
+			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
+			void* MappedData = UploadBufferAllocator->AllocUploadResource(data.size, UPLOAD_RESOURCE_ALIGNMENT, UploadResourceLocation);
 
-			// Create and upload to CPU accessible staging buffers.
-			StagingBuffer vertexStagingBuffer;
-			{
-				const D3D12_SUBRESOURCE_DATA vertexdata = { data.buffer };
-				vertexStagingBuffer = createStagingBuffer(context, buffers[index], 0, 1, &vertexdata);
-			}
+			//Copy contents to upload resource
+			memcpy(MappedData, data.buffer, data.size);
 
+			//Copy data from upload resource to default resource
+			TD3D12Resource* DefaultBuffer = VertexBufferRefArray[index]->ResourceLocation.UnderlyingResource;
+			TD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
 			// Enqueue upload to the GPU.
-			context->m_commandList->CopyResource(buffers[index].Get(), vertexStagingBuffer.buffer.Get());
 
-			const D3D12_RESOURCE_BARRIER barriers[] = {
-				CD3DX12_RESOURCE_BARRIER::Transition(buffers[index].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER),
-			};
-			context->m_commandList->ResourceBarrier(1, barriers);
-
-			// Execute graphics command list and wait for GPU to finish.
-			context->executeCommandList();
-			context->waitForGPU();
+			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
+			context->CopyBufferRegion(DefaultBuffer, VertexBufferRefArray[index]->ResourceLocation.OffsetFromBaseOfResource, UploadBuffer, UploadResourceLocation.OffsetFromBaseOfResource, data.size);
 		}
 
 		D3D12IndexBuffer::D3D12IndexBuffer(
@@ -934,32 +915,13 @@ namespace filament
 			HwIndexBuffer((uint8_t) D3D12Driver::getElementTypeSize(element_type), index_count),
 			usage(usage)
 		{
-			const size_t indexDataSize = elementSize * index_count;
-			// Create GPU resources & initialize view structures.
-			if (FAILED(context->m_device->CreateCommittedResource(
-				&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-				D3D12_HEAP_FLAG_NONE,
-				&CD3DX12_RESOURCE_DESC::Buffer(indexDataSize),
-				D3D12_RESOURCE_STATE_COPY_DEST,
-				nullptr,
-				IID_PPV_ARGS(&buffer))))
-			{
-				throw std::runtime_error("Failed to create index buffer");
-			}
-			ibv.BufferLocation = buffer->GetGPUVirtualAddress();
-			ibv.SizeInBytes = static_cast<UINT>(indexDataSize);
-			if (element_type == ElementType::USHORT) {
-				ibv.Format = DXGI_FORMAT_R16_UINT;
-			}
-			else
-			{
-				ibv.Format = DXGI_FORMAT_R32_UINT;
-			}
+			indexDataSize = elementSize * index_count;
+			indexElement_type = element_type;
 		}
 
 		D3D12IndexBuffer::~D3D12IndexBuffer()
 		{
-			//SAFE_RELEASE(buffer);
+
 		}
 
 		void D3D12IndexBuffer::Update(
@@ -967,25 +929,39 @@ namespace filament
 			const BufferDescriptor& data,
 			uint32_t offset)
 		{
-
-			// Create and upload to CPU accessible staging buffers.
-			StagingBuffer indexStagingBuffer;
+			// Create GPU resources & initialize view structures.
+			if (IndexBufferRef == nullptr) 
 			{
-				const D3D12_SUBRESOURCE_DATA indexdata = { data.buffer };
-				indexStagingBuffer = createStagingBuffer(context, buffer, 0, 1, &indexdata);
+				IndexBufferRef = std::make_shared<TD3D12IndexBuffer>();
+				//Create default resource
+				D3D12_RESOURCE_DESC ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(data.size, D3D12_RESOURCE_FLAG_NONE);
+				auto DefaultBufferAllocator = context->GetDefaultBufferAllocator();
+				DefaultBufferAllocator->AllocDefaultResource(ResourceDesc, UPLOAD_RESOURCE_ALIGNMENT, IndexBufferRef->ResourceLocation);
+				indexDataSize = data.size;
+				if (indexElement_type == ElementType::USHORT) {
+					indexFormat = DXGI_FORMAT_R16_UINT;
+				}
+				else
+				{
+					indexFormat = DXGI_FORMAT_R32_UINT;
+				}
 			}
 
+			//Create upload resource 
+			TD3D12ResourceLocation UploadResourceLocation;
+			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
+			void* MappedData = UploadBufferAllocator->AllocUploadResource(data.size, UPLOAD_RESOURCE_ALIGNMENT, UploadResourceLocation);
+
+			//Copy contents to upload resource
+			memcpy(MappedData, data.buffer, data.size);
+
+			//Copy data from upload resource to default resource
+			TD3D12Resource* DefaultBuffer = IndexBufferRef->ResourceLocation.UnderlyingResource;
+			TD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
 			// Enqueue upload to the GPU.
-			context->m_commandList->CopyResource(buffer.Get(), indexStagingBuffer.buffer.Get());
 
-			const D3D12_RESOURCE_BARRIER barriers[] = {
-				CD3DX12_RESOURCE_BARRIER::Transition(buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER)
-			};
-			context->m_commandList->ResourceBarrier(1, barriers);
-
-			// Execute graphics command list and wait for GPU to finish.
-			context->executeCommandList();
-			context->waitForGPU();
+			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
+			context->CopyBufferRegion(DefaultBuffer, IndexBufferRef->ResourceLocation.OffsetFromBaseOfResource, UploadBuffer, UploadResourceLocation.OffsetFromBaseOfResource, data.size);
 		}
 
 		D3D12RenderPrimitive::D3D12RenderPrimitive(D3D12Context* context)

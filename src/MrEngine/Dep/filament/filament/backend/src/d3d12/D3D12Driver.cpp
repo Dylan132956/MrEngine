@@ -4,6 +4,7 @@
 #include "CommandStreamDispatcher.h"
 #include "D3D12Context.h"
 #include "D3D12Handles.h"
+#include "D3D12DescriptorCache.h"
 #include <utils/unwindows.h>
 
 namespace filament
@@ -46,12 +47,22 @@ namespace filament
 
 		void D3D12Driver::beginFrame(int64_t monotonic_clock_ns, uint32_t frame_id)
 		{
-
+			//Indicate a state transition on the resource usage.
+			SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[m_context->m_frameIndex];
+			m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(scb.buffer.Get(),
+				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 		}
 
 		void D3D12Driver::endFrame(uint32_t frame_id)
 		{
+			// Clean memory allocations
+			m_context->GetUploadBufferAllocator()->CleanUpAllocations();
 
+			m_context->GetDefaultBufferAllocator()->CleanUpAllocations();
+
+			m_context->GetTextureResourceAllocator()->CleanUpAllocations();
+
+			m_context->GetDescriptorCache()->Reset();
 		}
 
 		void D3D12Driver::flush(int dummy)
@@ -186,8 +197,8 @@ namespace filament
 				rtvDesc.Format = desc.Format;
 				rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
 
-				render_target->rtv = m_context->m_descHeapRTV.alloc();
-				m_context->m_device->CreateRenderTargetView(render_target->colorTexture.Get(), &rtvDesc, render_target->rtv.cpuHandle);
+				//render_target->rtv = m_context->m_descHeapRTV.alloc();
+				//m_context->m_device->CreateRenderTargetView(render_target->colorTexture.Get(), &rtvDesc, render_target->rtv.cpuHandle);
 
 				if (samples <= 1) {
 					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -197,8 +208,8 @@ namespace filament
 					srvDesc.Texture2D.MostDetailedMip = 0;
 					srvDesc.Texture2D.MipLevels = 1;
 
-					render_target->srv = m_context->m_descHeapCBV_SRV_UAV.alloc();
-					m_context->m_device->CreateShaderResourceView(render_target->colorTexture.Get(), &srvDesc, render_target->srv.cpuHandle);
+					//render_target->srv = m_context->m_descHeapCBV_SRV_UAV.alloc();
+					//m_context->m_device->CreateShaderResourceView(render_target->colorTexture.Get(), &srvDesc, render_target->srv.cpuHandle);
 				}
 			}
 			if ((flags & TargetBufferFlags::DEPTH) ||
@@ -241,8 +252,8 @@ namespace filament
 				dsvDesc.Format = desc.Format;
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 
-				render_target->dsv = m_context->m_descHeapDSV.alloc();
-				m_context->m_device->CreateDepthStencilView(render_target->depthStencilTexture.Get(), &dsvDesc, render_target->dsv.cpuHandle);
+				//render_target->dsv = m_context->m_descHeapDSV.alloc();
+				//m_context->m_device->CreateDepthStencilView(render_target->depthStencilTexture.Get(), &dsvDesc, render_target->dsv.cpuHandle);
 			}
 		}
 
@@ -327,16 +338,19 @@ namespace filament
 
 		void D3D12Driver::destroyVertexBuffer(Handle<HwVertexBuffer> vbh)
 		{
+			m_context->waitForGPU();
 			destruct_handle<D3D12VertexBuffer>(m_handle_map, vbh);
 		}
 
 		void D3D12Driver::destroyIndexBuffer(Handle<HwIndexBuffer> ibh)
 		{
+			m_context->waitForGPU();
 			destruct_handle<D3D12IndexBuffer>(m_handle_map, ibh);
 		}
 
 		void D3D12Driver::destroyRenderPrimitive(Handle<HwRenderPrimitive> rph)
 		{
+			m_context->waitForGPU();
 			destruct_handle<D3D12RenderPrimitive>(m_handle_map, rph);
 		}
 
@@ -626,7 +640,7 @@ namespace filament
 				UINT frameIndex = m_context->m_frameIndex;
 				SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[frameIndex];
 				fb.colorTexture = scb.buffer;
-				fb.rtv = scb.rtv;
+				fb.rtv.cpuHandle = scb.RTV->GetDescriptorHandle();
 				
 				if (render_target->depthStencilTexture == nullptr)
 				{
@@ -643,18 +657,16 @@ namespace filament
 				}
 
 				fb.depthStencilTexture = render_target->depthStencilTexture;
-				fb.dsv = render_target->dsv;
+				fb.dsv.cpuHandle = render_target->DSV->GetDescriptorHandle();
 				target_height = render_target->height;
 				// Indicate a state transition on the resource usage.
-				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(fb.colorTexture.Get(),
-					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 			}
 			else
 			{
 				fb.colorTexture = render_target->colorTexture;
-				fb.rtv = render_target->rtv;
+				fb.rtv.cpuHandle = render_target->SRV->GetDescriptorHandle();
 				fb.depthStencilTexture = render_target->depthStencilTexture;
-				fb.dsv = render_target->dsv;
+				fb.dsv.cpuHandle = render_target->DSV->GetDescriptorHandle();
 				target_height = render_target->height;
 				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(fb.colorTexture.Get(),
 					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
@@ -817,7 +829,9 @@ namespace filament
 
 			assert(index < m_context->uniform_buffer_bindings.size());
 			
-			m_context->uniform_buffer_bindings[index].cbv = uniform_buffer->cbv;
+			m_context->uniform_buffer_bindings[index].ConstantBufferRef = uniform_buffer->cb;
+			//m_context->uniform_buffer_bindings[index].cbv = uniform_buffer->cbv;
+			//m_context->uniform_buffer_bindings[index].updata = uniform_buffer->updata;
 			m_context->uniform_buffer_bindings[index].offset = 0;
 			m_context->uniform_buffer_bindings[index].size = uniform_buffer->size;
 		}
@@ -920,6 +934,7 @@ namespace filament
 			auto vertex_buffer = handle_cast<D3D12VertexBuffer>(m_handle_map, primitive->vertex_buffer);
 			auto index_buffer = handle_cast<D3D12IndexBuffer>(m_handle_map, primitive->index_buffer);
 
+			auto DescriptorCache = m_context->GetDescriptorCache();
 			if (program->meshInputLayout.size() == 0)
 			{
 				auto get_format = [](ElementType type) {
@@ -948,19 +963,24 @@ namespace filament
 					}
 				}
 			}
-			m_context->m_commandList->SetPipelineState(program->GetPSO(m_context).Get());
+			m_context->m_commandList->SetPipelineState(program->GetPSO(m_context, ps).Get());
 			m_context->m_commandList->SetGraphicsRootSignature(program->m_RootSignature.Get());
 			UINT indexTable = 0;
-			ID3D12DescriptorHeap* descriptorHeaps[] = {
-				m_context->m_descHeapCBV_SRV_UAV.heap.Get()
-			};
-			m_context->m_commandList->SetDescriptorHeaps(1, descriptorHeaps);
+			//ID3D12DescriptorHeap* descriptorHeaps[] = {
+			//	m_context->m_descHeapCBV_SRV_UAV.heap.Get()
+			//};
+			//m_context->m_commandList->SetDescriptorHeaps(1, descriptorHeaps);
+			auto CacheCbvSrvUavDescriptorHeap = m_context->GetDescriptorCache()->GetCacheCbvSrvUavDescriptorHeap();
+			ID3D12DescriptorHeap* DescriptorHeaps[] = { CacheCbvSrvUavDescriptorHeap.Get() };
+			m_context->m_commandList->SetDescriptorHeaps(1, DescriptorHeaps);
+
 			if (program->vertex_binary)
 			{
 				for (size_t i = 0; i < program->vert_cbv.size(); ++i)
 				{
 					int bindpoint = program->vert_cbv[i].BindPoint;
-					m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
+					//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
+					m_context->m_commandList->SetGraphicsRootConstantBufferView(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
 				}
 
                 const auto& samplers = program->info.getSamplerGroupInfo();
@@ -979,7 +999,10 @@ namespace filament
                                 if (s.t)
                                 {
                                     auto texture = handle_const_cast<D3D12Texture>(m_handle_map, s.t);
-									m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], texture->srv.gpuHandle);
+									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
+									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
+									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
+									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
                                 }
                             }
                         }
@@ -992,7 +1015,8 @@ namespace filament
 				for (size_t i = 0; i < program->frag_cbv.size(); ++i)
 				{
 					int bindpoint = program->frag_cbv[i].BindPoint;
-					m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
+					//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
+					m_context->m_commandList->SetGraphicsRootConstantBufferView(program->frag_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
 				}
 
 				const auto& samplers = program->info.getSamplerGroupInfo();
@@ -1011,7 +1035,11 @@ namespace filament
                                 if (s.t)
                                 {
                                     auto texture = handle_const_cast<D3D12Texture>(m_handle_map, s.t);
-									m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], texture->srv.gpuHandle);
+									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
+									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
+									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
+									m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
+									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], texture->srv.gpuHandle);
                                 }
                             }
                         }
@@ -1019,8 +1047,10 @@ namespace filament
 				}
 			}
 
-			m_context->m_commandList->IASetVertexBuffers(0, vertex_buffer->vbvs.size(), &vertex_buffer->vbvs[0]);
-			m_context->m_commandList->IASetIndexBuffer(&index_buffer->ibv);
+			m_context->SetVertexBuffer(vertex_buffer->VertexBufferRefArray[0], 0, vertex_buffer->stride, vertex_buffer->size);
+			m_context->SetIndexBuffer(index_buffer->IndexBufferRef, 0, index_buffer->indexFormat, index_buffer->indexDataSize);
+			//m_context->m_commandList->IASetVertexBuffers(0, vertex_buffer->vbvs.size(), &vertex_buffer->vbvs[0]);
+			//m_context->m_commandList->IASetIndexBuffer(&index_buffer->ibv);
 
 			m_context->m_commandList->DrawIndexedInstanced(primitive->count, 1, 0, 0, 0);
 		}

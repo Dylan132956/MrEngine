@@ -446,8 +446,8 @@ namespace moonriver
         }
         Time::Update();
         m_pCore->m_scene_manager->Update();
-        m_pCore->m_editor->Update();
         m_pCore->BeginFrame();
+        m_pCore->m_editor->Update();
         m_pCore->Render();
         m_pCore->m_scene_manager->Render();
         m_pCore->EndFrame();
