@@ -44,4 +44,4 @@ Support Rendering frame、Imgui Rendering、OpenAl Audio Player(https://github.c
 * Android Studio
 * `src/MrEngine/App/Platform/android`
 
-Contact Me: QQ 13227110
+Contact Me: QQ/WeChat 13227110
