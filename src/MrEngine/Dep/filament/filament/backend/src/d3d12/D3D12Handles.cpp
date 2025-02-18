@@ -61,7 +61,7 @@ namespace filament
 				RtvDesc.Texture2D.MipSlice = 0;
 				RtvDesc.Texture2D.PlaneSlice = 0;
 				RtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				m_backbuffers[frameIndex].RTV = std::make_unique<TD3D12RenderTargetView>(context, RtvDesc, m_backbuffers[frameIndex].buffer.Get());
+				m_backbuffers[frameIndex].RTV = std::make_unique<MD3D12RenderTargetView>(context, RtvDesc, m_backbuffers[frameIndex].buffer.Get());
 				//context->m_device->CreateRenderTargetView(m_backbuffers[frameIndex].buffer.Get(), nullptr, m_backbuffers[frameIndex].rtv.cpuHandle);
 
 				//context->m_framebuffers[frameIndex] = context->createFrameBuffer(window_width, window_height, samples, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT);
@@ -132,7 +132,7 @@ namespace filament
 				dsvDesc.Format = desc.Format;
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 
-				DSV = std::make_unique<TD3D12DepthStencilView>(context, dsvDesc, depthStencilTexture.Get());
+				DSV = std::make_unique<MD3D12DepthStencilView>(context, dsvDesc, depthStencilTexture.Get());
 				//dsv = context->m_descHeapDSV.alloc();
 				//context->m_device->CreateDepthStencilView(depthStencilTexture.Get(), &dsvDesc, dsv.cpuHandle);
 			}
@@ -439,7 +439,7 @@ namespace filament
 			size(size),
 			usage(usage)
 		{
-			cb = std::make_shared<TD3D12ConstantBuffer>();
+			cb = std::make_shared<MD3D12ConstantBuffer>();
 			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
 			UploadBufferAllocator->AllocUploadResource(size, UPLOAD_RESOURCE_ALIGNMENT, cb->ResourceLocation);
 		}
@@ -553,7 +553,7 @@ namespace filament
 			default:
 				assert(0);
 			}
-			SRV = std::make_unique<TD3D12ShaderResourceView>(context, srvDesc, texture.Get());
+			SRV = std::make_unique<MD3D12ShaderResourceView>(context, srvDesc, texture.Get());
 		}
 
 		void D3D12Texture::createTextureUAV(D3D12Context* context, UINT mipSlice)
@@ -573,7 +573,7 @@ namespace filament
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 				uavDesc.Texture2D.MipSlice = mipSlice;
 			}
-			UAV = std::make_unique<TD3D12UnorderedAccessView>(context, uavDesc, texture.Get());
+			UAV = std::make_unique<MD3D12UnorderedAccessView>(context, uavDesc, texture.Get());
 		}
 
 		void D3D12Texture::CreateDepth(D3D12Context* context, DXGI_FORMAT format, uint32_t samples, uint32_t width, uint32_t height)
@@ -604,7 +604,7 @@ namespace filament
 				dsvDesc.Format = desc.Format;
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 				
-				DSV = std::make_unique<TD3D12DepthStencilView>(context, dsvDesc, texture.Get());
+				DSV = std::make_unique<MD3D12DepthStencilView>(context, dsvDesc, texture.Get());
 			}
 		}
 
@@ -884,14 +884,14 @@ namespace filament
 			assert(index < VertexBufferRefArray.size());
 			if (VertexBufferRefArray[index] == nullptr) 
 			{
-				VertexBufferRefArray[index] = std::make_shared<TD3D12VertexBuffer>();
+				VertexBufferRefArray[index] = std::make_shared<MD3D12VertexBuffer>();
 				D3D12_RESOURCE_DESC ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(data.size, D3D12_RESOURCE_FLAG_NONE);
 				auto DefaultBufferAllocator = context->GetDefaultBufferAllocator();
 				DefaultBufferAllocator->AllocDefaultResource(ResourceDesc, UPLOAD_RESOURCE_ALIGNMENT, VertexBufferRefArray[index]->ResourceLocation);
 				size = offset + data.size;
 			}
 			//Create upload resource 
-			TD3D12ResourceLocation UploadResourceLocation;
+			MD3D12ResourceLocation UploadResourceLocation;
 			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
 			void* MappedData = UploadBufferAllocator->AllocUploadResource(data.size, UPLOAD_RESOURCE_ALIGNMENT, UploadResourceLocation);
 
@@ -899,8 +899,8 @@ namespace filament
 			memcpy(MappedData, data.buffer, data.size);
 
 			//Copy data from upload resource to default resource
-			TD3D12Resource* DefaultBuffer = VertexBufferRefArray[index]->ResourceLocation.UnderlyingResource;
-			TD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
+			MD3D12Resource* DefaultBuffer = VertexBufferRefArray[index]->ResourceLocation.UnderlyingResource;
+			MD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
 			// Enqueue upload to the GPU.
 
 			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -932,7 +932,7 @@ namespace filament
 			// Create GPU resources & initialize view structures.
 			if (IndexBufferRef == nullptr) 
 			{
-				IndexBufferRef = std::make_shared<TD3D12IndexBuffer>();
+				IndexBufferRef = std::make_shared<MD3D12IndexBuffer>();
 				//Create default resource
 				D3D12_RESOURCE_DESC ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(data.size, D3D12_RESOURCE_FLAG_NONE);
 				auto DefaultBufferAllocator = context->GetDefaultBufferAllocator();
@@ -948,7 +948,7 @@ namespace filament
 			}
 
 			//Create upload resource 
-			TD3D12ResourceLocation UploadResourceLocation;
+			MD3D12ResourceLocation UploadResourceLocation;
 			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
 			void* MappedData = UploadBufferAllocator->AllocUploadResource(data.size, UPLOAD_RESOURCE_ALIGNMENT, UploadResourceLocation);
 
@@ -956,8 +956,8 @@ namespace filament
 			memcpy(MappedData, data.buffer, data.size);
 
 			//Copy data from upload resource to default resource
-			TD3D12Resource* DefaultBuffer = IndexBufferRef->ResourceLocation.UnderlyingResource;
-			TD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
+			MD3D12Resource* DefaultBuffer = IndexBufferRef->ResourceLocation.UnderlyingResource;
+			MD3D12Resource* UploadBuffer = UploadResourceLocation.UnderlyingResource;
 			// Enqueue upload to the GPU.
 
 			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);

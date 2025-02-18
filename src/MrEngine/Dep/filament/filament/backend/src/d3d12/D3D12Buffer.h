@@ -7,95 +7,95 @@ namespace filament
 {
 	namespace backend
 	{
-		class TD3D12Buffer
+		class MD3D12Buffer
 		{
 		public:
-			TD3D12Buffer() {}
+			MD3D12Buffer() {}
 
-			virtual ~TD3D12Buffer() {}
+			virtual ~MD3D12Buffer() {}
 
-			TD3D12Resource* GetResource() { return ResourceLocation.UnderlyingResource; }
+			MD3D12Resource* GetResource() { return ResourceLocation.UnderlyingResource; }
 
 		public:
-			TD3D12ResourceLocation ResourceLocation;
+			MD3D12ResourceLocation ResourceLocation;
 		};
 
-		class TD3D12ConstantBuffer : public TD3D12Buffer
+		class MD3D12ConstantBuffer : public MD3D12Buffer
 		{
 
 		};
-		typedef std::shared_ptr<TD3D12ConstantBuffer> TD3D12ConstantBufferRef;
+		typedef std::shared_ptr<MD3D12ConstantBuffer> MD3D12ConstantBufferRef;
 
 
-		class TD3D12StructuredBuffer : public TD3D12Buffer
+		class MD3D12StructuredBuffer : public MD3D12Buffer
 		{
 		public:
-			TD3D12ShaderResourceView* GetSRV()
+			MD3D12ShaderResourceView* GetSRV()
 			{
 				return SRV.get();
 			}
 
-			void SetSRV(std::unique_ptr<TD3D12ShaderResourceView>& InSRV)
+			void SetSRV(std::unique_ptr<MD3D12ShaderResourceView>& InSRV)
 			{
 				SRV = std::move(InSRV);
 			}
 
 		private:
-			std::unique_ptr<TD3D12ShaderResourceView> SRV = nullptr;
+			std::unique_ptr<MD3D12ShaderResourceView> SRV = nullptr;
 		};
-		typedef std::shared_ptr<TD3D12StructuredBuffer> TD3D12StructuredBufferRef;
+		typedef std::shared_ptr<MD3D12StructuredBuffer> MD3D12StructuredBufferRef;
 
 
-		class TD3D12RWStructuredBuffer : public TD3D12Buffer
+		class MD3D12RWStructuredBuffer : public MD3D12Buffer
 		{
 		public:
-			TD3D12ShaderResourceView* GetSRV()
+			MD3D12ShaderResourceView* GetSRV()
 			{
 				return SRV.get();
 			}
 
-			void SetSRV(std::unique_ptr<TD3D12ShaderResourceView>& InSRV)
+			void SetSRV(std::unique_ptr<MD3D12ShaderResourceView>& InSRV)
 			{
 				SRV = std::move(InSRV);
 			}
 
-			TD3D12UnorderedAccessView* GetUAV()
+			MD3D12UnorderedAccessView* GetUAV()
 			{
 				return UAV.get();
 			}
 
-			void SetUAV(std::unique_ptr<TD3D12UnorderedAccessView>& InUAV)
+			void SetUAV(std::unique_ptr<MD3D12UnorderedAccessView>& InUAV)
 			{
 				UAV = std::move(InUAV);
 			}
 
 		private:
-			std::unique_ptr<TD3D12ShaderResourceView> SRV = nullptr;
+			std::unique_ptr<MD3D12ShaderResourceView> SRV = nullptr;
 
-			std::unique_ptr<TD3D12UnorderedAccessView> UAV = nullptr;
+			std::unique_ptr<MD3D12UnorderedAccessView> UAV = nullptr;
 		};
-		typedef std::shared_ptr<TD3D12RWStructuredBuffer> TD3D12RWStructuredBufferRef;
+		typedef std::shared_ptr<MD3D12RWStructuredBuffer> MD3D12RWStructuredBufferRef;
 
 
-		class TD3D12VertexBuffer : public TD3D12Buffer
+		class MD3D12VertexBuffer : public MD3D12Buffer
 		{
 
 		};
-		typedef std::shared_ptr<TD3D12VertexBuffer> TD3D12VertexBufferRef;
+		typedef std::shared_ptr<MD3D12VertexBuffer> MD3D12VertexBufferRef;
 
 
-		class TD3D12IndexBuffer : public TD3D12Buffer
+		class MD3D12IndexBuffer : public MD3D12Buffer
 		{
 
 		};
-		typedef std::shared_ptr<TD3D12IndexBuffer> TD3D12IndexBufferRef;
+		typedef std::shared_ptr<MD3D12IndexBuffer> MD3D12IndexBufferRef;
 
 
-		class TD3D12ReadBackBuffer : public TD3D12Buffer
+		class MD3D12ReadBackBuffer : public MD3D12Buffer
 		{
 
 		};
-		typedef std::shared_ptr<TD3D12ReadBackBuffer> TD3D12ReadBackBufferRef;
+		typedef std::shared_ptr<MD3D12ReadBackBuffer> MD3D12ReadBackBufferRef;
 
 	}
 }

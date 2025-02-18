@@ -56,8 +56,8 @@ namespace filament
 
 			ComPtr<ID3D12Resource> colorTexture;
 			ComPtr<ID3D12Resource> depthStencilTexture;
-			std::unique_ptr<TD3D12ShaderResourceView> SRV;
-			std::unique_ptr<TD3D12DepthStencilView> DSV;
+			std::unique_ptr<MD3D12ShaderResourceView> SRV;
+			std::unique_ptr<MD3D12DepthStencilView> DSV;
 			UINT width, height;
 			UINT samples;
 		};
@@ -96,7 +96,7 @@ namespace filament
 			D3D12UniformBuffer(D3D12Context* context, size_t size, BufferUsage usage);
 			~D3D12UniformBuffer();
 			void Load(D3D12Context* context, const BufferDescriptor& data);
-			TD3D12ConstantBufferRef cb;
+			MD3D12ConstantBufferRef cb;
 			size_t size;
 			BufferUsage usage;
 			template<typename T> T* as() const
@@ -162,9 +162,9 @@ namespace filament
 
 			ComPtr<ID3D12Resource> texture;
 
-			std::unique_ptr<TD3D12ShaderResourceView> SRV;
-			std::unique_ptr<TD3D12DepthStencilView> DSV;
-			std::unique_ptr<TD3D12UnorderedAccessView> UAV;
+			std::unique_ptr<MD3D12ShaderResourceView> SRV;
+			std::unique_ptr<MD3D12DepthStencilView> DSV;
+			std::unique_ptr<MD3D12UnorderedAccessView> UAV;
 		};
 
 		struct D3D12VertexBuffer : public HwVertexBuffer
@@ -183,7 +183,7 @@ namespace filament
 				const BufferDescriptor& data,
 				uint32_t offset);
 
-			std::vector<TD3D12VertexBufferRef> VertexBufferRefArray;
+			std::vector<MD3D12VertexBufferRef> VertexBufferRefArray;
 			uint32_t stride;
 			UINT size;
 			BufferUsage usage;
@@ -202,7 +202,7 @@ namespace filament
 				const BufferDescriptor& data,
 				uint32_t offset);
 
-			TD3D12IndexBufferRef IndexBufferRef;
+			MD3D12IndexBufferRef IndexBufferRef;
 
 			ComPtr<ID3D12Resource> buffer;
 			size_t indexDataSize;

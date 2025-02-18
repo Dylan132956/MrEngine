@@ -9,13 +9,13 @@ namespace filament
 		using namespace DirectX;
 		using namespace Microsoft::WRL;
 
-		TD3D12BuddyAllocator::TD3D12BuddyAllocator(ID3D12Device* InDevice, const TAllocatorInitData& InInitData)
+		MD3D12BuddyAllocator::MD3D12BuddyAllocator(ID3D12Device* InDevice, const TAllocatorInitData& InInitData)
 			: D3DDevice(InDevice), InitData(InInitData)
 		{
 			Initialize();
 		}
 
-		TD3D12BuddyAllocator::~TD3D12BuddyAllocator()
+		MD3D12BuddyAllocator::~MD3D12BuddyAllocator()
 		{
 			if (BackingResource)
 			{
@@ -28,7 +28,7 @@ namespace filament
 			}
 		}
 
-		void TD3D12BuddyAllocator::Initialize()
+		void MD3D12BuddyAllocator::Initialize()
 		{
 			//Create BackingHeap or BackingResource
 			if (InitData.AllocationStrategy == EAllocationStrategy::PlacedResource)
@@ -43,7 +43,7 @@ namespace filament
 				// Create BackingHeap, we will create place resources on it.
 				ID3D12Heap* Heap = nullptr;
 				ThrowIfFailed(D3DDevice->CreateHeap(&Desc, IID_PPV_ARGS(&Heap)));
-				Heap->SetName(L"TD3D12BuddyAllocator BackingHeap");
+				Heap->SetName(L"MD3D12BuddyAllocator BackingHeap");
 
 				BackingHeap = Heap;
 			}
@@ -72,9 +72,9 @@ namespace filament
 					nullptr,
 					IID_PPV_ARGS(&Resource)));
 
-				Resource->SetName(L"TD3D12BuddyAllocator BackingResource");
+				Resource->SetName(L"MD3D12BuddyAllocator BackingResource");
 
-				BackingResource = new TD3D12Resource(Resource);
+				BackingResource = new MD3D12Resource(Resource);
 
 				if (InitData.HeapType == D3D12_HEAP_TYPE_UPLOAD)
 				{
@@ -93,7 +93,7 @@ namespace filament
 			FreeBlocks[MaxOrder].insert((uint32_t)0);
 		}
 
-		bool TD3D12BuddyAllocator::AllocResource(uint32_t Size, uint32_t Alignment, TD3D12ResourceLocation& ResourceLocation)
+		bool MD3D12BuddyAllocator::AllocResource(uint32_t Size, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation)
 		{
 			uint32_t SizeToAllocate = GetSizeToAllocate(Size, Alignment);
 
@@ -119,7 +119,7 @@ namespace filament
 				assert((AlignedOffsetFromResourceBase % Alignment) == 0);
 
 				// Save allocation info to ResourceLocation
-				ResourceLocation.SetType(TD3D12ResourceLocation::EResourceLocationType::SubAllocation);
+				ResourceLocation.SetType(MD3D12ResourceLocation::EResourceLocationType::SubAllocation);
 				ResourceLocation.BlockData.Order = Order;
 				ResourceLocation.BlockData.Offset = Offset;
 				ResourceLocation.BlockData.ActualUsedSize = Size;
@@ -151,7 +151,7 @@ namespace filament
 			}
 		}
 
-		uint32_t TD3D12BuddyAllocator::GetSizeToAllocate(uint32_t Size, uint32_t Alignment)
+		uint32_t MD3D12BuddyAllocator::GetSizeToAllocate(uint32_t Size, uint32_t Alignment)
 		{
 			uint32_t SizeToAllocate = Size;
 
@@ -164,7 +164,7 @@ namespace filament
 			return SizeToAllocate;
 		}
 
-		bool TD3D12BuddyAllocator::CanAllocate(uint32_t SizeToAllocate)
+		bool MD3D12BuddyAllocator::CanAllocate(uint32_t SizeToAllocate)
 		{
 			if (TotalAllocSize == DEFAULT_POOL_SIZE)
 			{
@@ -188,7 +188,7 @@ namespace filament
 			return false;
 		}
 
-		uint32_t TD3D12BuddyAllocator::AllocateBlock(uint32_t Order)
+		uint32_t MD3D12BuddyAllocator::AllocateBlock(uint32_t Order)
 		{
 			uint32_t Offset;
 
@@ -222,16 +222,16 @@ namespace filament
 			return Offset;
 		}
 
-		void TD3D12BuddyAllocator::Deallocate(TD3D12ResourceLocation& ResourceLocation)
+		void MD3D12BuddyAllocator::Deallocate(MD3D12ResourceLocation& ResourceLocation)
 		{
 			DeferredDeletionQueue.push_back(ResourceLocation.BlockData);
 		}
 
-		void TD3D12BuddyAllocator::CleanUpAllocations()
+		void MD3D12BuddyAllocator::CleanUpAllocations()
 		{
 			for (uint32_t i = 0; i < DeferredDeletionQueue.size(); i++)
 			{
-				const TD3D12BuddyBlockData& Block = DeferredDeletionQueue[i];
+				const MD3D12BuddyBlockData& Block = DeferredDeletionQueue[i];
 
 				DeallocateInternal(Block);
 			}
@@ -240,7 +240,7 @@ namespace filament
 			DeferredDeletionQueue.clear();
 		}
 
-		void TD3D12BuddyAllocator::DeallocateInternal(const TD3D12BuddyBlockData& Block)
+		void MD3D12BuddyAllocator::DeallocateInternal(const MD3D12BuddyBlockData& Block)
 		{
 			DeallocateBlock(Block.Offset, Block.Order);
 
@@ -256,7 +256,7 @@ namespace filament
 			}
 		}
 
-		void TD3D12BuddyAllocator::DeallocateBlock(uint32_t Offset, uint32_t Order)
+		void MD3D12BuddyAllocator::DeallocateBlock(uint32_t Offset, uint32_t Order)
 		{
 			// Get buddy block
 			uint32_t Size = OrderToUnitSize(Order);
@@ -278,18 +278,18 @@ namespace filament
 			}
 		}
 
-		TD3D12MultiBuddyAllocator::TD3D12MultiBuddyAllocator(ID3D12Device* InDevice, const TD3D12BuddyAllocator::TAllocatorInitData& InInitData)
+		MD3D12MultiBuddyAllocator::MD3D12MultiBuddyAllocator(ID3D12Device* InDevice, const MD3D12BuddyAllocator::TAllocatorInitData& InInitData)
 			:Device(InDevice), InitData(InInitData)
 		{
 
 		}
 
-		TD3D12MultiBuddyAllocator::~TD3D12MultiBuddyAllocator()
+		MD3D12MultiBuddyAllocator::~MD3D12MultiBuddyAllocator()
 		{
 
 		}
 
-		bool TD3D12MultiBuddyAllocator::AllocResource(uint32_t Size, uint32_t Alignment, TD3D12ResourceLocation& ResourceLocation)
+		bool MD3D12MultiBuddyAllocator::AllocResource(uint32_t Size, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation)
 		{
 			for (auto& Allocator : Allocators) // Try to use existing allocators 
 			{
@@ -300,7 +300,7 @@ namespace filament
 			}
 
 			// Create new allocator
-			auto Allocator = std::make_shared<TD3D12BuddyAllocator>(Device, InitData);
+			auto Allocator = std::make_shared<MD3D12BuddyAllocator>(Device, InitData);
 			Allocators.push_back(Allocator);
 
 			bool Result = Allocator->AllocResource(Size, Alignment, ResourceLocation);
@@ -309,7 +309,7 @@ namespace filament
 			return true;
 		}
 
-		void TD3D12MultiBuddyAllocator::CleanUpAllocations()
+		void MD3D12MultiBuddyAllocator::CleanUpAllocations()
 		{
 			for (auto& Allocator : Allocators)
 			{
@@ -317,56 +317,56 @@ namespace filament
 			}
 		}
 
-		TD3D12UploadBufferAllocator::TD3D12UploadBufferAllocator(ID3D12Device* InDevice)
+		MD3D12UploadBufferAllocator::MD3D12UploadBufferAllocator(ID3D12Device* InDevice)
 		{
-			TD3D12BuddyAllocator::TAllocatorInitData InitData;
-			InitData.AllocationStrategy = TD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
+			MD3D12BuddyAllocator::TAllocatorInitData InitData;
+			InitData.AllocationStrategy = MD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
 			InitData.HeapType = D3D12_HEAP_TYPE_UPLOAD;
 			InitData.ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
 
-			Allocator = std::make_unique<TD3D12MultiBuddyAllocator>(InDevice, InitData);
+			Allocator = std::make_unique<MD3D12MultiBuddyAllocator>(InDevice, InitData);
 
 			D3DDevice = InDevice;
 		}
 
-		void* TD3D12UploadBufferAllocator::AllocUploadResource(uint32_t Size, uint32_t Alignment, TD3D12ResourceLocation& ResourceLocation)
+		void* MD3D12UploadBufferAllocator::AllocUploadResource(uint32_t Size, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation)
 		{
 			Allocator->AllocResource(Size, Alignment, ResourceLocation);
 
 			return ResourceLocation.MappedAddress;
 		}
 
-		void TD3D12UploadBufferAllocator::CleanUpAllocations()
+		void MD3D12UploadBufferAllocator::CleanUpAllocations()
 		{
 			Allocator->CleanUpAllocations();
 		}
 
 
 
-		TD3D12DefaultBufferAllocator::TD3D12DefaultBufferAllocator(ID3D12Device* InDevice)
+		MD3D12DefaultBufferAllocator::MD3D12DefaultBufferAllocator(ID3D12Device* InDevice)
 		{
 			{
-				TD3D12BuddyAllocator::TAllocatorInitData InitData;
-				InitData.AllocationStrategy = TD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
+				MD3D12BuddyAllocator::TAllocatorInitData InitData;
+				InitData.AllocationStrategy = MD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
 				InitData.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 				InitData.ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
 
-				Allocator = std::make_unique<TD3D12MultiBuddyAllocator>(InDevice, InitData);
+				Allocator = std::make_unique<MD3D12MultiBuddyAllocator>(InDevice, InitData);
 			}
 
 			{
-				TD3D12BuddyAllocator::TAllocatorInitData InitData;
-				InitData.AllocationStrategy = TD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
+				MD3D12BuddyAllocator::TAllocatorInitData InitData;
+				InitData.AllocationStrategy = MD3D12BuddyAllocator::EAllocationStrategy::ManualSubAllocation;
 				InitData.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 				InitData.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-				UavAllocator = std::make_unique<TD3D12MultiBuddyAllocator>(InDevice, InitData);
+				UavAllocator = std::make_unique<MD3D12MultiBuddyAllocator>(InDevice, InitData);
 			}
 
 			D3DDevice = InDevice;
 		}
 
-		void TD3D12DefaultBufferAllocator::AllocDefaultResource(const D3D12_RESOURCE_DESC& ResourceDesc, uint32_t Alignment, TD3D12ResourceLocation& ResourceLocation)
+		void MD3D12DefaultBufferAllocator::AllocDefaultResource(const D3D12_RESOURCE_DESC& ResourceDesc, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation)
 		{
 			if (ResourceDesc.Flags == D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
 			{
@@ -378,26 +378,26 @@ namespace filament
 			}
 		}
 
-		void TD3D12DefaultBufferAllocator::CleanUpAllocations()
+		void MD3D12DefaultBufferAllocator::CleanUpAllocations()
 		{
 			Allocator->CleanUpAllocations();
 		}
 
 
 
-		TD3D3TextureResourceAllocator::TD3D3TextureResourceAllocator(ID3D12Device* InDevice)
+		MD3D3TextureResourceAllocator::MD3D3TextureResourceAllocator(ID3D12Device* InDevice)
 		{
-			TD3D12BuddyAllocator::TAllocatorInitData InitData;
-			InitData.AllocationStrategy = TD3D12BuddyAllocator::EAllocationStrategy::PlacedResource;
+			MD3D12BuddyAllocator::TAllocatorInitData InitData;
+			InitData.AllocationStrategy = MD3D12BuddyAllocator::EAllocationStrategy::PlacedResource;
 			InitData.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 			InitData.HeapFlags = D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
 
-			Allocator = std::make_unique<TD3D12MultiBuddyAllocator>(InDevice, InitData);
+			Allocator = std::make_unique<MD3D12MultiBuddyAllocator>(InDevice, InitData);
 
 			D3DDevice = InDevice;
 		}
 
-		void TD3D3TextureResourceAllocator::AllocTextureResource(const D3D12_RESOURCE_STATES& ResourceState, const D3D12_RESOURCE_DESC& ResourceDesc, TD3D12ResourceLocation& ResourceLocation)
+		void MD3D3TextureResourceAllocator::AllocTextureResource(const D3D12_RESOURCE_STATES& ResourceState, const D3D12_RESOURCE_DESC& ResourceDesc, MD3D12ResourceLocation& ResourceLocation)
 		{
 			const D3D12_RESOURCE_ALLOCATION_INFO Info = D3DDevice->GetResourceAllocationInfo(0, 1, &ResourceDesc);
 
@@ -410,13 +410,13 @@ namespace filament
 				uint64_t HeapOffset = ResourceLocation.OffsetFromBaseOfHeap;
 				D3DDevice->CreatePlacedResource(BackingHeap, HeapOffset, &ResourceDesc, ResourceState, nullptr, IID_PPV_ARGS(&Resource));
 
-				TD3D12Resource* NewResource = new TD3D12Resource(Resource);
+				MD3D12Resource* NewResource = new MD3D12Resource(Resource);
 				ResourceLocation.UnderlyingResource = NewResource;
 				ResourceLocation.BlockData.PlacedResource = NewResource;  // Will delete Resource when ResourceLocation was destroyed
 			}
 		}
 
-		void TD3D3TextureResourceAllocator::CleanUpAllocations()
+		void MD3D3TextureResourceAllocator::CleanUpAllocations()
 		{
 			Allocator->CleanUpAllocations();
 		}

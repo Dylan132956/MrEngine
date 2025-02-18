@@ -106,20 +106,20 @@ namespace filament
 			//m_constantBuffer = createUploadBuffer(640 * 1024);
 
 			//Create memory allocator
-			UploadBufferAllocator = std::make_unique<TD3D12UploadBufferAllocator>(m_device.Get());
+			UploadBufferAllocator = std::make_unique<MD3D12UploadBufferAllocator>(m_device.Get());
 
-			DefaultBufferAllocator = std::make_unique<TD3D12DefaultBufferAllocator>(m_device.Get());
+			DefaultBufferAllocator = std::make_unique<MD3D12DefaultBufferAllocator>(m_device.Get());
 
-			TextureResourceAllocator = std::make_unique<TD3D3TextureResourceAllocator>(m_device.Get());
+			TextureResourceAllocator = std::make_unique<MD3D3TextureResourceAllocator>(m_device.Get());
 
 			//Create heapSlot allocator
-			RTVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 200);
+			RTVHeapSlotAllocator = std::make_unique<MD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 200);
 
-			DSVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 200);
+			DSVHeapSlotAllocator = std::make_unique<MD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 200);
 
-			SRVHeapSlotAllocator = std::make_unique<TD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 200);
+			SRVHeapSlotAllocator = std::make_unique<MD3D12HeapSlotAllocator>(m_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 200);
 
-			DescriptorCache = std::make_unique<TD3D12DescriptorCache>(this);
+			DescriptorCache = std::make_unique<MD3D12DescriptorCache>(this);
 
 		}
 
@@ -138,7 +138,7 @@ namespace filament
 		//	return region;
 		//}
 
-		TD3D12HeapSlotAllocator* D3D12Context::GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType)
+		MD3D12HeapSlotAllocator* D3D12Context::GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType)
 		{
 			switch (HeapType)
 			{
@@ -363,7 +363,7 @@ namespace filament
 		//	return fb;
 		//}
 
-		void D3D12Context::TransitionResource(TD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter)
+		void D3D12Context::TransitionResource(MD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter)
 		{
 			D3D12_RESOURCE_STATES StateBefore = Resource->CurrentState;
 
@@ -375,12 +375,12 @@ namespace filament
 			}
 		}
 
-		void D3D12Context::CopyResource(TD3D12Resource* DstResource, TD3D12Resource* SrcResource)
+		void D3D12Context::CopyResource(MD3D12Resource* DstResource, MD3D12Resource* SrcResource)
 		{
 			m_commandList->CopyResource(DstResource->D3DResource.Get(), SrcResource->D3DResource.Get());
 		}
 
-		void D3D12Context::CopyBufferRegion(TD3D12Resource* DstResource, UINT64 DstOffset, TD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size)
+		void D3D12Context::CopyBufferRegion(MD3D12Resource* DstResource, UINT64 DstOffset, MD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size)
 		{
 			m_commandList->CopyBufferRegion(DstResource->D3DResource.Get(), DstOffset, SrcResource->D3DResource.Get(), SrcOffset, Size);
 		}
@@ -390,11 +390,11 @@ namespace filament
 			m_commandList->CopyTextureRegion(Dst, DstX, DstY, DstZ, Src, SrcBox);
 		}
 
-		void D3D12Context::SetVertexBuffer(const TD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size)
+		void D3D12Context::SetVertexBuffer(const MD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size)
 		{
 			// Transition resource state
-			const TD3D12ResourceLocation& ResourceLocation = VertexBuffer->ResourceLocation;
-			TD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
+			const MD3D12ResourceLocation& ResourceLocation = VertexBuffer->ResourceLocation;
+			MD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
 			TransitionResource(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 			// Set vertex buffer
@@ -405,11 +405,11 @@ namespace filament
 			m_commandList->IASetVertexBuffers(0, 1, &VBV);
 		}
 
-		void D3D12Context::SetIndexBuffer(const TD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size)
+		void D3D12Context::SetIndexBuffer(const MD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size)
 		{
 			// Transition resource state
-			const TD3D12ResourceLocation& ResourceLocation = IndexBuffer->ResourceLocation;
-			TD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
+			const MD3D12ResourceLocation& ResourceLocation = IndexBuffer->ResourceLocation;
+			MD3D12Resource* Resource = ResourceLocation.UnderlyingResource;
 			TransitionResource(Resource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 			// Set vertex buffer

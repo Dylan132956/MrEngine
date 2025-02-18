@@ -5,13 +5,13 @@ namespace filament
 {
 	namespace backend
 	{
-		class TD3D12BuddyAllocator;
+		class MD3D12BuddyAllocator;
 
 
-		class TD3D12Resource
+		class MD3D12Resource
 		{
 		public:
-			TD3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3DResource, D3D12_RESOURCE_STATES InitState = D3D12_RESOURCE_STATE_COMMON);
+			MD3D12Resource(Microsoft::WRL::ComPtr<ID3D12Resource> InD3DResource, D3D12_RESOURCE_STATES InitState = D3D12_RESOURCE_STATE_COMMON);
 
 			void Map();
 
@@ -26,16 +26,16 @@ namespace filament
 			void* MappedBaseAddress = nullptr;
 		};
 
-		struct TD3D12BuddyBlockData
+		struct MD3D12BuddyBlockData
 		{
 			uint32_t Offset = 0;
 			uint32_t Order = 0;
 			uint32_t ActualUsedSize = 0;
 
-			TD3D12Resource* PlacedResource = nullptr;
+			MD3D12Resource* PlacedResource = nullptr;
 		};
 
-		class TD3D12ResourceLocation
+		class MD3D12ResourceLocation
 		{
 		public:
 			enum class EResourceLocationType
@@ -46,9 +46,9 @@ namespace filament
 			};
 
 		public:
-			TD3D12ResourceLocation();
+			MD3D12ResourceLocation();
 
-			~TD3D12ResourceLocation();
+			~MD3D12ResourceLocation();
 
 			void ReleaseResource();
 
@@ -58,12 +58,12 @@ namespace filament
 			EResourceLocationType ResourceLocationType = EResourceLocationType::Undefined;
 
 			// SubAllocation 
-			TD3D12BuddyAllocator* Allocator = nullptr;
+			MD3D12BuddyAllocator* Allocator = nullptr;
 
-			TD3D12BuddyBlockData BlockData;
+			MD3D12BuddyBlockData BlockData;
 
 			// StandAlone resource 
-			TD3D12Resource* UnderlyingResource = nullptr;
+			MD3D12Resource* UnderlyingResource = nullptr;
 
 			union
 			{
@@ -79,16 +79,16 @@ namespace filament
 		};
 
 		template<typename T>
-		class TD3D12ScopeMap
+		class MD3D12ScopeMap
 		{
 		public:
-			TD3D12ScopeMap(TD3D12Resource* Resource)
+			MD3D12ScopeMap(MD3D12Resource* Resource)
 			{
 				D3DResource = Resource->D3DResource.Get();
 				D3DResource->Map(0, nullptr, reinterpret_cast<void**>(&MappedData));
 			}
 
-			~TD3D12ScopeMap()
+			~MD3D12ScopeMap()
 			{
 				D3DResource->Unmap(0, nullptr);
 			}

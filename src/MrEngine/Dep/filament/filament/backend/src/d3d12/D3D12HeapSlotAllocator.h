@@ -3,7 +3,7 @@
 #include "D3D12Utils.h"
 #include <list>
 
-class TD3D12HeapSlotAllocator
+class MD3D12HeapSlotAllocator
 {
 public:
 	typedef D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHandle;
@@ -25,15 +25,15 @@ private:
 	struct HeapEntry
 	{
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> Heap = nullptr;
-		std::list<TD3D12HeapSlotAllocator::FreeRange> FreeList;
+		std::list<MD3D12HeapSlotAllocator::FreeRange> FreeList;
 
 		HeapEntry() { }
 	};
 
 public:
-	TD3D12HeapSlotAllocator(ID3D12Device* InDevice, D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap);
+	MD3D12HeapSlotAllocator(ID3D12Device* InDevice, D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap);
 
-	~TD3D12HeapSlotAllocator();
+	~MD3D12HeapSlotAllocator();
 
 	HeapSlot AllocateHeapSlot();
 

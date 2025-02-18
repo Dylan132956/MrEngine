@@ -147,13 +147,13 @@ namespace filament
 		struct SwapChainBuffer
 		{
 			ComPtr<ID3D12Resource> buffer;
-			std::unique_ptr<TD3D12RenderTargetView> RTV;
+			std::unique_ptr<MD3D12RenderTargetView> RTV;
 			//Descriptor rtv;
 		};
 
 		struct D3D12SwapChain;
 		struct D3D12RenderTarget;
-		class TD3D12DescriptorCache;
+		class MD3D12DescriptorCache;
 
 		class D3D12Context
 		{
@@ -173,31 +173,31 @@ namespace filament
 			ComPtr<ID3DBlob> compileShader(const std::string& filename, const std::string& entryPoint, const std::string& profile);
 			//UploadBuffer createUploadBuffer(UINT capacity) const;
 			//UploadBufferRegion allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const;
-			void SetVertexBuffer(const TD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size);
+			void SetVertexBuffer(const MD3D12VertexBufferRef& VertexBuffer, UINT Offset, UINT Stride, UINT Size);
 
-			void SetIndexBuffer(const TD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size);
+			void SetIndexBuffer(const MD3D12IndexBufferRef& IndexBuffer, UINT Offset, DXGI_FORMAT Format, UINT Size);
 
-			void TransitionResource(TD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter);
+			void TransitionResource(MD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter);
 
-			void CopyResource(TD3D12Resource* DstResource, TD3D12Resource* SrcResource);
+			void CopyResource(MD3D12Resource* DstResource, MD3D12Resource* SrcResource);
 
-			void CopyBufferRegion(TD3D12Resource* DstResource, UINT64 DstOffset, TD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size);
+			void CopyBufferRegion(MD3D12Resource* DstResource, UINT64 DstOffset, MD3D12Resource* SrcResource, UINT64 SrcOffset, UINT64 Size);
 
 			void CopyTextureRegion(const D3D12_TEXTURE_COPY_LOCATION* Dst, UINT DstX, UINT DstY, UINT DstZ, const D3D12_TEXTURE_COPY_LOCATION* Src, const D3D12_BOX* SrcBox);
 
-			TD3D12UploadBufferAllocator* GetUploadBufferAllocator() { return UploadBufferAllocator.get(); }
+			MD3D12UploadBufferAllocator* GetUploadBufferAllocator() { return UploadBufferAllocator.get(); }
 
-			TD3D12DefaultBufferAllocator* GetDefaultBufferAllocator() { return DefaultBufferAllocator.get(); }
+			MD3D12DefaultBufferAllocator* GetDefaultBufferAllocator() { return DefaultBufferAllocator.get(); }
 
-			TD3D3TextureResourceAllocator* GetTextureResourceAllocator() { return TextureResourceAllocator.get(); }
+			MD3D3TextureResourceAllocator* GetTextureResourceAllocator() { return TextureResourceAllocator.get(); }
 
-			TD3D12HeapSlotAllocator* GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
+			MD3D12HeapSlotAllocator* GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
 
-			TD3D12DescriptorCache* GetDescriptorCache() { return DescriptorCache.get(); }
+			MD3D12DescriptorCache* GetDescriptorCache() { return DescriptorCache.get(); }
 
 			struct UniformBufferBinding
 			{
-				TD3D12ConstantBufferRef ConstantBufferRef;
+				MD3D12ConstantBufferRef ConstantBufferRef;
 				//UploadBufferRegion updata;
 				//Descriptor cbv;
 				size_t offset = 0;
@@ -253,19 +253,19 @@ namespace filament
 			std::unordered_map<uint32_t, RenderState> rasterizer_states;
 
 		private:
-			std::unique_ptr<TD3D12UploadBufferAllocator> UploadBufferAllocator = nullptr;
+			std::unique_ptr<MD3D12UploadBufferAllocator> UploadBufferAllocator = nullptr;
 
-			std::unique_ptr<TD3D12DefaultBufferAllocator> DefaultBufferAllocator = nullptr;
+			std::unique_ptr<MD3D12DefaultBufferAllocator> DefaultBufferAllocator = nullptr;
 
-			std::unique_ptr<TD3D3TextureResourceAllocator> TextureResourceAllocator = nullptr;
+			std::unique_ptr<MD3D3TextureResourceAllocator> TextureResourceAllocator = nullptr;
 
-			std::unique_ptr<TD3D12HeapSlotAllocator> RTVHeapSlotAllocator = nullptr;
+			std::unique_ptr<MD3D12HeapSlotAllocator> RTVHeapSlotAllocator = nullptr;
 
-			std::unique_ptr<TD3D12HeapSlotAllocator> DSVHeapSlotAllocator = nullptr;
+			std::unique_ptr<MD3D12HeapSlotAllocator> DSVHeapSlotAllocator = nullptr;
 
-			std::unique_ptr<TD3D12HeapSlotAllocator> SRVHeapSlotAllocator = nullptr;
+			std::unique_ptr<MD3D12HeapSlotAllocator> SRVHeapSlotAllocator = nullptr;
 
-			std::unique_ptr<TD3D12DescriptorCache> DescriptorCache = nullptr;
+			std::unique_ptr<MD3D12DescriptorCache> DescriptorCache = nullptr;
 		};
 	}
 }

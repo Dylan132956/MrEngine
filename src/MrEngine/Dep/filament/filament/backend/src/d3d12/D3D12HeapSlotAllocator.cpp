@@ -2,7 +2,7 @@
 #include <assert.h>
 
 
-TD3D12HeapSlotAllocator::TD3D12HeapSlotAllocator(ID3D12Device* InDevice, D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap)
+MD3D12HeapSlotAllocator::MD3D12HeapSlotAllocator(ID3D12Device* InDevice, D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap)
 	:D3DDevice(InDevice),
 	HeapDesc(CreateHeapDesc(Type, NumDescriptorsPerHeap)),
 	DescriptorSize(D3DDevice->GetDescriptorHandleIncrementSize(HeapDesc.Type))
@@ -10,12 +10,12 @@ TD3D12HeapSlotAllocator::TD3D12HeapSlotAllocator(ID3D12Device* InDevice, D3D12_D
 
 }
 
-TD3D12HeapSlotAllocator::~TD3D12HeapSlotAllocator()
+MD3D12HeapSlotAllocator::~MD3D12HeapSlotAllocator()
 {
 
 }
 
-D3D12_DESCRIPTOR_HEAP_DESC TD3D12HeapSlotAllocator::CreateHeapDesc(D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap)
+D3D12_DESCRIPTOR_HEAP_DESC MD3D12HeapSlotAllocator::CreateHeapDesc(D3D12_DESCRIPTOR_HEAP_TYPE Type, uint32_t NumDescriptorsPerHeap)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC Desc = {};
 	Desc.Type = Type;
@@ -26,12 +26,12 @@ D3D12_DESCRIPTOR_HEAP_DESC TD3D12HeapSlotAllocator::CreateHeapDesc(D3D12_DESCRIP
 	return Desc;
 }
 
-void TD3D12HeapSlotAllocator::AllocateHeap()
+void MD3D12HeapSlotAllocator::AllocateHeap()
 {
 	// Create a new descriptorHeap
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> Heap;
 	ThrowIfFailed(D3DDevice->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&Heap)));
-	SetDebugName(Heap.Get(), L"TD3D12HeapSlotAllocator Descriptor Heap");
+	SetDebugName(Heap.Get(), L"MD3D12HeapSlotAllocator Descriptor Heap");
 
 	// Add an entry covering the entire heap.
 	DescriptorHandle HeapBase = Heap->GetCPUDescriptorHandleForHeapStart();
@@ -45,7 +45,7 @@ void TD3D12HeapSlotAllocator::AllocateHeap()
 	HeapMap.push_back(Entry);
 }
 
-TD3D12HeapSlotAllocator::HeapSlot TD3D12HeapSlotAllocator::AllocateHeapSlot()
+MD3D12HeapSlotAllocator::HeapSlot MD3D12HeapSlotAllocator::AllocateHeapSlot()
 {
 	// Find the entry with free list
 	int EntryIndex = -1;
@@ -83,7 +83,7 @@ TD3D12HeapSlotAllocator::HeapSlot TD3D12HeapSlotAllocator::AllocateHeapSlot()
 	return Slot;
 }
 
-void TD3D12HeapSlotAllocator::FreeHeapSlot(const HeapSlot& Slot)
+void MD3D12HeapSlotAllocator::FreeHeapSlot(const HeapSlot& Slot)
 {
 	assert(Slot.HeapIndex < HeapMap.size());
 	HeapEntry& Entry = HeapMap[Slot.HeapIndex];

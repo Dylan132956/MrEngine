@@ -8,12 +8,12 @@ namespace filament
 	{
 		class D3D12Context;
 
-		class TD3D12DescriptorCache
+		class MD3D12DescriptorCache
 		{
 		public:
-			TD3D12DescriptorCache(D3D12Context* InContext);
+			MD3D12DescriptorCache(D3D12Context* InContext);
 
-			~TD3D12DescriptorCache();
+			~MD3D12DescriptorCache();
 
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GetCacheCbvSrvUavDescriptorHeap() { return CacheCbvSrvUavDescriptorHeap; }
 
