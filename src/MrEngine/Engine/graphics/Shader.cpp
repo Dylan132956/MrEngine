@@ -100,7 +100,7 @@ namespace moonriver
         std::string define;
         if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
         }
-        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
         {
             define = "#define COMPILER_HLSL 1\n";
         }
@@ -153,6 +153,9 @@ namespace moonriver
 
                 arg.version = 330;
                 arg.set_version = true;
+
+				//arg.es = true;
+				//arg.version = 100;
 #if VR_ANDROID || VR_IOS
                 arg.set_es = true;
                 arg.es = true;

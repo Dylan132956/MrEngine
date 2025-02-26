@@ -69,7 +69,6 @@ OpenGLProgram::OpenGLProgram(OpenGLDriver* gl, const Program& programBuilder) no
             mValidShaderSet |= 1U << i;
         }
     }
-
     // we need at least a vertex and fragment program
     const uint8_t validShaderSet = mValidShaderSet;
     const uint8_t mask = VERTEX_SHADER_BIT | FRAGMENT_SHADER_BIT;
@@ -93,8 +92,7 @@ OpenGLProgram::OpenGLProgram(OpenGLDriver* gl, const Program& programBuilder) no
             return;
         }
         this->gl.program = program;
-
-        // Associate each UniformBlock in the program to a known binding.
+        /*
 		GLint numBlocks;
 		GLint nameLen;
 
@@ -135,11 +133,8 @@ OpenGLProgram::OpenGLProgram(OpenGLDriver* gl, const Program& programBuilder) no
 				glGetProgramResourceName(program, GL_UNIFORM, unifIx, unifName.size() + 1, nullptr, (GLchar*)unifName.data());
 			}
 		}
-
-
-
-
-
+        */
+        // Associate each UniformBlock in the program to a known binding.
         auto const& uniformBlockInfo = programBuilder.getUniformBlockInfo();
         #pragma nounroll
         for (GLuint binding = 0, n = (GLuint) uniformBlockInfo.size(); binding < n; binding++) {
