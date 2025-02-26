@@ -5,10 +5,14 @@
 #include <vector>
 #include <stdarg.h> 
 #include <algorithm>
-#include <io.h>
-#include <direct.h>
+//#include <io.h>
+//#include <direct.h>
 
 using namespace std;
+#if VR_WINDOWS || VR_UWP
+#elif VR_IOS || VR_ANDROID || VR_MAC || VR_WASM
+#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
+#endif
 
 std::string VFormat(const char* format, va_list ap)
 {
@@ -316,6 +320,7 @@ void RemoveUTF8BOM(std::string& s)
 	if (s[0] == '\xEF' && s[1] == '\xBB' && s[2] == '\xBF')
 		s.erase(0, 3);
 }
+
 
 bool ReadFileContent(const string& fileName, string& fileContet)
 {

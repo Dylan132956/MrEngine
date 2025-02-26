@@ -20,8 +20,10 @@
 #include "audio/AudioManager.h"
 #include "Editor.h"
 #include "Input.h"
-
+#if VR_WINDOWS
 #include "core/meta/reflection/reflection_register.h"
+#endif
+//#include "hlsl2glsl.h"
 //#include "core/meta/meta_example.h"
 
 #if VR_WINDOWS
@@ -97,7 +99,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::D3D12),
+            m_backend(backend::Backend::OPENGL),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -144,9 +146,16 @@ namespace moonriver
             Shader::Init();
             AudioManager::Init();
             
+#if VR_WINDOWS
             Reflection::TypeMetaRegister::metaRegister();
             //test Reflection system
             metaExample();
+#endif
+			//if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL
+			//	&& Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
+			//{
+				//Hlsl2Glsl_Initialize();
+			//}
 		}
 
         void Shutdown()
@@ -184,8 +193,14 @@ namespace moonriver
                 m_driver_thread.join();
             }
             Shader::Exit();
-
+#if VR_WINDOWS
             Reflection::TypeMetaRegister::metaUnregister();
+#endif
+			//if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL
+			//	&& Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
+			//{
+			//	Hlsl2Glsl_Shutdown();
+			//}
         }
 
         void Loop()

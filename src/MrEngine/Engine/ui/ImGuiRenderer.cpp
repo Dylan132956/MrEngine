@@ -122,7 +122,8 @@ namespace moonriver
 #if VR_WINDOWS
             std::string str = Gb2312ToUtf8(std::string(&cs[0], cs.size()));
 #else
-            String str = String(&cs[0], cs.Size());
+            //String str = String(&cs[0], cs.Size());
+            std::string str = cs.data();
 #endif
 
             io.AddInputCharactersUTF8(str.c_str());

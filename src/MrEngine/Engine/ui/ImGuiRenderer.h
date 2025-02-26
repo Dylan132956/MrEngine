@@ -22,6 +22,7 @@
 
 namespace moonriver
 {
+    class Camera;
     class ImGuiRenderer : public MeshRenderer
     {
     public:
@@ -29,12 +30,12 @@ namespace moonriver
         virtual ~ImGuiRenderer();
         void UpdateImGui();
         void SetDrawAction(Action draw) { m_draw = draw; }
-        Ref<Camera> GetCamera() const { return m_camera.lock(); }
-        void SetCamera(const Ref<Camera>& camera) { m_camera = camera; }
+        std::shared_ptr<Camera> GetCamera() const { return m_camera.lock(); }
+        void SetCamera(const shared_ptr<Camera>& camera) { m_camera = camera; }
 
     private:
         Action m_draw;
-        Ref<Texture> m_font_texture;
-        WeakRef<Camera> m_camera;
+        std::shared_ptr<Texture> m_font_texture;
+        std::weak_ptr<Camera> m_camera;
     };
 }

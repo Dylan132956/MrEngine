@@ -93,9 +93,6 @@ file(GLOB MR3D_LIB_SRCS_HEADER
      ${MR3D_LIB_SRC_DIR}/Engine/string/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/thread/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/time/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.h
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/imgui/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/ui/*.h
      )
@@ -113,9 +110,6 @@ file(GLOB MR3D_LIB_SRCS_SOURCE
      ${MR3D_LIB_SRC_DIR}/Engine/string/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/thread/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/time/*.cpp
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.cpp
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.cpp
-     ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/imgui/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/ui/*.cpp
      )
@@ -142,6 +136,23 @@ target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter
                            ${MR3D_LIB_SRC_DIR}/Dep/json11
                            )
+
+if (${Target} MATCHES "Windows" OR
+    ${Target} MATCHES "UWP")
+    file(GLOB MR3D_SRCS_REFLECTION_HEADER
+        ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.h
+         ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.h
+         ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.h
+         )
+
+    file(GLOB MR3D_SRCS_REFLECTION_SOURCE
+        ${MR3D_LIB_SRC_DIR}/Engine/core/meta/*.cpp
+        ${MR3D_LIB_SRC_DIR}/Engine/core/meta/reflection/*.cpp
+        ${MR3D_LIB_SRC_DIR}/Engine/core/meta/serializer/*.cpp
+        )
+    source_group(TREE ${MR3D_LIB_SRC_DIR}/.. FILES ${MR3D_SRCS_REFLECTION_HEADER} ${MR3D_SRCS_REFLECTION_SOURCE})
+    target_sources(Mr3D PRIVATE ${MR3D_SRCS_REFLECTION_HEADER} ${MR3D_SRCS_REFLECTION_SOURCE})
+endif ()
 
 file(GLOB MR3D_APP_SRCS
      ${MR3D_APP_SRC_DIR}/App.cpp
@@ -535,6 +546,7 @@ if (${Target} MATCHES "Windows")
                    ${MR3D_APP_SRC_DIR}/Platform/win/Main.cpp
                    )
 
+
     target_link_libraries(Mr3DApp
                           Mr3D Mr3DDep
                           opengl32.lib
@@ -735,15 +747,21 @@ target_include_directories(Mr3DApp PRIVATE
                            ${MR3D_LIB_SRC_DIR}
                            )
 
-set(ENGINE_TOOLS_DIR ${CMAKE_SOURCE_DIR}/src/MrEngine/Tools)
-
 add_subdirectory(src/MrEngine/Dep/json11)
-add_subdirectory(src/MrEngine/Tools/meta_parser)
-
-set(CODEGEN_TARGET "MrPreCompile")
-include(src/MrEngine/precompile/precompile.cmake)
-set_target_properties("${CODEGEN_TARGET}" PROPERTIES FOLDER "Engine" )
-
-add_dependencies(Mr3D "${CODEGEN_TARGET}")
 add_dependencies(Mr3D json11)
-add_dependencies("${CODEGEN_TARGET}" "MrParser")
+
+if (${Target} MATCHES "Windows")
+    set(ENGINE_TOOLS_DIR ${CMAKE_SOURCE_DIR}/src/MrEngine/Tools)
+
+    add_subdirectory(src/MrEngine/Tools/meta_parser)
+
+    set(CODEGEN_TARGET "MrPreCompile")
+    include(src/MrEngine/precompile/precompile.cmake)
+    set_target_properties("${CODEGEN_TARGET}" PROPERTIES FOLDER "Engine" )
+
+    add_dependencies(Mr3D "${CODEGEN_TARGET}")
+
+    add_dependencies("${CODEGEN_TARGET}" "MrParser")
+endif ()
+
+
