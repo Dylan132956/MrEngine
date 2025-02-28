@@ -155,6 +155,7 @@ namespace moonriver
 				if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
 				{
 					arg.es = true;
+					arg.set_es = true;
 					arg.version = 100;
 				}
 				else
