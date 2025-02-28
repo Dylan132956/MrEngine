@@ -518,19 +518,21 @@ namespace moonriver
 			light_uniforms.spot_light_dir = -this->GetTransform()->GetForward();
 		}
 		light_uniforms.shadow_params = Vector4(m_shadow_strength, m_shadow_z_bias, m_shadow_slope_bias, 1.0f / m_shadow_texture_size * 3);
-
-		for (auto i : Renderer::GetRenderers())
+		if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
+			Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
 		{
-			const auto& materials = i->GetMaterials();
-
-			for (int i = 0; i < materials.size(); ++i)
+			for (auto i : Renderer::GetRenderers())
 			{
-				materials[i]->SetColor("_619.u_ambient_color", light_uniforms.ambient_color);
-				materials[i]->SetColor("_619.u_light_color", light_uniforms.light_color);
-				materials[i]->SetVector("_619.u_light_pos", light_uniforms.light_pos);
+				const auto& materials = i->GetMaterials();
+
+				for (int i = 0; i < materials.size(); ++i)
+				{
+					materials[i]->SetColor("_619.u_ambient_color", light_uniforms.ambient_color);
+					materials[i]->SetColor("_619.u_light_color", light_uniforms.light_color);
+					materials[i]->SetVector("_619.u_light_pos", light_uniforms.light_pos);
+				}
 			}
 		}
-
 		void* buffer = driver.allocate(sizeof(LightFragmentUniforms));
 		Memory::Copy(buffer, &light_uniforms, sizeof(LightFragmentUniforms));
 		driver.loadUniformBuffer(m_light_uniform_buffer, filament::backend::BufferDescriptor(buffer, sizeof(LightFragmentUniforms)));

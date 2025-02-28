@@ -354,8 +354,8 @@ namespace moonriver
             }
         }
 
-		if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL/* &&
-			Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20*/)
+		if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
+			Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
         {
             for (auto& i : m_properties)
             {

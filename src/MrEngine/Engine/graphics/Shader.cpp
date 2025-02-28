@@ -150,6 +150,8 @@ namespace moonriver
 
             if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
                 compile_arguments arg;
+#if VR_ANDROID || VR_IOS
+				arg.set_version = true;
 				if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
 				{
 					arg.es = true;
@@ -158,13 +160,7 @@ namespace moonriver
 				else
 				{
 					arg.version = 330;
-					arg.set_version = true;
 				}
-#if VR_ANDROID || VR_IOS
-                arg.set_es = true;
-                arg.es = true;
-                arg.version = 300;
-                arg.set_version = true;
 #endif
                 std::string vs_glsl = spirv_converter(arg, vs_spriv);
                 std::string fs_glsl = spirv_converter(arg, fs_spriv);

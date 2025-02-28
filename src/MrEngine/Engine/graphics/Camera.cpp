@@ -401,8 +401,8 @@ namespace moonriver
             auto& material = materials[i];
             if (material)
             {
-				if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL/* &&
-					Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20*/)
+				if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
+					Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
                 {
 
 					//static constexpr const char* VIEW_MATRIX = "u_view_matrix";
