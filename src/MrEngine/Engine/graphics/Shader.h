@@ -3,6 +3,7 @@
 #include "Object.h"
 #include "private/backend/DriverApi.h"
 #include <map>
+#include <unordered_map>
 
 namespace moonriver
 {
@@ -107,6 +108,8 @@ namespace moonriver
             int queue = (int)Queue::Geometry;
             LightMode light_mode = LightMode::None;
             std::vector<Uniform> uniforms;
+            //use in es2.0
+            std::unordered_map<std::string, std::string> mapUniformsName;
             std::vector<SamplerGroup> samplers;
             filament::backend::PipelineState pipeline;
         };

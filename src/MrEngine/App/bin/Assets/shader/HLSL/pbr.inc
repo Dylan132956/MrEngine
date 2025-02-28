@@ -27,15 +27,18 @@ struct GLTFMaterialShaderInfo
     float   BaseColorSlice;
     float   PhysicalDescriptorSlice;
 
-    float   NormalSlice;
-    float   OcclusionSlice;
-    float   EmissiveSlice;
-    float   MetallicFactor;
+    float4   MroFactor;
+    float4   RacFactor;
 
-    float   RoughnessFactor;
-    int     AlphaMode;
-    float   AlphaMaskCutoff;
-    float   Dummy0;
+    //float   NormalSlice;
+    //float   OcclusionSlice;
+    //float   EmissiveSlice;
+    //float   MetallicFactor;
+
+    //float   RoughnessFactor;
+    //int     AlphaMode;
+    //float   AlphaMaskCutoff;
+    //float   Dummy0;
 
     // When texture atlas is used, UV scale and bias applied to
     // each texture coordinate set
@@ -141,7 +144,7 @@ float4 pbrBaseColor(float2 texcoord)
 
 float2 pbrMetallicRoughness(float2 texcoord)
 {
-    return g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, texcoord).rg * float2(g_MaterialInfo.MetallicFactor, g_MaterialInfo.RoughnessFactor);
+    return g_PhysicalDescriptorMap.Sample(g_PhysicalDescriptorSampler, texcoord).rg * float2(g_MaterialInfo.MroFactor.a, g_MaterialInfo.RacFactor.r);
 }
 #if (_NORMALMAP_ON == 1)
 float3 pbrNormal(float2 texcoord)

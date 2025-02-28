@@ -308,6 +308,13 @@ namespace moonriver
 			void* buffer = driver.allocate(sizeof(ShaderAttribs));
 			Memory::Copy(buffer, &Attribs, sizeof(ShaderAttribs));
 			driver.loadUniformBuffer(m_pbr_uniform_buffers[i], filament::backend::BufferDescriptor(buffer, sizeof(ShaderAttribs)));
+
+			SetVector("_242.g_MaterialInfo.BaseColorFactor", Attribs.BaseColorFactor);
+			SetVector("_242.g_MaterialInfo.EmissiveFactor", Attribs.EmissiveFactor);
+			SetVector("_242.g_MaterialInfo.SpecularFactor", Attribs.SpecularFactor);
+            SetVector("_242.g_MaterialInfo.MroFactor", Vector4(Attribs.NormalSlice, Attribs.OcclusionSlice, Attribs.EmissiveSlice, Attribs.MetallicFactor));
+            SetVector("_242.g_MaterialInfo.RacFactor", Vector4(Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.AlphaCutoff, Attribs.Dummy0));
+            //SetVector("_242.g_MaterialInfo.SpecularFactor", Vector4(Attribs.MetallicFactor, Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.));
         }
     }
 
@@ -347,8 +354,8 @@ namespace moonriver
             }
         }
 
-        if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
-            Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
+		if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL/* &&
+			Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20*/)
         {
             for (auto& i : m_properties)
             {

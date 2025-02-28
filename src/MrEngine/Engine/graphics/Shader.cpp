@@ -150,12 +150,16 @@ namespace moonriver
 
             if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
                 compile_arguments arg;
-
-                arg.version = 330;
-                arg.set_version = true;
-
-				//arg.es = true;
-				//arg.version = 100;
+				if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
+				{
+					arg.es = true;
+					arg.version = 100;
+				}
+				else
+				{
+					arg.version = 330;
+					arg.set_version = true;
+				}
 #if VR_ANDROID || VR_IOS
                 arg.set_es = true;
                 arg.es = true;

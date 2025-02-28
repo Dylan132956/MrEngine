@@ -2939,14 +2939,14 @@ void OpenGLDriver::setRenderPrimitiveBuffer(Handle<HwRenderPrimitive> rph,
 }
 
 static const char* ATTRIBUTE_NAMES[] = {
-	"i_vertex",
-	"i_color",
-	"i_uv",
-	"i_uv2",
-	"i_normal",
-	"i_tangent",
-	"i_bone_weights",
-	"i_bone_indices"
+	"v_vertex",
+	"v_color",
+	"v_uv",
+	"v_uv2",
+	"v_normal",
+	"v_tangent",
+	"v_boneWeights",
+	"v_boneIndices"
 };
 
 void OpenGLDriver::bindVertexAttribs(const GLRenderPrimitive* rp, OpenGLProgram* p) noexcept

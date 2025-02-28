@@ -42,7 +42,7 @@ struct appdata
     float2 uv2 : TEXCOORD1;
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
-    float4 boneWeight : BLENDWEIGHT;
+    float4 boneWeights : BLENDWEIGHT;
     float4 boneIndices : BLENDINDICES;
 };
 
@@ -64,10 +64,10 @@ v2f vert(appdata v)
     int index_1 = int(v.boneIndices.y);
     int index_2 = int(v.boneIndices.z);
     int index_3 = int(v.boneIndices.w);
-    float weights_0 = v.boneWeight.x;
-    float weights_1 = v.boneWeight.y;
-    float weights_2 = v.boneWeight.z;
-    float weights_3 = v.boneWeight.w;
+    float weights_0 = v.boneWeights.x;
+    float weights_1 = v.boneWeights.y;
+    float weights_2 = v.boneWeights.z;
+    float weights_3 = v.boneWeights.w;
     float4x4 bone_0 = float4x4(u_bones[index_0 * 3], u_bones[index_0 * 3 + 1], u_bones[index_0 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 bone_1 = float4x4(u_bones[index_1 * 3], u_bones[index_1 * 3 + 1], u_bones[index_1 * 3 + 2], float4(0, 0, 0, 1));
     float4x4 bone_2 = float4x4(u_bones[index_2 * 3], u_bones[index_2 * 3 + 1], u_bones[index_2 * 3 + 2], float4(0, 0, 0, 1));
@@ -78,16 +78,18 @@ v2f vert(appdata v)
 #endif
     float4 worldpos = mul(float4(v.vertex.xyz, 1.0), model_matrix);
     o.vertex = mul(mul(worldpos, u_view_matrix), u_projection_matrix);
-    o.vfnormal.xyz = mul(v.normal.xyz, (float3x3)model_matrix);
-#if (_NORMALMAP_ON == 1)
-    o.vftangent.xyz = mul(v.tangent.xyz, (float3x3)model_matrix);
-    o.vfbinormal.xyz = normalize(cross(o.vfnormal.xyz, o.vftangent.xyz) * float3(v.tangent.w, v.tangent.w, v.tangent.w));
-#endif
-    o.vfnormal.w = worldpos.x;
-    o.vftangent.w = worldpos.y;
-    o.vfbinormal.w = worldpos.z;
-    o.vcolor = v.color;
+    o.normal.xyz = mul(v.normal.xyz, (float3x3)model_matrix);
+//#if (_NORMALMAP_ON == 1)
+    o.tangent.xyz = mul(v.tangent.xyz, (float3x3)model_matrix);
+    o.binormal.xyz = normalize(cross(o.normal.xyz, o.tangent.xyz) * float3(v.tangent.w, v.tangent.w, v.tangent.w));
+//#endif
+    o.normal.w = worldpos.x;
+    o.tangent.w = worldpos.y;
+    o.binormal.w = worldpos.z;
+    o.color = v.color;
+    o.u_camera_pos = u_camera_pos;
     o.uv = v.uv;
+    o.uv2 = v.uv2;
 #if (COMPILER_HLSL == 1)
     o.vertex.z = 0.5 * (o.vertex.z + o.vertex.w);
 #endif
@@ -104,15 +106,15 @@ void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
     float4 bgfx_VoidFrag = vec4_splat(1.0);
     PBRMaterial mat = pbrMaterial(uv);
 #if (_NORMALMAP_ON == 1)
-    float3 N = convertTangentNormal(_entryPointOutput.vfnormal.xyz, _entryPointOutput.vftangent.xyz, mat.normal);
+    float3 N = convertTangentNormal(_entryPointOutput.normal.xyz, _entryPointOutput.tangent.xyz, mat.normal);
     N = mat.normal;
 #else
-    float3 N = _entryPointOutput.vfnormal.xyz;
+    float3 N = _entryPointOutput.normal.xyz;
 #endif
     N.xyz = normalize(N.xyz);
     mat.a = specularAntiAliasing(N, mat.a);
-    float3 camPos = u_camera_pos.xyz;
-    float3 fragPos = float3(_entryPointOutput.vfnormal.w, _entryPointOutput.vftangent.w, _entryPointOutput.vfbinormal.w);
+    float3 camPos = _entryPointOutput.u_camera_pos.xyz;
+    float3 fragPos = float3(_entryPointOutput.normal.w, _entryPointOutput.tangent.w, _entryPointOutput.binormal.w);
     float3 V = normalize(camPos - fragPos);
     float NoV = abs(dot(N, V)) + 1e-5;
     float3 msFactor = 1.0;
@@ -123,8 +125,8 @@ void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
     radianceOut += BRDF(V, L, N, NoV, NoL, mat) * color * msFactor * NoL;
     radianceOut += u_ambient_color.rgb * mat.diffuseColor * mat.occlusion;
     radianceOut += mat.emissive;
+    //radianceOut = mat.diffuseColor;
     outColor = float4(toGammaAccurate(tonemap_aces_luminance(radianceOut)), 1.0);
-    //outColor = float4(1.0, 0.0, 0.0, 1.0);
 }
 ENDCG
 #END_PASSES

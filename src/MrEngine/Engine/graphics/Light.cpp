@@ -466,6 +466,18 @@ namespace moonriver
 		m_culling_mask = mask;
 	}
 
+	//void SetLightVector4();
+	//{
+	//	void* buffer = driver.allocate(sizeof(Vector4));
+	//	Memory::Copy(buffer, &i.second.data, sizeof(Vector4));
+	//	driver.setUniformVector(
+	//		shader->GetPass(pass).pipeline.program,
+	//		i.first.c_str(),
+	//		1,
+	//		filament::backend::BufferDescriptor(buffer, sizeof(Vector4)));
+	//	break;
+	//}
+
 	void Light::Prepare()
 	{
 		if (!m_dirty)
@@ -506,6 +518,18 @@ namespace moonriver
 			light_uniforms.spot_light_dir = -this->GetTransform()->GetForward();
 		}
 		light_uniforms.shadow_params = Vector4(m_shadow_strength, m_shadow_z_bias, m_shadow_slope_bias, 1.0f / m_shadow_texture_size * 3);
+
+		for (auto i : Renderer::GetRenderers())
+		{
+			const auto& materials = i->GetMaterials();
+
+			for (int i = 0; i < materials.size(); ++i)
+			{
+				materials[i]->SetColor("_619.u_ambient_color", light_uniforms.ambient_color);
+				materials[i]->SetColor("_619.u_light_color", light_uniforms.light_color);
+				materials[i]->SetVector("_619.u_light_pos", light_uniforms.light_pos);
+			}
+		}
 
 		void* buffer = driver.allocate(sizeof(LightFragmentUniforms));
 		Memory::Copy(buffer, &light_uniforms, sizeof(LightFragmentUniforms));

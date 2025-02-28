@@ -25,9 +25,11 @@ struct simple_vert_color_uv_output
 struct v2f
 {
     float4 vertex : SV_POSITION;
-    float4 vcolor : COLOR;
+    float4 color  : COLOR;
     float2 uv : TEXCOORD0;
-    float4 vfnormal : NORMAL;
-    float4 vftangent : TANGENT;
-    float4 vfbinormal : BINORMAL;
+    float2 uv2 : TEXCOORD1;
+    float4 normal : NORMAL;
+    float4 tangent : TANGENT;
+    float4 binormal : BINORMAL;
+    float4 u_camera_pos : TEXCOORD2;
 };
