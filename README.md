@@ -6,7 +6,7 @@ Cross-platform 3D Rendering Engine
 
 Support Android、iOS、macOS、Windows
 
-Support OpenGL ES 3.0、Vulkan、Metal、DX11、DX12
+Support OpenGL ES 2.0、OpenGL ES 3.0、Vulkan、Metal、DX11、DX12
 
 Shader Language: HLSL
 
