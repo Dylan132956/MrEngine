@@ -55,8 +55,9 @@ PlatformCocoaTouchGL::~PlatformCocoaTouchGL() noexcept {
 
 Driver* PlatformCocoaTouchGL::createDriver(void* const sharedGLContext) noexcept {
     EAGLSharegroup* sharegroup = (EAGLSharegroup*) sharedGLContext;
-
-    EAGLContext* context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup:sharegroup];
+    //iOS uses the ES 2.0 context by default. The demonstration engine supports the usage of ES 2.0.
+    //kEAGLRenderingAPIOpenGLES3 -> kEAGLRenderingAPIOpenGLES2
+    EAGLContext* context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2 sharegroup:sharegroup];
     if (context == nil) {
         context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2 sharegroup:sharegroup];
     }

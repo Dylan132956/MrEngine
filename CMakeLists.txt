@@ -671,10 +671,16 @@ elseif (${Target} MATCHES "iOS")
     set(CMAKE_OSX_DEPLOYMENT_TARGET "")
     set(CMAKE_OSX_ARCHITECTURES arm64)
 
+    #iOS uses the ES 2.0 context by default. The demonstration engine supports the usage of ES 2.0.
+    #support metal
+    # set(CMAKE_CXX_FLAGS
+    #     "${CMAKE_CXX_FLAGS} -std=c++14 -DVR_IOS -DVR_VULKAN=0 -DVR_GLES=1 -DVR_METAL=1 -DVR_USE_METAL=1")
+    # add_definitions(-Wall -DIOS -DHAVE_ASSERT_H -DFILAMENT_SUPPORTS_METAL)
+    #support es
     set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} -std=c++14 -DVR_IOS -DVR_VULKAN=0 -DVR_GLES=1 -DVR_METAL=1 -DVR_USE_METAL=1")
-    add_definitions(-Wall -DIOS -DHAVE_ASSERT_H -DFILAMENT_SUPPORTS_METAL)
-
+        "${CMAKE_CXX_FLAGS} -std=c++14 -DVR_IOS -DVR_VULKAN=0 -DVR_GLES=1")
+    add_definitions(-Wall -DIOS -DHAVE_ASSERT_H)
+    
     file(GLOB MR3D_DEP_SRCS_IOS
          ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/opengl/PlatformCocoaTouchGL.mm
          )
