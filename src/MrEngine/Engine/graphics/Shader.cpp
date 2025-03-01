@@ -152,15 +152,15 @@ namespace moonriver
                 compile_arguments arg;
 #if VR_ANDROID || VR_IOS
 				arg.set_version = true;
+				arg.es = true;
+				arg.set_es = true;
 				if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
 				{
-					arg.es = true;
-					arg.set_es = true;
 					arg.version = 100;
 				}
 				else
 				{
-					arg.version = 330;
+					arg.version = 300;
 				}
 #endif
                 std::string vs_glsl = spirv_converter(arg, vs_spriv);
@@ -368,7 +368,7 @@ namespace moonriver
 				std::string str_shader = shader_buffer;
 				FileSystem::FreeFileData(shader_buffer);
 				RemoveUTF8BOM(str_shader);
-				// ´¦Àípass
+				// ï¿½ï¿½ï¿½ï¿½pass
 				size_t beginToken = std::string::npos;
 				size_t endToken = std::string::npos;
 				std::vector<std::string> totalPassNames;
@@ -407,7 +407,7 @@ namespace moonriver
 					pass.fsPath = shader_path[0];
 					shader->m_passes.push_back(pass);
 					//totalPassNames.push_back(passname);
-					// ²éÕÒÐÂµÄpass
+					// ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½pass
 					bfind = FindInTokensString(str_shader, beginPass,
 						endPass, endToken, beginToken, endToken);
 				}
