@@ -72,6 +72,10 @@ namespace moonriver
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize = ImVec2((float) Engine::Instance()->GetWidth(), (float) Engine::Instance()->GetHeight());
         io.DeltaTime = Time::GetDeltaTime();
+        if (io.DeltaTime == 0.f)
+        {
+            io.DeltaTime = std::numeric_limits<float>::epsilon();
+        }
 
         //Log("io.DeltaTime: %f", io.DeltaTime);
         
