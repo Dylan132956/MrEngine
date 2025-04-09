@@ -55,7 +55,7 @@ v2f vert(appdata a)
     v2f o = (v2f)0;
     float4x4 model_matrix = u_model_matrix;
     o.vertex = mul(mul(mul(float4(a.vertex.xyz, 1.0), model_matrix), u_view_matrix), u_projection_matrix);
-    o.vcolor = a.color;
+    o.color = a.color;
     o.uv = a.uv * u_texture_scale_offset.xy + u_texture_scale_offset.zw;
 
 #if (COMPILER_HLSL == 1)
@@ -70,7 +70,7 @@ v2f vert(appdata a)
 
 void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
 {
-    outColor = g_ColorMap.Sample(g_ColorSampler, _entryPointOutput.uv) * _entryPointOutput.vcolor * u_color;
+    outColor = g_ColorMap.Sample(g_ColorSampler, _entryPointOutput.uv) * _entryPointOutput.color * u_color;
 }
 ENDCG
 #END_PASSES
