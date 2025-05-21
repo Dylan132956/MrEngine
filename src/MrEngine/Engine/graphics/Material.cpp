@@ -309,11 +309,14 @@ namespace moonriver
 			Memory::Copy(buffer, &Attribs, sizeof(ShaderAttribs));
 			driver.loadUniformBuffer(m_pbr_uniform_buffers[i], filament::backend::BufferDescriptor(buffer, sizeof(ShaderAttribs)));
 
-			SetVector("_242.g_MaterialInfo.BaseColorFactor", Attribs.BaseColorFactor);
-			SetVector("_242.g_MaterialInfo.EmissiveFactor", Attribs.EmissiveFactor);
-			SetVector("_242.g_MaterialInfo.SpecularFactor", Attribs.SpecularFactor);
-            SetVector("_242.g_MaterialInfo.MroFactor", Vector4(Attribs.NormalSlice, Attribs.OcclusionSlice, Attribs.EmissiveSlice, Attribs.MetallicFactor));
-            SetVector("_242.g_MaterialInfo.RacFactor", Vector4(Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.AlphaCutoff, Attribs.Dummy0));
+            if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
+            {
+				SetVector("fs.PerMaterialFragment.g_MaterialInfo.BaseColorFactor", Attribs.BaseColorFactor);
+				SetVector("fs.PerMaterialFragment.g_MaterialInfo.EmissiveFactor", Attribs.EmissiveFactor);
+				SetVector("fs.PerMaterialFragment.g_MaterialInfo.SpecularFactor", Attribs.SpecularFactor);
+				SetVector("fs.PerMaterialFragment.g_MaterialInfo.MroFactor", Vector4(Attribs.NormalSlice, Attribs.OcclusionSlice, Attribs.EmissiveSlice, Attribs.MetallicFactor));
+				SetVector("fs.PerMaterialFragment.g_MaterialInfo.RacFactor", Vector4(Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.AlphaCutoff, Attribs.Dummy0));
+            }
             //SetVector("_242.g_MaterialInfo.SpecularFactor", Vector4(Attribs.MetallicFactor, Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.));
         }
     }
@@ -329,6 +332,30 @@ namespace moonriver
         uint32_t scissor_height = (uint32_t)(m_scissor_rect.h * target_height);
         driver.setViewportScissor(scissor_left, scissor_bottom, scissor_width, scissor_height);
     }
+
+	std::vector<std::string> splitByTwoDots(const std::string& str) {
+		std::vector<std::string> parts(3); // 默认初始化3个空字符串
+		size_t first_dot = str.find('.');
+
+		// 提取第一段
+		if (first_dot != std::string::npos) {
+			parts[0] = str.substr(0, first_dot);
+			size_t second_dot = str.find('.', first_dot + 1); // 从第一个点后开始找
+
+			// 提取第二段
+			if (second_dot != std::string::npos) {
+				parts[1] = str.substr(first_dot + 1, second_dot - (first_dot + 1));
+				parts[2] = str.substr(second_dot + 1); // 第三段为剩余部分
+			}
+			else {
+				parts[1] = str.substr(first_dot + 1); // 第二个点不存在，第二段取到末尾
+			}
+		}
+		else {
+			parts[0] = str; // 无点，整个字符串作为第一段
+		}
+		return parts;
+	}
 
     void Material::Bind(const std::shared_ptr<Shader>& shader, int pass)
     {
@@ -357,6 +384,43 @@ namespace moonriver
 		if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
 			Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
         {
+
+			auto GetShaderParamName = [](const Shader::Pass& pass, const std::string& inputName)
+			{
+				// 1. 添加输入有效性检查
+				std::vector<std::string> vstring = splitByTwoDots(inputName);
+				if (vstring.size() < 3) { // 确保分割后的三段都存在
+					assert(!"Invalid uniform name format");
+					return std::string();
+				}
+
+				// 2. 统一使用 find 方法处理 const 容器
+				const auto& vsMap = pass.vs_mapUniformsName;
+				const auto& fsMap = pass.fs_mapUniformsName;
+
+				if (vstring[0] == "vs") {
+					auto it = vsMap.find(vstring[1]);
+					if (it != vsMap.end()) {
+						return it->second + "." + vstring[2];
+					}
+					// 3. 添加明确的错误处理
+					assert(!"VS uniform not found");
+					return std::string();
+				}
+				else if (vstring[0] == "fs") {
+					auto it = fsMap.find(vstring[1]);
+					if (it != fsMap.end()) {
+						return it->second + "." + vstring[2];
+					}
+					assert(!"FS uniform not found");
+					return std::string();
+				}
+
+				// 4. 优化断言信息
+				assert(!"Invalid shader stage prefix (must be vs/fs)");
+				return std::string();
+			};
+
             for (auto& i : m_properties)
             {
                 switch (i.second.type)
@@ -367,7 +431,7 @@ namespace moonriver
                     Memory::Copy(buffer, &i.second.data, sizeof(Matrix4x4));
                     driver.setUniformMatrix(
                         shader->GetPass(pass).pipeline.program,
-                        i.first.c_str(),
+                        GetShaderParamName((shader->GetPass(pass)), (i.first)),
                         1,
                         filament::backend::BufferDescriptor(buffer, sizeof(Matrix4x4)));
                     break;
@@ -379,7 +443,7 @@ namespace moonriver
                     Memory::Copy(buffer, &i.second.data, sizeof(Vector4));
                     driver.setUniformVector(
                         shader->GetPass(pass).pipeline.program,
-                        i.first.c_str(),
+                        GetShaderParamName((shader->GetPass(pass)), (i.first)),
                         1,
                         filament::backend::BufferDescriptor(buffer, sizeof(Vector4)));
                     break;
@@ -391,7 +455,7 @@ namespace moonriver
                     Memory::Copy(buffer, &array[0], sizeof(array[0]) * array.size());
                     driver.setUniformVector(
                         shader->GetPass(pass).pipeline.program,
-                        i.first.c_str(),
+                        GetShaderParamName((shader->GetPass(pass)), (i.first)),
                         array.size(),
                         filament::backend::BufferDescriptor(buffer, sizeof(array[0]) * array.size()));
                     break;

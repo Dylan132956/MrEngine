@@ -109,7 +109,8 @@ namespace moonriver
             LightMode light_mode = LightMode::None;
             std::vector<Uniform> uniforms;
             //use in es2.0
-            std::unordered_map<std::string, std::string> mapUniformsName;
+            std::unordered_map<std::string, std::string> vs_mapUniformsName;
+            std::unordered_map<std::string, std::string> fs_mapUniformsName;
             std::vector<SamplerGroup> samplers;
             filament::backend::PipelineState pipeline;
         };
