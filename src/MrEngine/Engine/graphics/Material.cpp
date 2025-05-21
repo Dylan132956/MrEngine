@@ -417,8 +417,8 @@ namespace moonriver
 				}
 
 				// 4. 优化断言信息
-				assert(!"Invalid shader stage prefix (must be vs/fs)");
-				return std::string();
+				//assert(!"Invalid shader stage prefix (must be vs/fs)");
+				return std::string(inputName);
 			};
 
             for (auto& i : m_properties)
