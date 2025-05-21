@@ -1550,7 +1550,7 @@ string compile_iteration(std::vector<uint32_t> &spirv_file)
 	return ret;
 }
 
-static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> spirv_file)
+static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> spirv_file, st_outres* ores = nullptr)
 {
 	Parser spirv_parser(std::move(spirv_file));
 	spirv_parser.parse();
@@ -1931,10 +1931,24 @@ static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> 
 		print_capabilities_and_extensions(*compiler);
 	}
 
+	//print_resources(compiler, "ubos", res.uniform_buffers);
+	if (ores != nullptr )
+	{
+		ores->mapUniformsName.clear();
+		for (auto &res : res.uniform_buffers)
+		{
+			auto &type = (*compiler).get_type(res.type_id);
+			char buffer[256];
+			sprintf(buffer, "_%d", res.id);
+			ores->mapUniformsName[res.name] = string(buffer);
+		}
+	}
+
+
 	return ret;
 }
 
-std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv_file)
+std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv_file, st_outres *ores)
 {
 	CLIArguments args;
     //gl gles
@@ -1948,7 +1962,7 @@ std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv
     args.set_msl_version = arg.set_msl_version;
     args.msl_version = arg.msl_version;
     args.msl_decoration_binding = arg.msl_decoration_binding;
-	return compile_iteration(args, spirv_file);
+	return compile_iteration(args, spirv_file, ores);
 }
 
 static int main_inner(int argc, char *argv[])

@@ -527,9 +527,9 @@ namespace moonriver
 
 				for (int i = 0; i < materials.size(); ++i)
 				{
-					materials[i]->SetColor("_619.u_ambient_color", light_uniforms.ambient_color);
-					materials[i]->SetColor("_619.u_light_color", light_uniforms.light_color);
-					materials[i]->SetVector("_619.u_light_pos", light_uniforms.light_pos);
+					materials[i]->SetColor("fs.PerLightFragment.u_ambient_color", light_uniforms.ambient_color);
+					materials[i]->SetColor("fs.PerLightFragment..u_light_color", light_uniforms.light_color);
+					materials[i]->SetVector("fs.PerLightFragment.u_light_pos", light_uniforms.light_pos);
 				}
 			}
 		}

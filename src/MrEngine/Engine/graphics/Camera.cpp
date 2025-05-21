@@ -404,20 +404,15 @@ namespace moonriver
 				if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL &&
 					Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
                 {
-
-					//static constexpr const char* VIEW_MATRIX = "u_view_matrix";
-					//static constexpr const char* PROJECTION_MATRIX = "u_projection_matrix";
-					//static constexpr const char* CAMERA_POS = "u_camera_pos";
-					//static constexpr const char* TIME = "u_time";
-					material->SetMatrix("_285.u_view_matrix", m_view_uniforms.view_matrix); //_48.u_view_matrix
-					material->SetMatrix("_285.u_projection_matrix", m_view_uniforms.projection_matrix);
-					material->SetVector("_285.u_camera_pos", m_view_uniforms.camera_pos);
-					material->SetVector("_285.u_time", m_view_uniforms.time);
-					material->SetMatrix(RendererUniforms::MODEL_MATRIX, renderer->GetTransform()->GetLocalToWorldMatrix());
+					material->SetMatrix("vs.PerView.u_view_matrix", m_view_uniforms.view_matrix); //_48.u_view_matrix
+					material->SetMatrix("vs.PerView.u_projection_matrix", m_view_uniforms.projection_matrix);
+					material->SetVector("vs.PerView.u_camera_pos", m_view_uniforms.camera_pos);
+					material->SetVector("vs.PerView.u_time", m_view_uniforms.time);
+					material->SetMatrix("vs.PerRenderer.u_model_matrix", renderer->GetTransform()->GetLocalToWorldMatrix());
 
                     if (skin && skin->GetBonesUniformBuffer())
                     {
-                        material->SetVectorArray("_68.u_bones", skin->GetBoneVectors());
+                        material->SetVectorArray("vs.PerRendererBones.u_bones", skin->GetBoneVectors());
                     }
                 }
 

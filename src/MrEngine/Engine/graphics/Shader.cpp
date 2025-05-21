@@ -150,6 +150,8 @@ namespace moonriver
 
             if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
                 compile_arguments arg;
+				st_outres* ores = nullptr;
+				st_outres es2;
 #if VR_ANDROID || VR_IOS
 				arg.set_version = true;
 				arg.es = true;
@@ -157,15 +159,22 @@ namespace moonriver
 				if (Engine::Instance()->GetShaderModel() == filament::backend::ShaderModel::GL_ES_20)
 				{
 					arg.version = 100;
+					ores = &es2;
 				}
 				else
 				{
 					arg.version = 300;
 				}
 #endif
-                std::string vs_glsl = spirv_converter(arg, vs_spriv);
-                std::string fs_glsl = spirv_converter(arg, fs_spriv);
-
+				ores = &es2;
+                std::string vs_glsl = spirv_converter(arg, vs_spriv, ores);
+				if (ores != nullptr) {
+					pass.vs_mapUniformsName = ores->mapUniformsName;
+				}
+                std::string fs_glsl = spirv_converter(arg, fs_spriv, ores);
+				if (ores != nullptr) {
+					pass.fs_mapUniformsName = ores->mapUniformsName;
+				}
                 vs_data.resize(vs_glsl.size());
                 memcpy(&vs_data[0], &vs_glsl[0], vs_data.size());
                 fs_data.resize(fs_glsl.size());
