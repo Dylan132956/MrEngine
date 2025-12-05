@@ -99,7 +99,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::OPENGL),
+            m_backend(backend::Backend::VULKAN),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -461,8 +461,9 @@ namespace moonriver
         }
         Time::Update();
         m_pCore->m_scene_manager->Update();
-        m_pCore->BeginFrame();
         m_pCore->m_editor->Update();
+        m_pCore->BeginFrame();
+        m_pCore->m_editor->Render();
         m_pCore->Render();
         m_pCore->m_scene_manager->Render();
         m_pCore->EndFrame();

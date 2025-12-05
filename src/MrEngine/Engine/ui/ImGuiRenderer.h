@@ -29,6 +29,7 @@ namespace moonriver
         ImGuiRenderer();
         virtual ~ImGuiRenderer();
         void UpdateImGui();
+        void Render();
         void SetDrawAction(Action draw) { m_draw = draw; }
         std::shared_ptr<Camera> GetCamera() const { return m_camera.lock(); }
         void SetCamera(const shared_ptr<Camera>& camera) { m_camera = camera; }
@@ -37,5 +38,9 @@ namespace moonriver
         Action m_draw;
         std::shared_ptr<Texture> m_font_texture;
         std::weak_ptr<Camera> m_camera;
+        //font
+		int m_font_tex_width = -1;
+		int m_font_tex_height = -1;
+        unsigned char* m_font_tex_pixels = nullptr;
     };
 }

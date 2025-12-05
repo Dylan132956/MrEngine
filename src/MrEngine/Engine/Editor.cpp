@@ -159,6 +159,18 @@ namespace moonriver
         }
     }
 
+    void Editor::Render()
+    {
+		if (m_editor_mode)
+		{
+			auto imgui = m_imgui.lock();
+            if (imgui)
+            {
+                imgui->Render();
+            }
+		}
+    }
+
     void Editor::DrawWindows()
     {
         ImGui::ShowDemoWindow();

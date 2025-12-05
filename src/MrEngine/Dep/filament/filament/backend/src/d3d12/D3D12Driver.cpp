@@ -809,7 +809,9 @@ namespace filament
 
 			m_context->executeCommandList(false);
 			auto swap_chain = handle_cast<D3D12SwapChain>(m_handle_map, sch);
-			swap_chain->m_swapChain->Present(1, 0);
+
+			DXGI_PRESENT_PARAMETERS dpp = {};
+			swap_chain->m_swapChain->Present1(0, DXGI_PRESENT_ALLOW_TEARING, &dpp);
 
 			const UINT64 prevFrameFenceValue = m_context->m_fenceValues[m_context->m_frameIndex];
 			m_context->m_commandQueue->Signal(m_context->m_fence.Get(), prevFrameFenceValue);

@@ -28,6 +28,7 @@ namespace moonriver
         bool IsInEditorMode() const { return m_editor_mode; }
         std::shared_ptr<Entity> GetSelectedGameObject() const { return m_selected_object.lock(); }
         void Update();
+        void Render();
 
     private:
         void DrawWindows();

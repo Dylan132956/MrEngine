@@ -67,98 +67,23 @@ namespace moonriver
         ImGui::DestroyContext();
     }
 
-    void ImGuiRenderer::UpdateImGui()
+    void ImGuiRenderer::Render()
     {
         ImGuiIO& io = ImGui::GetIO();
-        io.DisplaySize = ImVec2((float) Engine::Instance()->GetWidth(), (float) Engine::Instance()->GetHeight());
-        io.DeltaTime = Time::GetDeltaTime();
-        if (io.DeltaTime < std::numeric_limits<float>::epsilon())
-        {
-            io.DeltaTime = std::numeric_limits<float>::epsilon();
-        }
+		if (m_font_texture == nullptr)
+		{
+			ByteBuffer pixels(m_font_tex_pixels, m_font_tex_width * m_font_tex_height * 4);
+			m_font_texture = Texture::CreateTexture2DFromMemory(
+				pixels,
+				m_font_tex_width,
+				m_font_tex_height,
+				TextureFormat::R8G8B8A8,
+				FilterMode::Linear,
+				SamplerAddressMode::ClampToEdge,
+				false);
+		}
 
-        //Log("io.DeltaTime: %f", io.DeltaTime);
-        
-        // input
-        for (int i = 0; i < 3; ++i)
-        {
-            if (Input::GetMouseButtonDown(i))
-            {
-                io.MouseDown[i] = true;
-            }
-            if (Input::GetMouseButtonUp(i))
-            {
-                io.MouseDown[i] = false;
-            }
-        }
-        const auto& pos = Input::GetMousePosition();
-        io.MousePos = ImVec2(pos.x, Engine::Instance()->GetHeight() - pos.y - 1);
-        io.MouseWheel += Input::GetMouseScrollWheel();
-        
-        // key
-        io.KeyCtrl = Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl);
-        io.KeyShift = Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift);
-        io.KeyAlt = Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt);
-        io.KeySuper = false;
-        for (int i = 0; i < (int) KeyCode::COUNT; ++i)
-        {
-            io.KeysDown[i] = Input::GetKey((KeyCode) i);
-        }
-
-        const std::vector<unsigned short>& chars = Input::GetInputQueueCharacters();
-        if (chars.size() > 0)
-        {
-            std::vector<char> cs;
-            for (int i = 0; i < chars.size(); ++i)
-            {
-                unsigned short c = chars[i];
-                if (c <= 0xff)
-                {
-                    cs.push_back(c & 0xff);
-                }
-                else
-                {
-                    cs.push_back((c & 0xff00) >> 8);
-                    cs.push_back(c & 0xff);
-                }
-            }
-
-#if VR_WINDOWS
-            std::string str = Gb2312ToUtf8(std::string(&cs[0], cs.size()));
-#else
-            //String str = String(&cs[0], cs.Size());
-            std::string str = cs.data();
-#endif
-
-            io.AddInputCharactersUTF8(str.c_str());
-        }
-
-        if (!m_font_texture)
-        {
-            unsigned char* font_tex_pixels;
-            int font_tex_width;
-            int font_tex_height;
-            io.Fonts->GetTexDataAsRGBA32(&font_tex_pixels, &font_tex_width, &font_tex_height);
-
-            ByteBuffer pixels(font_tex_pixels, font_tex_width * font_tex_height * 4);
-            m_font_texture = Texture::CreateTexture2DFromMemory(
-                pixels,
-                font_tex_width,
-                font_tex_height,
-                TextureFormat::R8G8B8A8,
-                FilterMode::Linear,
-                SamplerAddressMode::ClampToEdge,
-                false);
-        }
-
-        ImGui::NewFrame();
-        if (m_draw)
-        {
-            m_draw();
-        }
-        ImGui::Render();
-
-        ImDrawData* draw_data = ImGui::GetDrawData();
+		ImDrawData* draw_data = ImGui::GetDrawData();
         if (draw_data->Valid)
         {
             // update mesh
@@ -256,7 +181,7 @@ namespace moonriver
                 }
                 this->SetMaterials(materials);
             }
-            
+    
             {
                 auto& materials = this->GetMaterials();
                 for (int i = 0; i < materials.size(); ++i)
@@ -276,5 +201,81 @@ namespace moonriver
                 }
             }
         }
+    }
+
+    void ImGuiRenderer::UpdateImGui()
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2((float) Engine::Instance()->GetWidth(), (float) Engine::Instance()->GetHeight());
+        io.DeltaTime = Time::GetDeltaTime();
+        if (io.DeltaTime < std::numeric_limits<float>::epsilon())
+        {
+            io.DeltaTime = std::numeric_limits<float>::epsilon();
+        }
+        // input
+        for (int i = 0; i < 3; ++i)
+        {
+            if (Input::GetMouseButtonDown(i))
+            {
+                io.MouseDown[i] = true;
+            }
+            if (Input::GetMouseButtonUp(i))
+            {
+                io.MouseDown[i] = false;
+            }
+        }
+        const auto& pos = Input::GetMousePosition();
+        io.MousePos = ImVec2(pos.x, Engine::Instance()->GetHeight() - pos.y - 1);
+        io.MouseWheel += Input::GetMouseScrollWheel();
+        
+        // key
+        io.KeyCtrl = Input::GetKey(KeyCode::LeftControl) || Input::GetKey(KeyCode::RightControl);
+        io.KeyShift = Input::GetKey(KeyCode::LeftShift) || Input::GetKey(KeyCode::RightShift);
+        io.KeyAlt = Input::GetKey(KeyCode::LeftAlt) || Input::GetKey(KeyCode::RightAlt);
+        io.KeySuper = false;
+        for (int i = 0; i < (int) KeyCode::COUNT; ++i)
+        {
+            io.KeysDown[i] = Input::GetKey((KeyCode) i);
+        }
+
+        const std::vector<unsigned short>& chars = Input::GetInputQueueCharacters();
+        if (chars.size() > 0)
+        {
+            std::vector<char> cs;
+            for (int i = 0; i < chars.size(); ++i)
+            {
+                unsigned short c = chars[i];
+                if (c <= 0xff)
+                {
+                    cs.push_back(c & 0xff);
+                }
+                else
+                {
+                    cs.push_back((c & 0xff00) >> 8);
+                    cs.push_back(c & 0xff);
+                }
+            }
+
+#if VR_WINDOWS
+            std::string str = Gb2312ToUtf8(std::string(&cs[0], cs.size()));
+#else
+            //String str = String(&cs[0], cs.Size());
+            std::string str = cs.data();
+#endif
+
+            io.AddInputCharactersUTF8(str.c_str());
+        }
+
+		if (m_font_tex_pixels == nullptr)
+		{
+			io.Fonts->GetTexDataAsRGBA32(&m_font_tex_pixels, &m_font_tex_width, &m_font_tex_height);
+		}
+
+        ImGui::NewFrame();
+        if (m_draw)
+        {
+            m_draw();
+        }
+        ImGui::Render();
     }
 }
