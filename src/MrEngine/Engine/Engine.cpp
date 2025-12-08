@@ -20,6 +20,7 @@
 #include "audio/AudioManager.h"
 #include "Editor.h"
 #include "Input.h"
+#include "cmdbuf/CmdBuf.h"
 #if VR_WINDOWS
 #include "core/meta/reflection/reflection_register.h"
 #endif
@@ -41,6 +42,8 @@
 //#define UTILS_HAS_THREADING 0
 
 using namespace filament;
+
+//typedef cb::CommandBuffer<cb::DrawKey, cb::DefaultKeyDecoder> GeometryCommandBuffer;
 
 namespace moonriver
 {
@@ -95,6 +98,8 @@ namespace moonriver
 		std::map<int, std::list<MessageHandler>> m_message_handlers;
 		Mutex m_mutex;
         std::shared_ptr<Editor> m_editor;
+		//commandbuffer
+		//GeometryCommandBuffer m_geometryCommands;
 
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
@@ -466,6 +471,7 @@ namespace moonriver
         m_pCore->m_editor->Render();
         m_pCore->Render();
         m_pCore->m_scene_manager->Render();
+        CmdBuf::CmdBufManager()->m_geometryCommands.submit(nullptr, false);
         m_pCore->EndFrame();
 
         if (!UTILS_HAS_THREADING)
@@ -622,4 +628,6 @@ namespace moonriver
     {
         return m_pCore->m_scene_manager->CreateScene();
     }
+
+    
 }

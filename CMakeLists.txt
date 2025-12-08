@@ -101,6 +101,7 @@ file(GLOB MR3D_LIB_SRCS_SOURCE
      ${MR3D_LIB_SRC_DIR}/Engine/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/cmdbuf/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/sprivShader/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/audio/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/io/*.cpp
@@ -135,6 +136,7 @@ target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/stb
                            ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter
                            ${MR3D_LIB_SRC_DIR}/Dep/json11
+                           ${MR3D_LIB_SRC_DIR}/Dep/cb
                            )
 
 if (${Target} MATCHES "Windows" OR

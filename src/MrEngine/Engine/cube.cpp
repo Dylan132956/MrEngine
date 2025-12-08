@@ -9,10 +9,50 @@
 #include "time/Time.h"
 #include "shader_converter.h"
 #include "graphics/sprivShader/spirv_shader.h"
+#include "RenderContext.h"
+#include "cmdbuf/CmdBuf.h"
 //#include "graphics/Texture.h"
 
 namespace moonriver
 {
+	struct DrawcubeCommand
+	{
+		static const cb::RenderContext::function_t kDispatchFunction;
+
+		filament::backend::UniformBufferHandle* m_uniform_buffer;
+		filament::backend::PipelineState* pipeline;
+		filament::backend::RenderPrimitiveHandle* m_primitives;
+		filament::backend::RenderTargetHandle* target;
+		filament::backend::SamplerGroupHandle* m_cube_sampler_group;
+	};
+
+	void drawcubeCommand(const void* data, cb::RenderContext* rc)
+	{
+		auto& cmd = *reinterpret_cast<const DrawcubeCommand*>(data);
+
+		auto& driver = Engine::Instance()->GetDriverApi();
+
+		filament::backend::RenderPassParams params;
+		params.flags.clear = filament::backend::TargetBufferFlags::NONE;
+		params.viewport.left = (int32_t)0;
+		params.viewport.bottom = (int32_t)0;
+		params.viewport.width = Engine::Instance()->GetWidth();
+		params.viewport.height = Engine::Instance()->GetHeight();
+		params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
+
+		driver.beginRenderPass(*cmd.target, params);
+		driver.setViewportScissor(0, 0, Engine::Instance()->GetWidth(), Engine::Instance()->GetHeight());
+		driver.bindUniformBuffer(0, *cmd.m_uniform_buffer);
+
+		driver.bindSamplers((size_t)4, *cmd.m_cube_sampler_group);
+
+		driver.draw(*cmd.pipeline, *cmd.m_primitives);
+		driver.endRenderPass();
+		driver.flush();
+	}
+
+    const cb::RenderContext::function_t DrawcubeCommand::kDispatchFunction = &drawcubeCommand;
+
     //const uint32_t cube::mIndices[] = {
     //    // solid
     //    1,0,2, 3,1,2,  // far
@@ -338,7 +378,7 @@ namespace moonriver
         //std::shared_ptr<Image> image =  Image::LoadFromFile(asset_path + "/texture/" + "model18.png");
         //image->EncodeToPNG("out.png");
 
-        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "moonriver.jpg", FilterMode::Linear, SamplerAddressMode::ClampToEdge, false);
+        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "ic_launcher.png", FilterMode::Linear, SamplerAddressMode::ClampToEdge, true);
 
         //Shader shader;
     }
@@ -386,8 +426,9 @@ namespace moonriver
         angle = Time::GetRealTimeSinceStartup();
         //printf("%.6f\n", angle);
         Vector3 r = Vector3(1., 1., 1.);
-        Vector3 t = Vector3(0., 0., 0.);
-        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(r, angle) * Matrix4x4::Translation(t);
+        Vector3 t = Vector3(-4, 2., 0.);
+        Vector3 s = Vector3(0.5, 0.5, 0.5);
+        m_uniforms.uWorldMatrix = Matrix4x4::Translation(t) * Matrix4x4::RotMat(r, angle) * Matrix4x4::Scaling(s);
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));
         memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));
@@ -397,24 +438,36 @@ namespace moonriver
         samplers.setSampler(0, cube_texture->GetTexture(), cube_texture->GetSampler());
         driver.updateSamplerGroup(m_cube_sampler_group, std::move(samplers));
 
-        filament::backend::RenderTargetHandle target = *(filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
-        filament::backend::RenderPassParams params;
-        params.flags.clear = filament::backend::TargetBufferFlags::COLOR | filament::backend::TargetBufferFlags::DEPTH;
+        //filament::backend::RenderTargetHandle target = *(filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
+        //filament::backend::RenderPassParams params;
+        ////params.flags.clear = filament::backend::TargetBufferFlags::COLOR | filament::backend::TargetBufferFlags::DEPTH;
+        //params.flags.clear = filament::backend::TargetBufferFlags::NONE;
 
-        params.viewport.left = (int32_t)0;
-        params.viewport.bottom = (int32_t)0;
-        params.viewport.width = Engine::Instance()->GetWidth();
-        params.viewport.height = Engine::Instance()->GetHeight();
-        params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
+        //params.viewport.left = (int32_t)0;
+        //params.viewport.bottom = (int32_t)0;
+        //params.viewport.width = Engine::Instance()->GetWidth();
+        //params.viewport.height = Engine::Instance()->GetHeight();
+        //params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
-        driver.beginRenderPass(target, params);
-        driver.setViewportScissor(0, 0, Engine::Instance()->GetWidth(), Engine::Instance()->GetHeight());
-        driver.bindUniformBuffer(0, m_uniform_buffer);
+        //driver.beginRenderPass(target, params);
+        //driver.setViewportScissor(0, 0, Engine::Instance()->GetWidth(), Engine::Instance()->GetHeight());
+        //driver.bindUniformBuffer(0, m_uniform_buffer);
 
-        driver.bindSamplers((size_t)4, m_cube_sampler_group);
+        //driver.bindSamplers((size_t)4, m_cube_sampler_group);
 
-        driver.draw(pipeline, m_primitives[0]);
-        driver.endRenderPass();
-        driver.flush();
+        //driver.draw(pipeline, m_primitives[0]);
+        //driver.endRenderPass();
+        //driver.flush();
+
+        //draw in commandbuffer
+		const auto key = cb::DrawKey(0); // lowest priority
+        auto* cmd = CmdBuf::CmdBufManager()->m_geometryCommands.addCommand<DrawcubeCommand>(key);
+        cmd->target = (filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
+        cmd->m_uniform_buffer = &m_uniform_buffer;
+        cmd->pipeline = &pipeline;
+        cmd->m_cube_sampler_group = &m_cube_sampler_group;
+        cmd->m_primitives = &m_primitives[0];
+
+        //CmdBuf::CmdBufManager()->m_geometryCommands.addCommand<DrawcubeCommand>(key);
     }
 }

@@ -51,6 +51,6 @@ namespace moonriver
     void SceneManager::Render()
     {
         //m_triangle->Render();
-        //m_cube->Render();
+        m_cube->Render();
     }
 }
