@@ -104,7 +104,7 @@ namespace moonriver
         MrEngine(Engine* engine, void* native_window, int width, int height, uint64_t flags, void* shared_gl_context) :
             m_engine(engine),
 #if VR_WINDOWS
-            m_backend(backend::Backend::VULKAN),
+            m_backend(backend::Backend::D3D12),
 #elif VR_UWP
             m_backend(backend::Backend::D3D11),
 #elif VR_ANDROID
@@ -471,7 +471,7 @@ namespace moonriver
         m_pCore->m_editor->Render();
         m_pCore->Render();
         m_pCore->m_scene_manager->Render();
-        CmdBuf::CmdBufManager()->m_geometryCommands.submit(nullptr, false);
+        CmdBuf::CmdBufManager()->m_geometryCommands.submit(nullptr, true);
         m_pCore->EndFrame();
 
         if (!UTILS_HAS_THREADING)

@@ -1004,6 +1004,10 @@ namespace filament
 									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
 									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
 									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
+
+									if (program->vert_srv_map.count(samplers[i][j].binding)) {
+										m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
+									}
 									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
                                 }
                             }
@@ -1040,7 +1044,10 @@ namespace filament
 									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
 									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
 									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
-									m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
+
+									if (program->frag_srv_map.count(samplers[i][j].binding)) {
+										m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
+									}
 									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], texture->srv.gpuHandle);
                                 }
                             }

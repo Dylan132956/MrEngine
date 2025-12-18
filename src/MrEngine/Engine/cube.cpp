@@ -378,7 +378,7 @@ namespace moonriver
         //std::shared_ptr<Image> image =  Image::LoadFromFile(asset_path + "/texture/" + "model18.png");
         //image->EncodeToPNG("out.png");
 
-        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "ic_launcher.png", FilterMode::Linear, SamplerAddressMode::ClampToEdge, true);
+        cube_texture = Texture::LoadTexture2DFromFile(asset_path + "/texture/" + "ic_launcher.png", FilterMode::Linear, SamplerAddressMode::ClampToEdge, false);
 
         //Shader shader;
     }
