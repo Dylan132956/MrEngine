@@ -20,6 +20,11 @@ namespace filament
     }
 }
 
+namespace utils
+{
+    class JobSystem;
+}
+
 namespace moonriver
 {
     class MrEngine;
@@ -35,6 +40,7 @@ namespace moonriver
         filament::backend::DriverApi& GetDriverApi();
         const filament::backend::Backend& GetBackend() const;
         filament::backend::ShaderModel GetShaderModel() const;
+        utils::JobSystem* getJobSystem() const noexcept;
         void* GetDefaultRenderTarget();
         void OnResize(void* native_window, int width, int height, uint64_t flags = 0);
         int GetWidth() const;

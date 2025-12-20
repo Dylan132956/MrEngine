@@ -21,6 +21,7 @@
 #include <utils/compiler.h>
 #include <utils/memalign.h>
 #include <utils/Mutex.h>
+#include <utils/debug.h>
 
 #include <atomic>
 #include <mutex>
@@ -386,39 +387,53 @@ using ThreadSafeObjectPoolAllocator = PoolAllocator<sizeof(T),
 // Areas
 // ------------------------------------------------------------------------------------------------
 
-class HeapArea {
-public:
-    HeapArea() noexcept = default;
 
-    explicit HeapArea(size_t size) {
-        if (size) {
-            // TODO: policy committing memory
-            mBegin = malloc(size);
-            mEnd = pointermath::add(mBegin, size);
-        }
-    }
+namespace AreaPolicy {
 
-    ~HeapArea() noexcept {
-        // TODO: policy for returning memory to system
-        free(mBegin);
-    }
+	class HeapArea {
+	public:
+		HeapArea() noexcept = default;
 
-    HeapArea(const HeapArea& rhs) = delete;
-    HeapArea& operator=(const HeapArea& rhs) = delete;
-    HeapArea(HeapArea&& rhs) noexcept = delete;
-    HeapArea& operator=(HeapArea&& rhs) noexcept = delete;
+		explicit HeapArea(size_t size) {
+			if (size) {
+				// TODO: policy committing memory
+				mBegin = malloc(size);
+				mEnd = pointermath::add(mBegin, size);
+			}
+		}
 
-    void* data() const noexcept { return mBegin; }
-    void* begin() const noexcept { return mBegin; }
-    void* end() const noexcept { return mEnd; }
-    size_t getSize() const noexcept { return uintptr_t(mEnd) - uintptr_t(mBegin); }
+		~HeapArea() noexcept {
+			// TODO: policy for returning memory to system
+			free(mBegin);
+		}
 
-private:
-    void* mBegin = nullptr;
-    void* mEnd = nullptr;
-};
+		HeapArea(const HeapArea& rhs) = delete;
+		HeapArea& operator=(const HeapArea& rhs) = delete;
+		HeapArea(HeapArea&& rhs) noexcept = delete;
+		HeapArea& operator=(HeapArea&& rhs) noexcept = delete;
 
+		void* data() const noexcept { return mBegin; }
+		void* begin() const noexcept { return mBegin; }
+		void* end() const noexcept { return mEnd; }
+		size_t size() const noexcept { return uintptr_t(mEnd) - uintptr_t(mBegin); }
 
+		friend void swap(HeapArea& lhs, HeapArea& rhs) noexcept {
+			using std::swap;
+			swap(lhs.mBegin, rhs.mBegin);
+			swap(lhs.mEnd, rhs.mEnd);
+		}
+
+	private:
+		void* mBegin = nullptr;
+		void* mEnd = nullptr;
+	};
+
+	class NullArea {
+	public:
+		void* data() const noexcept { return nullptr; }
+		size_t size() const noexcept { return 0; }
+	};
+}
 // ------------------------------------------------------------------------------------------------
 // Policies
 // ------------------------------------------------------------------------------------------------
@@ -515,6 +530,66 @@ private:
     uint32_t mHighWaterMark = 0;
 };
 
+// This just fills buffers with known values to help catch uninitialized access and use after free.
+struct Debug {
+	Debug() noexcept = default;
+	Debug(const char* name, size_t size) noexcept
+		: mName(name), mSize(uint32_t(size)) { }
+    void onAlloc(void* p, size_t size, size_t alignment, size_t extra) noexcept
+    {
+		if (p) {
+			memset(p, 0xeb, size);
+		}
+    }
+    void onFree(void* p, size_t size) noexcept
+    {
+		if (p) {
+			memset(p, 0xef, size);
+		}
+    }
+    void onReset() noexcept
+    {
+		// we should never be here if mBase is nullptr because compilation would have failed when
+        // Arena::onReset() tries to call the underlying allocator's onReset()
+		assert_invariant(mBase);
+		memset(mBase, 0xec, mSize);
+    }
+    void onRewind(void* addr) noexcept
+    {
+		// we should never be here if mBase is nullptr because compilation would have failed when
+        // Arena::onRewind() tries to call the underlying allocator's onReset()
+		assert(mBase);
+		assert(addr >= mBase);
+		memset(addr, 0x55, uintptr_t(mBase) + mSize - uintptr_t(addr));
+    }
+protected:
+	const char* mName = nullptr;
+	void* mBase = nullptr;
+	uint32_t mSize = 0;
+};
+
+struct DebugAndHighWatermark : protected HighWatermark, protected Debug {
+	DebugAndHighWatermark() noexcept = default;
+	DebugAndHighWatermark(const char* name, size_t size) noexcept
+		: HighWatermark(name, size), Debug(name, size) { }
+	void onAlloc(void* p, size_t size, size_t alignment, size_t extra) noexcept {
+		HighWatermark::onAlloc(p, size, alignment, extra);
+		Debug::onAlloc(p, size, alignment, extra);
+	}
+	void onFree(void* p, size_t size) noexcept {
+		HighWatermark::onFree(p, size);
+		Debug::onFree(p, size);
+	}
+	void onReset() noexcept {
+		HighWatermark::onReset();
+		Debug::onReset();
+	}
+	void onRewind(void* addr) noexcept {
+		HighWatermark::onRewind(addr);
+		Debug::onRewind(addr);
+	}
+};
+
 } // namespace TrackingPolicy
 
 // ------------------------------------------------------------------------------------------------
@@ -522,123 +597,173 @@ private:
 // ------------------------------------------------------------------------------------------------
 
 template<typename AllocatorPolicy, typename LockingPolicy,
-        typename TrackingPolicy = TrackingPolicy::Untracked>
-class Arena {
-public:
+	typename TrackingPolicy = TrackingPolicy::Untracked,
+	typename AreaPolicy = AreaPolicy::HeapArea>
+	class Arena {
+	public:
 
-    Arena() = default;
+		Arena() = default;
 
-    // construct an arena with a name and forward argument to its allocator
-    template<typename ... ARGS>
-    Arena(const char* name, size_t size, ARGS&& ... args)
-            : mArea(size),
-              mAllocator(mArea, std::forward<ARGS>(args) ... ),
-              mListener(name, size),
-              mArenaName(name) {
-    }
+		// construct an arena with a name and forward argument to its allocator
+		template<typename ... ARGS>
+		Arena(const char* name, size_t size, ARGS&& ... args)
+			: mArenaName(name),
+			mArea(size),
+			mAllocator(mArea, std::forward<ARGS>(args) ...),
+			mListener(name, mArea.size()) {
+		}
 
-    // allocate memory from arena with given size and alignment
-    // (acceptable size/alignment may depend on the allocator provided)
-    void* alloc(size_t size, size_t alignment = alignof(std::max_align_t), size_t extra = 0) noexcept {
-        std::lock_guard<LockingPolicy> guard(mLock);
-        void* p = mAllocator.alloc(size, alignment, extra);
-        mListener.onAlloc(p, size, alignment, extra);
-        return p;
-    }
+		template<typename ... ARGS>
+		Arena(const char* name, AreaPolicy&& area, ARGS&& ... args)
+			: mArenaName(name),
+			mArea(std::forward<AreaPolicy>(area)),
+			mAllocator(mArea, std::forward<ARGS>(args) ...),
+			mListener(name, mArea.size()) {
+		}
 
-    // Allocate an array of trivially destructible objects
-    // for safety, we disable the object-based alloc method if the object type is not
-    // trivially destructible, since free() won't call the destructor and this is allocating
-    // an array.
-    template <typename T,
-            typename = typename std::enable_if<std::is_trivially_destructible<T>::value>::type>
-    T* alloc(size_t count, size_t alignment = alignof(T), size_t extra = 0) noexcept {
-        return (T*)alloc(count * sizeof(T), alignment, extra);
-    }
+		template<typename ... ARGS>
+		void* alloc(size_t size, size_t alignment, size_t extra, ARGS&& ... args) noexcept {
+			std::lock_guard<LockingPolicy> guard(mLock);
+			void* p = mAllocator.alloc(size, alignment, extra, std::forward<ARGS>(args) ...);
+			mListener.onAlloc(p, size, alignment, extra);
+			return p;
+		}
 
-    // return memory pointed by p to the arena
-    // (actual behaviour may depend on allocator provided)
-    void free(void* p) noexcept {
-        if (p) {
-            std::lock_guard<LockingPolicy> guard(mLock);
-            mListener.onFree(p);
-            mAllocator.free(p);
-        }
-    }
 
-    // some allocators require the size of the allocation for free
-    void free(void* p, size_t size) noexcept {
-        if (p) {
-            std::lock_guard<LockingPolicy> guard(mLock);
-            mListener.onFree(p, size);
-            mAllocator.free(p, size);
-        }
-    }
+		// allocate memory from arena with given size and alignment
+		// (acceptable size/alignment may depend on the allocator provided)
+		void* alloc(size_t size, size_t alignment, size_t extra) noexcept {
+			std::lock_guard<LockingPolicy> guard(mLock);
+			void* p = mAllocator.alloc(size, alignment, extra);
+			mListener.onAlloc(p, size, alignment, extra);
+			return p;
+		}
 
-    // some allocators don't have a free() call, but a single reset() or rewind() instead
-    void reset() noexcept {
-        std::lock_guard<LockingPolicy> guard(mLock);
-        mListener.onReset();
-        mAllocator.reset();
-    }
+		void* alloc(size_t size, size_t alignment = alignof(std::max_align_t)) noexcept {
+			std::lock_guard<LockingPolicy> guard(mLock);
+			void* p = mAllocator.alloc(size, alignment);
+			mListener.onAlloc(p, size, alignment, 0);
+			return p;
+		}
 
-    void* getCurrent() noexcept { return mAllocator.getCurrent(); }
+		// Allocate an array of trivially destructible objects
+		// for safety, we disable the object-based alloc method if the object type is not
+		// trivially destructible, since free() won't call the destructor and this is allocating
+		// an array.
+		template <typename T,
+			typename = std::enable_if_t<std::is_trivially_destructible_v<T>>>
+			T* alloc(size_t count, size_t alignment, size_t extra) noexcept {
+			return (T*)alloc(count * sizeof(T), alignment, extra);
+		}
 
-    void rewind(void *addr) noexcept {
-        std::lock_guard<LockingPolicy> guard(mLock);
-        mListener.onRewind(addr);
-        mAllocator.rewind(addr);
-    }
+		template <typename T,
+			typename = std::enable_if_t<std::is_trivially_destructible_v<T>>>
+			T* alloc(size_t count, size_t alignment = alignof(T)) noexcept {
+			return (T*)alloc(count * sizeof(T), alignment);
+		}
 
-    // Allocate and construct an object
-    template<typename T, size_t ALIGN = alignof(T), typename... ARGS>
-    T* make(ARGS&& ... args) noexcept {
-        void* const p = this->alloc(sizeof(T), ALIGN);
-        return p ? new(p) T(std::forward<ARGS>(args)...) : nullptr;
-    }
+		// some allocators require more parameters
+		template<typename ... ARGS>
+		void free(void* p, size_t size, ARGS&& ... args) noexcept {
+			if (p) {
+				std::lock_guard<LockingPolicy> guard(mLock);
+				mListener.onFree(p, size);
+				mAllocator.free(p, size, std::forward<ARGS>(args) ...);
+			}
+		}
 
-    // destroys an object created with make<T>() above, and frees associated memory
-    template<typename T>
-    void destroy(T* p) noexcept {
-        if (p) {
-            p->~T();
-            this->free((void*)p, sizeof(T));
-        }
-    }
+		// some allocators require the size of the allocation for free
+		void free(void* p, size_t size) noexcept {
+			if (p) {
+				std::lock_guard<LockingPolicy> guard(mLock);
+				mListener.onFree(p, size);
+				mAllocator.free(p, size);
+			}
+		}
 
-    char const* getName() const noexcept { return mArenaName; }
+		// return memory pointed by p to the arena
+		// (actual behaviour may depend on allocator provided)
+		void free(void* p) noexcept {
+			if (p) {
+				std::lock_guard<LockingPolicy> guard(mLock);
+				mListener.onFree(p);
+				mAllocator.free(p);
+			}
+		}
 
-    AllocatorPolicy& getAllocator() noexcept { return mAllocator; }
-    AllocatorPolicy const& getAllocator() const noexcept { return mAllocator; }
+		// some allocators don't have a free() call, but a single reset() or rewind() instead
+		void reset() noexcept {
+			std::lock_guard<LockingPolicy> guard(mLock);
+			mListener.onReset();
+			mAllocator.reset();
+		}
 
-    TrackingPolicy& getListener() noexcept { return mListener; }
-    TrackingPolicy const& getListener() const noexcept { return mListener; }
+		void* getCurrent() noexcept { return mAllocator.getCurrent(); }
 
-    HeapArea& getArea() noexcept { return mArea; }
-    HeapArea const& getArea() const noexcept { return mArea; }
+		void rewind(void* addr) noexcept {
+			std::lock_guard<LockingPolicy> guard(mLock);
+			mListener.onRewind(addr);
+			mAllocator.rewind(addr);
+		}
 
-    void setListener(TrackingPolicy listener) noexcept {
-        std::swap(mListener, listener);
-    }
+		// Allocate and construct an object
+		template<typename T, size_t ALIGN = alignof(T), typename... ARGS>
+		T* make(ARGS&& ... args) noexcept {
+			void* const p = this->alloc(sizeof(T), ALIGN);
+			return p ? new(p) T(std::forward<ARGS>(args)...) : nullptr;
+		}
 
-    template <typename ... ARGS>
-    void emplaceListener(ARGS&& ... args) noexcept {
-        mListener.~TrackingPolicy();
-        new (&mListener) TrackingPolicy(std::forward<ARGS>(args)...);
-    }
+		// destroys an object created with make<T>() above, and frees associated memory
+		template<typename T>
+		void destroy(T* p) noexcept {
+			if (p) {
+				p->~T();
+				this->free((void*)p, sizeof(T));
+			}
+		}
 
-    // An arena can't be copied
-    Arena(Arena const& rhs) noexcept = delete;
-    Arena& operator=(Arena const& rhs) noexcept = delete;
+		char const* getName() const noexcept { return mArenaName; }
 
-private:
-    HeapArea mArea; // We might want to make that a template parameter too eventually.
-    AllocatorPolicy mAllocator;
-    LockingPolicy mLock;
-    TrackingPolicy mListener;
-    char const* mArenaName = nullptr;
+		AllocatorPolicy& getAllocator() noexcept { return mAllocator; }
+		AllocatorPolicy const& getAllocator() const noexcept { return mAllocator; }
+
+		TrackingPolicy& getListener() noexcept { return mListener; }
+		TrackingPolicy const& getListener() const noexcept { return mListener; }
+
+		AreaPolicy& getArea() noexcept { return mArea; }
+		AreaPolicy const& getArea() const noexcept { return mArea; }
+
+		void setListener(TrackingPolicy listener) noexcept {
+			std::swap(mListener, listener);
+		}
+
+		template <typename ... ARGS>
+		void emplaceListener(ARGS&& ... args) noexcept {
+			mListener.~TrackingPolicy();
+			new (&mListener) TrackingPolicy(std::forward<ARGS>(args)...);
+		}
+
+		// An arena can't be copied
+		Arena(Arena const& rhs) noexcept = delete;
+		Arena& operator=(Arena const& rhs) noexcept = delete;
+
+		friend void swap(Arena& lhs, Arena& rhs) noexcept {
+			using std::swap;
+			swap(lhs.mArea, rhs.mArea);
+			swap(lhs.mAllocator, rhs.mAllocator);
+			swap(lhs.mLock, rhs.mLock);
+			swap(lhs.mListener, rhs.mListener);
+			swap(lhs.mArenaName, rhs.mArenaName);
+		}
+
+	private:
+		char const* mArenaName = nullptr;
+		AreaPolicy mArea;
+		// note: we should use something like compressed_pair for the members below
+		AllocatorPolicy mAllocator;
+		LockingPolicy mLock;
+		TrackingPolicy mListener;
 };
-
 // ------------------------------------------------------------------------------------------------
 
 template<typename TrackingPolicy = TrackingPolicy::Untracked>

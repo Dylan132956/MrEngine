@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef MATH_VEC4_H_
-#define MATH_VEC4_H_
+#ifndef TNT_MATH_VEC4_H
+#define TNT_MATH_VEC4_H
 
-#include <math/vec3.h>
 #include <math/half.h>
+#include <math/vec3.h>
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -29,13 +30,13 @@ namespace math {
 
 namespace details {
 
-template <typename T>
-class MATH_EMPTY_BASES TVec4 :  public TVecProductOperators<TVec4, T>,
-                public TVecAddOperators<TVec4, T>,
-                public TVecUnaryOperators<TVec4, T>,
-                public TVecComparisonOperators<TVec4, T>,
-                public TVecFunctions<TVec4, T>,
-                public TVecDebug<TVec4, T> {
+template<typename T>
+class MATH_EMPTY_BASES TVec4 :
+        public TVecProductOperators<TVec4, T>,
+        public TVecAddOperators<TVec4, T>,
+        public TVecUnaryOperators<TVec4, T>,
+        public TVecComparisonOperators<TVec4, T>,
+        public TVecFunctions<TVec4, T> {
 public:
     typedef T value_type;
     typedef T& reference;
@@ -44,7 +45,7 @@ public:
     static constexpr size_t SIZE = 4;
 
     union {
-        T v[SIZE];
+        T v[SIZE] MATH_CONSTEXPR_INIT;
         TVec2<T> xy, st, rg;
         TVec3<T> xyz, stp, rgb;
         struct {
@@ -68,13 +69,12 @@ public:
     inline constexpr size_type size() const { return SIZE; }
 
     // array access
-    inline constexpr T const& operator[](size_t i) const {
-        // only possible in C++0x14 with constexpr
+    inline constexpr T const& operator[](size_t i) const noexcept {
         assert(i < SIZE);
         return v[i];
     }
 
-    inline constexpr T& operator[](size_t i) {
+    inline constexpr T& operator[](size_t i) noexcept {
         assert(i < SIZE);
         return v[i];
     }
@@ -82,30 +82,36 @@ public:
     // constructors
 
     // default constructor
-    constexpr TVec4() = default;
+    MATH_DEFAULT_CTOR_CONSTEXPR TVec4() noexcept MATH_DEFAULT_CTOR
 
     // handles implicit conversion to a tvec4. must not be explicit.
-    template<typename A>
-    constexpr TVec4(A v) : x(v), y(v), z(v), w(v) { }
+    template<typename A, typename = enable_if_arithmetic_t<A>>
+    constexpr TVec4(A v) noexcept : v{ T(v), T(v), T(v), T(v) } {}
 
-    template<typename A, typename B, typename C, typename D>
-    constexpr TVec4(A x, B y, C z, D w) : x((T) x), y((T) y), z((T) z), w((T) w) { }
+    template<typename A, typename B, typename C, typename D,
+            typename = enable_if_arithmetic_t<A, B, C, D>>
+    constexpr TVec4(A x, B y, C z, D w) noexcept : v{ T(x), T(y), T(z), T(w) } {}
 
-    template<typename A, typename B, typename C>
-    constexpr TVec4(const TVec2<A>& v, B z, C w) : x(v.x), y(v.y), z((T) z), w((T) w) { }
+    template<typename A, typename B, typename C,
+            typename = enable_if_arithmetic_t<A, B, C>>
+    constexpr TVec4(const TVec2<A>& v, B z, C w) noexcept : v{ T(v[0]), T(v[1]), T(z), T(w) } {}
 
-    template<typename A, typename B>
-    constexpr TVec4(const TVec3<A>& v, B w) : x(v.x), y(v.y), z(v.z), w((T) w) { }
+    template<typename A, typename B, typename = enable_if_arithmetic_t<A, B>>
+    constexpr TVec4(const TVec2<A>& v, const TVec2<B>& w) noexcept : v{
+            T(v[0]), T(v[1]), T(w[0]), T(w[1]) } {}
 
-    template<typename A>
-    constexpr TVec4(const TVec4<A>& v) : x(v.x), y(v.y), z(v.z), w(v.w) { }
+    template<typename A, typename B, typename = enable_if_arithmetic_t<A, B>>
+    constexpr TVec4(const TVec3<A>& v, B w) noexcept : v{ T(v[0]), T(v[1]), T(v[2]), T(w) } {}
+
+    template<typename A, typename = enable_if_arithmetic_t<A>>
+    constexpr TVec4(const TVec4<A>& v) noexcept : v{ T(v[0]), T(v[1]), T(v[2]), T(v[3]) } {}
 };
 
 }  // namespace details
 
 // ----------------------------------------------------------------------------------------
 
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value>>
+template<typename T, typename = details::enable_if_arithmetic_t<T>>
 using vec4 = details::TVec4<T>;
 
 using double4 = vec4<double>;
@@ -124,4 +130,4 @@ using bool4 = vec4<bool>;
 }  // namespace math
 }  // namespace filament
 
-#endif  // MATH_VEC4_H_
+#endif  // TNT_MATH_VEC4_H

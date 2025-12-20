@@ -16,6 +16,7 @@ namespace moonriver
     class Renderer;
 	class RenderTarget;
 	class Mesh;
+    class Froxelizer;
 
     class Camera : public Component
     {
@@ -111,5 +112,6 @@ namespace moonriver
 		ViewUniforms m_view_uniforms;
 		filament::backend::UniformBufferHandle m_view_uniform_buffer;
 		filament::backend::RenderTargetHandle m_render_target;
+        Froxelizer* m_froxelizer;
     };
 }

@@ -19,6 +19,7 @@
 #include "Scene.h"
 #include "Debug.h"
 #include <vector>
+#include <iostream>
 
 
 namespace moonriver

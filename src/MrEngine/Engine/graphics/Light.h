@@ -4,6 +4,7 @@
 #include "Color.h"
 #include "math/Matrix4x4.h"
 #include "private/backend/DriverApi.h"
+#include "math/Vector2.h"
 #include <list>
 
 namespace moonriver
@@ -21,6 +22,7 @@ namespace moonriver
     class Light : public Component
     {
     public:
+		static constexpr size_t DIRECTIONAL_LIGHTS_COUNT = 1;
 		static const std::list<Light*>& GetLights() { return m_lights; }
 		static const Color& GetAmbientColor() { return m_ambient_color; }
 		static void SetAmbientColor(const Color& color);
@@ -37,6 +39,8 @@ namespace moonriver
 		void SetRange(float range);
 		float GetSpotAngle() const { return m_spot_angle; }
 		void SetSpotAngle(float angle);
+		float getCosOuterSquared() const { return m_cosOuterSquared; }
+		float getSinInverse() const { return m_sinInverse; }
 		bool IsShadowEnable() const { return m_shadow_enable; }
 		void EnableShadow(bool enable);
 		void SetShadowTextureSize(int size);
@@ -76,7 +80,14 @@ namespace moonriver
 		Color m_color;
 		float m_intensity;
 		float m_range;
+		//spot
 		float m_spot_angle;
+		float m_outerClamped = 0;
+		float m_cosOuterSquared = 1;
+		float m_sinInverse = std::numeric_limits<float>::infinity();
+		float m_luminousPower = 0;
+		Vector2 m_scaleOffset = {};
+
 		bool m_shadow_enable;
 		int m_shadow_texture_size;
 		std::shared_ptr<Texture> m_shadow_texture;

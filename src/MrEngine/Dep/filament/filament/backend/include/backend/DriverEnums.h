@@ -507,6 +507,16 @@ enum TextureUsage : uint8_t {
     DEFAULT = UPLOADABLE | SAMPLEABLE
 };
 
+//! Texture swizzle
+enum class TextureSwizzle : uint8_t {
+	SUBSTITUTE_ZERO,
+	SUBSTITUTE_ONE,
+	CHANNEL_0,
+	CHANNEL_1,
+	CHANNEL_2,
+	CHANNEL_3
+};
+
 // implement requirement of BitmaskType
 inline constexpr TextureUsage operator~(TextureUsage rhs) noexcept {
     return TextureUsage(~uint8_t(rhs) & 0x1Fu);

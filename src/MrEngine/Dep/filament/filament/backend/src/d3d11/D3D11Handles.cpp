@@ -3,6 +3,7 @@
 #include "D3D11Handles.h"
 #include <d3dcompiler.h>
 #include <assert.h>
+#include <iostream>
 
 namespace filament
 {

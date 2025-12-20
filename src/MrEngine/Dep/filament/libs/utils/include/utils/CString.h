@@ -303,6 +303,8 @@ public:
         return ptr;
     }
 
+
+
 private:
     struct Data {
         size_type length;
@@ -345,7 +347,13 @@ private:
     friend bool operator<=(CString const& lhs, CString const& rhs) noexcept {
         return !(lhs > rhs);
     }
+
+	// Implement this for your type for automatic conversion to CString. Failing to do so leads
+    // to a compile-time failure.
 };
+
+template<typename T>
+CString to_string(T value) noexcept;
 
 } // namespace utils
 

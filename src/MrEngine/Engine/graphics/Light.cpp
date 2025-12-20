@@ -7,6 +7,7 @@
 #include "Texture.h"
 #include "Transform.h"
 #include "time/Time.h"
+#include <algorithm>
 
 namespace moonriver
 {
@@ -327,6 +328,24 @@ namespace moonriver
         if (!Mathf::FloatEqual(m_spot_angle, angle))
         {
             m_spot_angle = angle;
+
+			// clamp the inner/outer angles to [0.5 degrees, 90 degrees]
+			float innerClamped = Mathf::Clamp(m_spot_angle / 4.0f, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
+			float const outerClamped = Mathf::Clamp(m_spot_angle / 2.0f, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
+			// inner must always be smaller than outer
+			innerClamped = std::min(innerClamped, outerClamped);
+
+			float const cosOuter = cos(outerClamped);
+			float const cosInner = cos(innerClamped);
+			float const cosOuterSquared = cosOuter * cosOuter;
+			float const scale = 1.0f / std::max(1.0f / 1024.0f, cosInner - cosOuter);
+			float const offset = -cosOuter * scale;
+
+			m_outerClamped = outerClamped;
+			m_cosOuterSquared = cosOuterSquared;
+			m_sinInverse = 1.0f / std::sin(outerClamped);
+			m_scaleOffset = Vector2(scale, offset);
+
             m_dirty = true;
             m_projection_matrix_dirty = true;
         }

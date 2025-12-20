@@ -2,6 +2,7 @@
 #include <backend/Platform.h>
 #include <utils/compiler.h>
 #include <utils/CountDownLatch.h>
+#include <utils/JobSystem.h>
 #include "private/backend/CommandStream.h"
 #include "private/backend/CommandBufferQueue.h"
 #include "triangle.h"
@@ -93,6 +94,7 @@ namespace moonriver
 
         bool m_quit = false;
 		std::shared_ptr<ThreadPool> m_thread_pool;
+        std::shared_ptr<utils::JobSystem> m_JobSystem;
 		std::list<Action> m_actions;
 		std::list<Message> m_messages;
 		std::map<int, std::list<MessageHandler>> m_message_handlers;
@@ -145,7 +147,13 @@ namespace moonriver
             m_render_target = this->GetDriverApi().createDefaultRenderTarget();
 
 #if !VR_WASM
-			m_thread_pool = std::make_shared<ThreadPool>(4);
+			// 1 thread for the user, 1 thread for the backend
+			int threadCount = int(std::thread::hardware_concurrency()) - 2;
+			// make sure we have at least 1 thread though
+			threadCount = Mathf::Max(1, threadCount);
+			m_thread_pool = std::make_shared<ThreadPool>(threadCount);
+            m_JobSystem = std::make_shared<utils::JobSystem>(threadCount);
+            m_JobSystem->adopt();
 #endif
             m_editor = std::make_shared<Editor>();
             Shader::Init();
@@ -176,6 +184,8 @@ namespace moonriver
             m_scene_manager = nullptr;
 
             m_thread_pool.reset();
+			// detach this thread from the JobSystem
+			m_JobSystem->emancipate();
 
             this->GetDriverApi().destroyRenderTarget(m_render_target);
 
@@ -495,6 +505,13 @@ namespace moonriver
     {
         return m_pCore->m_driver->getShaderModel();
     }
+
+	utils::JobSystem* Engine::getJobSystem() const noexcept {
+		// JobSystem is thread-safe, and it's always okay to return a non-const one,
+		// it's conceptually the same as if we were holding a non-const reference, as opposed
+		// to by-value class attribute.
+		return m_pCore->m_JobSystem.get();
+	}
 
     void* Engine::GetDefaultRenderTarget()
     {

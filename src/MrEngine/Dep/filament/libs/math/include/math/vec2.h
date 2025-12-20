@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MATH_VEC2_H_
-#define MATH_VEC2_H_
+#ifndef TNT_MATH_VEC2_H
+#define TNT_MATH_VEC2_H
 
 #include <math/TVecHelpers.h>
 #include <math/half.h>
+
+#include <type_traits>
+
 #include <assert.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <type_traits>
-
 
 namespace filament {
 namespace math {
@@ -31,14 +32,13 @@ namespace math {
 
 namespace details {
 
-template <typename T>
+template<typename T>
 class MATH_EMPTY_BASES TVec2 :
-                public TVecProductOperators<TVec2, T>,
-                public TVecAddOperators<TVec2, T>,
-                public TVecUnaryOperators<TVec2, T>,
-                public TVecComparisonOperators<TVec2, T>,
-                public TVecFunctions<TVec2, T>,
-                public TVecDebug<TVec2, T> {
+        public TVecProductOperators<TVec2, T>,
+        public TVecAddOperators<TVec2, T>,
+        public TVecUnaryOperators<TVec2, T>,
+        public TVecComparisonOperators<TVec2, T>,
+        public TVecFunctions<TVec2, T> {
 public:
     typedef T value_type;
     typedef T& reference;
@@ -47,7 +47,7 @@ public:
     static constexpr size_t SIZE = 2;
 
     union {
-        T v[SIZE];
+        T v[SIZE] MATH_CONSTEXPR_INIT;
         struct { T x, y; };
         struct { T s, t; };
         struct { T r, g; };
@@ -56,13 +56,12 @@ public:
     inline constexpr size_type size() const { return SIZE; }
 
     // array access
-    inline constexpr T const& operator[](size_t i) const {
-        // only possible in C++0x14 with constexpr
+    inline constexpr T const& operator[](size_t i) const noexcept {
         assert(i < SIZE);
         return v[i];
     }
 
-    inline constexpr T& operator[](size_t i) {
+    inline constexpr T& operator[](size_t i) noexcept {
         assert(i < SIZE);
         return v[i];
     }
@@ -70,23 +69,23 @@ public:
     // constructors
 
     // default constructor
-    constexpr TVec2() = default;
+    MATH_DEFAULT_CTOR_CONSTEXPR TVec2() MATH_DEFAULT_CTOR
 
     // handles implicit conversion to a tvec4. must not be explicit.
-    template<typename A>
-    constexpr TVec2(A v) : x(v), y(v) { }
+    template<typename A, typename = enable_if_arithmetic_t<A>>
+    constexpr TVec2(A v) noexcept : v{ T(v), T(v) } {}
 
-    template<typename A, typename B>
-    constexpr TVec2(A x, B y) : x(x), y(y) { }
+    template<typename A, typename B, typename = enable_if_arithmetic_t<A, B>>
+    constexpr TVec2(A x, B y) noexcept : v{ T(x), T(y) } {}
 
-    template<typename A>
-    constexpr TVec2(const TVec2<A>& v) : x(v.x), y(v.y) { }
+    template<typename A, typename = enable_if_arithmetic_t<A>>
+    constexpr TVec2(const TVec2<A>& v) noexcept : v{ T(v[0]), T(v[1]) } {}
 
     // cross product works only on vectors of size 2 or 3
-    template <typename RT>
-    friend inline
-    constexpr value_type cross(const TVec2& u, const TVec2<RT>& v) {
-        return value_type(u.x*v.y - u.y*v.x);
+    template<typename U>
+    friend inline constexpr
+    arithmetic_result_t<T, U> cross(const TVec2& u, const TVec2<U>& v) noexcept {
+        return u[0] * v[1] - u[1] * v[0];
     }
 };
 
@@ -94,7 +93,7 @@ public:
 
 // ----------------------------------------------------------------------------------------
 
-template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value>>
+template<typename T, typename = details::enable_if_arithmetic_t<T>>
 using vec2 = details::TVec2<T>;
 
 using double2 = vec2<double>;
@@ -112,4 +111,4 @@ using bool2 = vec2<bool>;
 }  // namespace math
 }  // namespace filament
 
-#endif  // MATH_VEC2_H_
+#endif  // TNT_MATH_VEC2_H

@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include <d3dcompiler.h>
 #include "D3D12DescriptorCache.h"
+#include <stdexcept>
 
 using Microsoft::WRL::ComPtr;
 

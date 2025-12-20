@@ -856,12 +856,12 @@ default_case:
 // -- less than 128 bytes
 
 
-OpenGLDriver::HandleAllocator::HandleAllocator(const utils::HeapArea& area)
+OpenGLDriver::HandleAllocator::HandleAllocator(const utils::AreaPolicy::HeapArea& area)
         : mPool0(area.begin(),
-                  pointermath::add(area.begin(), (1 * area.getSize()) / 16)),
-          mPool1( pointermath::add(area.begin(), (1 * area.getSize()) / 16),
-                  pointermath::add(area.begin(), (6 * area.getSize()) / 16)),
-          mPool2( pointermath::add(area.begin(), (6 * area.getSize()) / 16),
+                  pointermath::add(area.begin(), (1 * area.size()) / 16)),
+          mPool1( pointermath::add(area.begin(), (1 * area.size()) / 16),
+                  pointermath::add(area.begin(), (6 * area.size()) / 16)),
+          mPool2( pointermath::add(area.begin(), (6 * area.size()) / 16),
                   area.end()) {
 
 #ifndef NDEBUG

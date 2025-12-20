@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MATH_TMATHELPERS_H_
-#define MATH_TMATHELPERS_H_
-
-#include <math.h>
-#include <stdint.h>
-#include <sys/types.h>
-
-#include <algorithm>
-#include <cmath>
-#include <exception>
-#include <iomanip>
-#include <iostream>
-#include <stdexcept>
-#include <string>
+#ifndef TNT_MATH_TMATHELPERS_H
+#define TNT_MATH_TMATHELPERS_H
 
 #include <math/compiler.h>
 #include <math/quat.h>
 #include <math/TVecHelpers.h>
+
+#include <algorithm>        // for std::swap and std::min
+#include <cmath>            // for std:: namespace
+
+#include <math.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 namespace filament {
 namespace math {
@@ -51,30 +46,21 @@ namespace details {
 
 namespace matrix {
 
-inline constexpr int     transpose(int v)    { return v; }
-inline constexpr float   transpose(float v)  { return v; }
-inline constexpr double  transpose(double v) { return v; }
-
-inline constexpr int     trace(int v)    { return v; }
-inline constexpr float   trace(float v)  { return v; }
-inline constexpr double  trace(double v) { return v; }
-
 /*
  * Matrix inversion
  */
 template<typename MATRIX>
-MATRIX MATH_PURE gaussJordanInverse(const MATRIX& src) {
+constexpr MATRIX MATH_PURE gaussJordanInverse(MATRIX src) {
     typedef typename MATRIX::value_type T;
-    static constexpr unsigned int N = MATRIX::NUM_ROWS;
-    MATRIX tmp(src);
-    MATRIX inverted(1);
+    constexpr unsigned int N = MATRIX::NUM_ROWS;
+    MATRIX inverted;
 
     for (size_t i = 0; i < N; ++i) {
         // look for largest element in i'th column
         size_t swap = i;
-        T t = std::abs(tmp[i][i]);
+        T t = src[i][i] < 0 ? -src[i][i] : src[i][i];
         for (size_t j = i + 1; j < N; ++j) {
-            const T t2 = std::abs(tmp[j][i]);
+            const T t2 = src[j][i] < 0 ? -src[j][i] : src[j][i];
             if (t2 > t) {
                 swap = j;
                 t = t2;
@@ -83,22 +69,22 @@ MATRIX MATH_PURE gaussJordanInverse(const MATRIX& src) {
 
         if (swap != i) {
             // swap columns.
-            std::swap(tmp[i], tmp[swap]);
+            std::swap(src[i], src[swap]);
             std::swap(inverted[i], inverted[swap]);
         }
 
-        const T denom(tmp[i][i]);
+        const T denom(src[i][i]);
         for (size_t k = 0; k < N; ++k) {
-            tmp[i][k] /= denom;
+            src[i][k] /= denom;
             inverted[i][k] /= denom;
         }
 
         // Factor out the lower triangle
         for (size_t j = 0; j < N; ++j) {
             if (j != i) {
-                const T t = tmp[j][i];
+                const T t = src[j][i];
                 for (size_t k = 0; k < N; ++k) {
-                    tmp[j][k] -= tmp[i][k] * t;
+                    src[j][k] -= src[i][k] * t;
                     inverted[j][k] -= inverted[i][k] * t;
                 }
             }
@@ -108,11 +94,10 @@ MATRIX MATH_PURE gaussJordanInverse(const MATRIX& src) {
     return inverted;
 }
 
-
 //------------------------------------------------------------------------------
 // 2x2 matrix inverse is easy.
-template <typename MATRIX>
-MATRIX MATH_PURE fastInverse2(const MATRIX& x) {
+template<typename MATRIX>
+constexpr MATRIX MATH_PURE fastInverse2(const MATRIX& x) {
     typedef typename MATRIX::value_type T;
 
     // Assuming the input matrix is:
@@ -125,7 +110,7 @@ MATRIX MATH_PURE fastInverse2(const MATRIX& x) {
     //
     // Importantly, our matrices are column-major!
 
-    MATRIX inverted(MATRIX::NO_INIT);
+    MATRIX inverted{};
 
     const T a = x[0][0];
     const T c = x[0][1];
@@ -140,13 +125,12 @@ MATRIX MATH_PURE fastInverse2(const MATRIX& x) {
     return inverted;
 }
 
-
 //------------------------------------------------------------------------------
 // From the Wikipedia article on matrix inversion's section on fast 3x3
 // matrix inversion:
 // http://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_3.C3.973_matrices
-template <typename MATRIX>
-MATRIX MATH_PURE fastInverse3(const MATRIX& x) {
+template<typename MATRIX>
+constexpr MATRIX MATH_PURE fastInverse3(const MATRIX& x) {
     typedef typename MATRIX::value_type T;
 
     // Assuming the input matrix is:
@@ -173,7 +157,7 @@ MATRIX MATH_PURE fastInverse3(const MATRIX& x) {
     //
     // Importantly, our matrices are column-major!
 
-    MATRIX inverted(MATRIX::NO_INIT);
+    MATRIX inverted{};
 
     const T a = x[0][0];
     const T b = x[1][0];
@@ -210,71 +194,260 @@ MATRIX MATH_PURE fastInverse3(const MATRIX& x) {
 }
 
 
+//------------------------------------------------------------------------------
+// Determinant and cofactor
+
+// this is just a dummy matrix helper
+template<typename T, size_t ORDER>
+class Matrix {
+    T m[ORDER][ORDER];
+public:
+    constexpr auto operator[](size_t i) const noexcept { return m[i]; }
+
+    constexpr auto& operator[](size_t i) noexcept { return m[i]; }
+
+    static constexpr Matrix<T, ORDER - 1> submatrix(Matrix in, size_t row, size_t col) noexcept {
+        size_t colCount = 0, rowCount = 0;
+        Matrix<T, ORDER - 1> dest{};
+        for (size_t i = 0; i < ORDER; i++) {
+            if (i != row) {
+                colCount = 0;
+                for (size_t j = 0; j < ORDER; j++) {
+                    if (j != col) {
+                        dest[rowCount][colCount] = in[i][j];
+                        colCount++;
+                    }
+                }
+                rowCount++;
+            }
+        }
+        return dest;
+    }
+};
+
+template<typename T, size_t O>
+struct Determinant {
+    static constexpr T determinant(Matrix<T, O> in) {
+        T det = {};
+        for (size_t i = 0; i < O; i++) {
+            T m = Determinant<T, O - 1>::determinant(Matrix<T, O>::submatrix(in, 0, i));
+            T factor = (i % 2 == 1) ? T(-1) : T(1);
+            det += factor * in[0][i] * m;
+        }
+        return det;
+    }
+};
+
+template<typename T>
+struct Determinant<T, 3> {
+    static constexpr T determinant(Matrix<T, 3> in) {
+        return
+            in[0][0] * in[1][1] * in[2][2] +
+            in[1][0] * in[2][1] * in[0][2] +
+            in[2][0] * in[0][1] * in[1][2] -
+            in[2][0] * in[1][1] * in[0][2] -
+            in[1][0] * in[0][1] * in[2][2] -
+            in[0][0] * in[2][1] * in[1][2];
+    }
+};
+
+template<typename T>
+struct Determinant<T, 2> {
+    static constexpr T determinant(Matrix<T, 2> in) {
+        return in[0][0] * in[1][1] - in[0][1] * in[1][0];
+    }
+};
+
+template<typename T>
+struct Determinant<T, 1> {
+    static constexpr T determinant(Matrix<T, 1> in) { return in[0][0]; }
+};
+
+template<typename MATRIX>
+constexpr MATRIX MATH_PURE cofactor(const MATRIX& m) {
+    typedef typename MATRIX::value_type T;
+
+    MATRIX out;
+    constexpr size_t order = MATRIX::NUM_COLS;
+
+    Matrix<T, order> in{};
+    for (size_t i = 0; i < order; i++) {
+        for (size_t j = 0; j < order; j++) {
+            in[i][j] = m[i][j];
+        }
+    }
+
+    for (size_t i = 0; i < order; i++) {
+        for (size_t j = 0; j < order; j++) {
+            T factor = ((i + j) % 2 == 1) ? T(-1) : T(1);
+            out[i][j] = Determinant<T, order - 1>::determinant(
+                    Matrix<T, order>::submatrix(in, i, j)) * factor;
+        }
+    }
+    return out;
+}
+
+template<typename MATRIX>
+constexpr MATRIX MATH_PURE fastCofactor2(const MATRIX& m) {
+    typedef typename MATRIX::value_type T;
+
+    // Assuming the input matrix is:
+    // | a b |
+    // | c d |
+    //
+    // The cofactor are
+    // | d -c |
+    // | -b a |
+    //
+    // Importantly, our matrices are column-major!
+
+    MATRIX cof{};
+
+    const T a = m[0][0];
+    const T c = m[0][1];
+    const T b = m[1][0];
+    const T d = m[1][1];
+
+    cof[0][0] = d;
+    cof[0][1] = -b;
+    cof[1][0] = -c;
+    cof[1][1] = a;
+    return cof;
+}
+
+template<typename MATRIX>
+constexpr MATRIX MATH_PURE fastCofactor3(const MATRIX& m) {
+    typedef typename MATRIX::value_type T;
+
+    // Assuming the input matrix is:
+    // | a b c |
+    // | d e f |
+    // | g h i |
+    //
+    // The cofactor are
+    // | A B C |
+    // | D E F |
+    // | G H I |
+
+    // Where:
+    // A = (ei - fh), B = (fg - di), C = (dh - eg)
+    // D = (ch - bi), E = (ai - cg), F = (bg - ah)
+    // G = (bf - ce), H = (cd - af), I = (ae - bd)
+
+    // Importantly, our matrices are column-major!
+
+    MATRIX cof{};
+
+    const T a = m[0][0];
+    const T b = m[1][0];
+    const T c = m[2][0];
+    const T d = m[0][1];
+    const T e = m[1][1];
+    const T f = m[2][1];
+    const T g = m[0][2];
+    const T h = m[1][2];
+    const T i = m[2][2];
+
+    cof[0][0] = e * i - f * h;  // A
+    cof[0][1] = c * h - b * i;  // D
+    cof[0][2] = b * f - c * e;  // G
+    cof[1][0] = f * g - d * i;  // B
+    cof[1][1] = a * i - c * g;  // E
+    cof[1][2] = c * d - a * f;  // H
+    cof[2][0] = d * h - e * g;  // C
+    cof[2][1] = b * g - a * h;  // F
+    cof[2][2] = a * e - b * d;  // I
+
+    return cof;
+}
+
+
+/**
+ * Cofactor function which switches on the matrix size.
+ */
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
+inline constexpr MATRIX MATH_PURE cof(const MATRIX& matrix) {
+    return (MATRIX::NUM_ROWS == 2) ? fastCofactor2<MATRIX>(matrix) :
+           ((MATRIX::NUM_ROWS == 3) ? fastCofactor3<MATRIX>(matrix) :
+            cofactor<MATRIX>(matrix));
+}
+
+/**
+ * Determinant of a matrix
+ */
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
+inline constexpr typename MATRIX::value_type MATH_PURE det(const MATRIX& matrix) {
+    typedef typename MATRIX::value_type T;
+    constexpr unsigned int N = MATRIX::NUM_ROWS;
+    Matrix<T, N> in{};
+    for (size_t i = 0; i < N; i++) {
+        for (size_t j = 0; j < N; j++) {
+            in[i][j] = matrix[i][j];
+        }
+    }
+    return Determinant<typename MATRIX::value_type, MATRIX::NUM_COLS>::determinant(in);
+}
+
 /**
  * Inversion function which switches on the matrix size.
  * @warning This function assumes the matrix is invertible. The result is
  * undefined if it is not. It is the responsibility of the caller to
  * make sure the matrix is not singular.
  */
-template <typename MATRIX>
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
 inline constexpr MATRIX MATH_PURE inverse(const MATRIX& matrix) {
-    static_assert(MATRIX::NUM_ROWS == MATRIX::NUM_COLS, "only square matrices can be inverted");
     return (MATRIX::NUM_ROWS == 2) ? fastInverse2<MATRIX>(matrix) :
-          ((MATRIX::NUM_ROWS == 3) ? fastInverse3<MATRIX>(matrix) :
-                    gaussJordanInverse<MATRIX>(matrix));
+           ((MATRIX::NUM_ROWS == 3) ? fastInverse3<MATRIX>(matrix) :
+            gaussJordanInverse<MATRIX>(matrix));
 }
 
-template<typename MATRIX_R, typename MATRIX_A, typename MATRIX_B>
-MATRIX_R MATH_PURE multiply(const MATRIX_A& lhs, const MATRIX_B& rhs) {
+template<typename MATRIX_R, typename MATRIX_A, typename MATRIX_B,
+        typename = std::enable_if_t<
+                MATRIX_A::NUM_COLS == MATRIX_B::NUM_ROWS &&
+                MATRIX_R::NUM_COLS == MATRIX_B::NUM_COLS &&
+                MATRIX_R::NUM_ROWS == MATRIX_A::NUM_ROWS, int>>
+constexpr MATRIX_R MATH_PURE multiply(MATRIX_A lhs, MATRIX_B rhs) {
     // pre-requisite:
     //  lhs : D columns, R rows
     //  rhs : C columns, D rows
     //  res : C columns, R rows
-
-    static_assert(MATRIX_A::NUM_COLS == MATRIX_B::NUM_ROWS,
-            "matrices can't be multiplied. invalid dimensions.");
-    static_assert(MATRIX_R::NUM_COLS == MATRIX_B::NUM_COLS,
-            "invalid dimension of matrix multiply result.");
-    static_assert(MATRIX_R::NUM_ROWS == MATRIX_A::NUM_ROWS,
-            "invalid dimension of matrix multiply result.");
-
-    MATRIX_R res(MATRIX_R::NO_INIT);
+    MATRIX_R res{};
     for (size_t col = 0; col < MATRIX_R::NUM_COLS; ++col) {
         res[col] = lhs * rhs[col];
     }
     return res;
 }
 
-// transpose. this handles matrices of matrices
-template <typename MATRIX>
-MATRIX MATH_PURE transpose(const MATRIX& m) {
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
+inline constexpr MATRIX MATH_PURE transpose(MATRIX m) {
     // for now we only handle square matrix transpose
-    static_assert(MATRIX::NUM_COLS == MATRIX::NUM_ROWS, "transpose only supports square matrices");
-    MATRIX result(MATRIX::NO_INIT);
+    MATRIX result{};
     for (size_t col = 0; col < MATRIX::NUM_COLS; ++col) {
         for (size_t row = 0; row < MATRIX::NUM_ROWS; ++row) {
-            result[col][row] = transpose(m[row][col]);
+            result[col][row] = m[row][col];
         }
     }
     return result;
 }
 
-// trace. this handles matrices of matrices
-template <typename MATRIX>
-typename MATRIX::value_type MATH_PURE trace(const MATRIX& m) {
-    static_assert(MATRIX::NUM_COLS == MATRIX::NUM_ROWS, "trace only defined for square matrices");
-    typename MATRIX::value_type result(0);
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
+inline constexpr typename MATRIX::value_type MATH_PURE trace(MATRIX m) {
+    typename MATRIX::value_type result{};
     for (size_t col = 0; col < MATRIX::NUM_COLS; ++col) {
-        result += trace(m[col][col]);
+        result += m[col][col];
     }
     return result;
 }
 
-// diag. this handles matrices of matrices
-template <typename MATRIX>
-typename MATRIX::col_type MATH_PURE diag(const MATRIX& m) {
-    static_assert(MATRIX::NUM_COLS == MATRIX::NUM_ROWS, "diag only defined for square matrices");
-    typename MATRIX::col_type result;
+template<typename MATRIX,
+        typename = std::enable_if_t<MATRIX::NUM_ROWS == MATRIX::NUM_COLS, int>>
+inline constexpr typename MATRIX::col_type MATH_PURE diag(MATRIX m) {
+    typename MATRIX::col_type result{};
     for (size_t col = 0; col < MATRIX::NUM_COLS; ++col) {
         result[col] = m[col][col];
     }
@@ -283,7 +456,7 @@ typename MATRIX::col_type MATH_PURE diag(const MATRIX& m) {
 
 //------------------------------------------------------------------------------
 // This is taken from the Imath MatrixAlgo code, and is identical to Eigen.
-template <typename MATRIX>
+template<typename MATRIX>
 TQuaternion<typename MATRIX::value_type> extractQuat(const MATRIX& mat) {
     typedef typename MATRIX::value_type T;
 
@@ -338,11 +511,21 @@ TQuaternion<typename MATRIX::value_type> extractQuat(const MATRIX& mat) {
  * get all the functionality here.
  */
 
-template <template<typename T> class BASE, typename T>
+template<template<typename> class BASE, typename T,
+        template<typename> class VEC>
 class TMatProductOperators {
 public:
-    // multiply by a scalar
-    BASE<T>& operator *= (T v) {
+    //  matrix *= matrix
+    template<typename U>
+    constexpr BASE<T>& operator*=(const BASE<U>& rhs) {
+        BASE<T>& lhs(static_cast< BASE<T>& >(*this));
+        lhs = matrix::multiply<BASE<T>>(lhs, rhs);
+        return lhs;
+    }
+
+    // matrix *= scalar
+    template<typename U, typename = enable_if_arithmetic_t<U>>
+    constexpr BASE<T>& operator*=(U v) {
         BASE<T>& lhs(static_cast< BASE<T>& >(*this));
         for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
             lhs[col] *= v;
@@ -350,16 +533,9 @@ public:
         return lhs;
     }
 
-    //  matrix *= matrix
-    template<typename U>
-    const BASE<T>& operator *= (const BASE<U>& rhs) {
-        BASE<T>& lhs(static_cast< BASE<T>& >(*this));
-        lhs = matrix::multiply<BASE<T> >(lhs, rhs);
-        return lhs;
-    }
-
-    // divide by a scalar
-    BASE<T>& operator /= (T v) {
+    // matrix /= scalar
+    template<typename U, typename = enable_if_arithmetic_t<U>>
+    constexpr BASE<T>& operator/=(U v) {
         BASE<T>& lhs(static_cast< BASE<T>& >(*this));
         for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
             lhs[col] /= v;
@@ -367,10 +543,71 @@ public:
         return lhs;
     }
 
-    // matrix * matrix, result is a matrix of the same type than the lhs matrix
+private:
+    /*
+     * NOTE: the functions below ARE NOT member methods. They are friend functions
+     * with they definition inlined with their declaration. This makes these
+     * template functions available to the compiler when (and only when) this class
+     * is instantiated, at which point they're only templated on the 2nd parameter
+     * (the first one, BASE<T> being known).
+     */
+
+    //  matrix * matrix
     template<typename U>
-    friend BASE<T> MATH_PURE operator *(const BASE<T>& lhs, const BASE<U>& rhs) {
-        return matrix::multiply<BASE<T> >(lhs, rhs);
+    friend inline constexpr BASE<arithmetic_result_t<T, U>> MATH_PURE
+    operator*(BASE<T> lhs, BASE<U> rhs) {
+        return matrix::multiply<BASE<arithmetic_result_t<T, U>>>(lhs, rhs);
+    }
+
+    // matrix * vector
+    template<typename U>
+    friend inline constexpr typename BASE<arithmetic_result_t<T, U>>::col_type MATH_PURE
+    operator*(const BASE<T>& lhs, const VEC<U>& rhs) {
+        typename BASE<arithmetic_result_t<T, U>>::col_type result{};
+        for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
+            result += lhs[col] * rhs[col];
+        }
+        return result;
+    }
+
+    // row-vector * matrix
+    template<typename U>
+    friend inline constexpr typename BASE<arithmetic_result_t<T, U>>::row_type MATH_PURE
+    operator*(const VEC<U>& lhs, const BASE<T>& rhs) {
+        typename BASE<arithmetic_result_t<T, U>>::row_type result{};
+        for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
+            result[col] = dot(lhs, rhs[col]);
+        }
+        return result;
+    }
+
+    // matrix * scalar
+    template<typename U, typename = enable_if_arithmetic_t <U>>
+    friend inline constexpr BASE<arithmetic_result_t < T, U>> MATH_PURE
+    operator*(const BASE<T>& lhs, U rhs) {
+        BASE<arithmetic_result_t<T, U>> result{};
+        for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
+            result[col] = lhs[col] * rhs;
+        }
+        return result;
+    }
+
+    // scalar * matrix
+    template<typename U, typename = enable_if_arithmetic_t<U>>
+    friend inline constexpr BASE<arithmetic_result_t<T, U>> MATH_PURE
+    operator*(U rhs, const BASE<T>& lhs) {
+        return lhs * rhs;
+    }
+
+    // matrix / scalar
+    template<typename U, typename = enable_if_arithmetic_t<U>>
+    friend inline constexpr BASE<arithmetic_result_t<T, U>> MATH_PURE
+    operator/(const BASE<T>& lhs, U rhs) {
+        BASE<arithmetic_result_t<T, U>> result{};
+        for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
+            result[col] = lhs[col] / rhs;
+        }
+        return result;
     }
 };
 
@@ -390,8 +627,7 @@ public:
 
 template<template<typename U> class BASE, typename T>
 class TMatSquareFunctions {
-public:
-
+private:
     /*
      * NOTE: the functions below ARE NOT member methods. They are friend functions
      * with they definition inlined with their declaration. This makes these
@@ -399,14 +635,30 @@ public:
      * is instantiated, at which point they're only templated on the 2nd parameter
      * (the first one, BASE<T> being known).
      */
-    friend inline BASE<T> MATH_PURE inverse(const BASE<T>& matrix) {
+    friend inline constexpr BASE<T> MATH_PURE inverse(const BASE<T>& matrix) {
         return matrix::inverse(matrix);
     }
-    friend inline constexpr BASE<T> MATH_PURE transpose(const BASE<T>& m) {
+
+    friend inline constexpr BASE<T> MATH_PURE cof(const BASE<T>& matrix) {
+        return matrix::cof(matrix);
+    }
+
+    friend inline constexpr BASE<T> MATH_PURE transpose(BASE<T> m) {
         return matrix::transpose(m);
     }
-    friend inline constexpr T MATH_PURE trace(const BASE<T>& m) {
+
+    friend inline constexpr T MATH_PURE trace(BASE<T> m) {
         return matrix::trace(m);
+    }
+
+    friend inline constexpr T MATH_PURE det(const BASE<T>& m) {
+        return matrix::det(m);
+    }
+
+    // unclear why we have to use 'auto' here. 'typename BASE<T>::col_type' produces
+    // error: no type named 'col_type' in 'filament::math::details::TMat44<float>'
+    friend inline constexpr auto MATH_PURE diag(const BASE<T>& m) {
+        return matrix::diag(m);
     }
 };
 
@@ -433,7 +685,8 @@ public:
         return static_cast<BASE<T>&>(*this)[col][row];
     }
 
-    friend inline BASE<T> MATH_PURE abs(BASE<T> m) {
+private:
+    constexpr friend inline BASE<T> MATH_PURE abs(BASE<T> m) {
         for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
             m[col] = abs(m[col]);
         }
@@ -449,26 +702,25 @@ public:
         static_assert(BASE<T>::NUM_ROWS == 3 || BASE<T>::NUM_ROWS == 4, "3x3 or 4x4 matrices only");
     }
 
-    template<typename A, typename VEC,
-            typename = typename std::enable_if<std::is_arithmetic<A>::value>::type>
-    static BASE<T> rotation(A radian, const VEC& about) {
+    template<typename A, typename VEC, typename = enable_if_arithmetic_t<A>>
+    static BASE<T> rotation(A radian, VEC about) {
         BASE<T> r;
         T c = std::cos(radian);
         T s = std::sin(radian);
-        if (about.x == 1 && about.y == 0 && about.z == 0) {
+        if (about[0] == 1 && about[1] == 0 && about[2] == 0) {
             r[1][1] = c;   r[2][2] = c;
             r[1][2] = s;   r[2][1] = -s;
-        } else if (about.x == 0 && about.y == 1 && about.z == 0) {
+        } else if (about[0] == 0 && about[1] == 1 && about[2] == 0) {
             r[0][0] = c;   r[2][2] = c;
             r[2][0] = s;   r[0][2] = -s;
-        } else if (about.x == 0 && about.y == 0 && about.z == 1) {
+        } else if (about[0] == 0 && about[1] == 0 && about[2] == 1) {
             r[0][0] = c;   r[1][1] = c;
             r[0][1] = s;   r[1][0] = -s;
         } else {
             VEC nabout = normalize(about);
-            typename VEC::value_type x = nabout.x;
-            typename VEC::value_type y = nabout.y;
-            typename VEC::value_type z = nabout.z;
+            typename VEC::value_type x = nabout[0];
+            typename VEC::value_type y = nabout[1];
+            typename VEC::value_type z = nabout[2];
             T nc = 1 - c;
             T xy = x * y;
             T yz = y * z;
@@ -496,12 +748,7 @@ public:
      * @param pitch about X axis
      * @param roll about Z axis
      */
-    template <
-        typename Y, typename P, typename R,
-        typename = typename std::enable_if<std::is_arithmetic<Y>::value >::type,
-        typename = typename std::enable_if<std::is_arithmetic<P>::value >::type,
-        typename = typename std::enable_if<std::is_arithmetic<R>::value >::type
-    >
+    template<typename Y, typename P, typename R, typename = enable_if_arithmetic_t<Y, P, R>>
     static BASE<T> eulerYXZ(Y yaw, P pitch, R roll) {
         return eulerZYX(roll, pitch, yaw);
     }
@@ -515,12 +762,7 @@ public:
      * The euler angles are applied in ZYX order. i.e: a vector is first rotated
      * about X (roll) then Y (pitch) and then Z (yaw).
      */
-    template <
-    typename Y, typename P, typename R,
-    typename = typename std::enable_if<std::is_arithmetic<Y>::value >::type,
-    typename = typename std::enable_if<std::is_arithmetic<P>::value >::type,
-    typename = typename std::enable_if<std::is_arithmetic<R>::value >::type
-    >
+    template<typename Y, typename P, typename R, typename = enable_if_arithmetic_t<Y, P, R>>
     static BASE<T> eulerZYX(Y yaw, P pitch, R roll) {
         BASE<T> r;
         T cy = std::cos(yaw);
@@ -552,39 +794,8 @@ public:
         return r;
     }
 
-    TQuaternion<T> toQuaternion() const {
+    TQuaternion <T> toQuaternion() const {
         return matrix::extractQuat(static_cast<const BASE<T>&>(*this));
-    }
-};
-
-
-template <template<typename T> class BASE, typename T>
-class TMatDebug {
-public:
-    friend std::ostream& operator<<(std::ostream& stream, const BASE<T>& m) {
-        for (size_t row = 0; row < BASE<T>::NUM_ROWS; ++row) {
-            if (row != 0) {
-                stream << std::endl;
-            }
-            if (row == 0) {
-                stream << "/ ";
-            } else if (row == BASE<T>::NUM_ROWS-1) {
-                stream << "\\ ";
-            } else {
-                stream << "| ";
-            }
-            for (size_t col = 0; col < BASE<T>::NUM_COLS; ++col) {
-                stream << std::setw(10) << std::to_string(m[col][row]);
-            }
-            if (row == 0) {
-                stream << " \\";
-            } else if (row == BASE<T>::NUM_ROWS-1) {
-                stream << " /";
-            } else {
-                stream << " |";
-            }
-        }
-        return stream;
     }
 };
 
@@ -593,4 +804,4 @@ public:
 }  // namespace math
 }  // namespace filament
 
-#endif  // MATH_TMATHELPERS_H_
+#endif  // TNT_MATH_TMATHELPERS_H

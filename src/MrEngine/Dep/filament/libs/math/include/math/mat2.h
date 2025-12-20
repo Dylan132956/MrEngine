@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef MATH_MAT2_H_
-#define MATH_MAT2_H_
+#ifndef TNT_MATH_MAT2_H
+#define TNT_MATH_MAT2_H
 
 #include <math/TMatHelpers.h>
-#include <math/vec2.h>
 #include <math/compiler.h>
+#include <math/vec2.h>
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -63,17 +64,18 @@ namespace details {
  * m[n] is the \f$ n^{th} \f$ column of the matrix and is a vec2.
  *
  */
-template <typename T>
+template<typename T>
 class MATH_EMPTY_BASES TMat22 :
-                public TVecUnaryOperators<TMat22, T>,
-                public TVecComparisonOperators<TMat22, T>,
-                public TVecAddOperators<TMat22, T>,
-                public TMatProductOperators<TMat22, T>,
-                public TMatSquareFunctions<TMat22, T>,
-                public TMatHelpers<TMat22, T>,
-                public TMatDebug<TMat22, T> {
+        public TVecUnaryOperators<TMat22, T>,
+        public TVecComparisonOperators<TMat22, T>,
+        public TVecAddOperators<TMat22, T>,
+        public TMatProductOperators<TMat22, T, TVec2>,
+        public TMatSquareFunctions<TMat22, T>,
+        public TMatHelpers<TMat22, T> {
 public:
-    enum no_init { NO_INIT };
+    enum no_init {
+        NO_INIT
+    };
     typedef T value_type;
     typedef T& reference;
     typedef T const& const_reference;
@@ -105,15 +107,12 @@ private:
 
 public:
     // array access
-    inline constexpr col_type const& operator[](size_t column) const {
-#if __cplusplus >= 201402L
-        // only possible in C++0x14 with constexpr
+    inline constexpr col_type const& operator[](size_t column) const noexcept {
         assert(column < NUM_COLS);
-#endif
         return m_value[column];
     }
 
-    inline col_type& operator[](size_t column) {
+    inline constexpr col_type& operator[](size_t column) noexcept {
         assert(column < NUM_COLS);
         return m_value[column];
     }
@@ -125,7 +124,7 @@ public:
     /**
      * leaves object uninitialized. use with caution.
      */
-    constexpr explicit TMat22(no_init) {}
+    constexpr explicit TMat22(no_init) noexcept {}
 
 
     /**
@@ -140,7 +139,7 @@ public:
      *      \right)
      *      \f$
      */
-    constexpr TMat22();
+    constexpr TMat22() noexcept ;
 
     /**
      * initialize to Identity*scalar.
@@ -155,7 +154,7 @@ public:
      *      \f$
      */
     template<typename U>
-    constexpr explicit TMat22(U v);
+    constexpr explicit TMat22(U v) noexcept;
 
     /**
      * sets the diagonal to a vector.
@@ -169,14 +168,14 @@ public:
      *      \right)
      *      \f$
      */
-    template <typename U>
-    constexpr explicit TMat22(const TVec2<U>& v);
+    template<typename U>
+    constexpr explicit TMat22(const TVec2<U>& v) noexcept;
 
     /**
      * construct from another matrix of the same size
      */
-    template <typename U>
-    constexpr explicit TMat22(const TMat22<U>& rhs);
+    template<typename U>
+    constexpr explicit TMat22(const TMat22<U>& rhs) noexcept;
 
     /**
      * construct from 2 column vectors.
@@ -189,8 +188,8 @@ public:
      *      \right)
      *      \f$
      */
-    template <typename A, typename B>
-    constexpr TMat22(const TVec2<A>& v0, const TVec2<B>& v1);
+    template<typename A, typename B>
+    constexpr TMat22(const TVec2<A>& v0, const TVec2<B>& v1) noexcept;
 
     /** construct from 4 elements in column-major form.
      *
@@ -203,70 +202,54 @@ public:
      *      \right)
      *      \f$
      */
-    template <
-        typename A, typename B,
-        typename C, typename D>
-    constexpr explicit TMat22(A m00, B m01,
-                              C m10, D m11);
+    template<
+            typename A, typename B,
+            typename C, typename D>
+    constexpr explicit TMat22(A m00, B m01, C m10, D m11) noexcept ;
 
 
     struct row_major_init {
-        template<
-                typename A, typename B,
+        template<typename A, typename B,
                 typename C, typename D>
-        constexpr explicit row_major_init(A m00, B m01,
-                                          C m10, D m11) noexcept
-                : m(m00, m10,
-                    m01, m11) {}
+        constexpr explicit row_major_init(A m00, B m01, C m10, D m11) noexcept
+                : m(m00, m10, m01, m11) {}
+
     private:
         friend TMat22;
         TMat22 m;
     };
 
-    constexpr explicit TMat22(row_major_init c) : TMat22(std::move(c.m)) { }
+    constexpr explicit TMat22(row_major_init c) noexcept : TMat22(std::move(c.m)) {}
 
     /**
      * Rotate by radians in the 2D plane
      */
-    static TMat22<T> rotate(T radian) {
-        TMat22<T> r(TMat22<T>::NO_INIT);
+    static TMat22<T> rotate(T radian) noexcept {
+        TMat22<T> r(NO_INIT);
         T c = std::cos(radian);
         T s = std::sin(radian);
-        r[0][0] = c;   r[1][1] = c;
-        r[0][1] = s;   r[1][0] = -s;
+        r[0][0] = c;
+        r[1][1] = c;
+        r[0][1] = s;
+        r[1][0] = -s;
         return r;
     }
 
-    // returns false if the two matrices are different. May return false if they're the
-    // same, with some elements only differing by +0 or -0. Behaviour is undefined with NaNs.
-    static constexpr bool fuzzyEqual(TMat22 l, TMat22 r) noexcept {
-        uint64_t const* const li = reinterpret_cast<uint64_t const*>(&l);
-        uint64_t const* const ri = reinterpret_cast<uint64_t const*>(&r);
-        uint64_t result = 0;
-        // For some reason clang is not able to vectoize this loop when the number of iteration
-        // is known and constant (!?!?!). Still this is better than operator==.
-        #pragma clang loop vectorize_width(2)
-        for (size_t i = 0; i < sizeof(TMat22) / sizeof(uint64_t); i++) {
-            result |= li[i] ^ ri[i];
-        }
-        return result != 0;
-    }
-
-    template <typename A>
-    static constexpr TMat22 translation(const TVec2<A>& t) {
+    template<typename A>
+    static constexpr TMat22 translation(const TVec2<A>& t) noexcept {
         TMat22 r;
         r[2] = t;
         return r;
     }
 
-    template <typename A>
-    static constexpr TMat22 scaling(const TVec2<A>& s) {
+    template<typename A>
+    static constexpr TMat22 scaling(const TVec2<A>& s) noexcept {
         return TMat22{ s };
     }
 
-    template <typename A>
-    static constexpr TMat22 scaling(A s) {
-        return TMat22{ TVec2<T>{ s, s } };
+    template<typename A>
+    static constexpr TMat22 scaling(A s) noexcept {
+        return TMat22{ TVec2<T>{ s, s }};
     }
 };
 
@@ -277,110 +260,46 @@ public:
 // Since the matrix code could become pretty big quickly, we don't inline most
 // operations.
 
-template <typename T>
-constexpr TMat22<T>::TMat22() {
-    m_value[0] = col_type(1, 0);
-    m_value[1] = col_type(0, 1);
-}
-
-template <typename T>
-template <typename U>
-constexpr TMat22<T>::TMat22(U v) {
-    m_value[0] = col_type(v, 0);
-    m_value[1] = col_type(0, v);
+template<typename T>
+constexpr TMat22<T>::TMat22() noexcept
+        : m_value{ col_type(1, 0), col_type(0, 1) } {
 }
 
 template<typename T>
 template<typename U>
-constexpr TMat22<T>::TMat22(const TVec2<U>& v) {
-    m_value[0] = col_type(v.x, 0);
-    m_value[1] = col_type(0, v.y);
+constexpr TMat22<T>::TMat22(U v) noexcept
+        : m_value{ col_type(v, 0), col_type(0, v) } {
+}
+
+template<typename T>
+template<typename U>
+constexpr TMat22<T>::TMat22(const TVec2<U>& v) noexcept
+        : m_value{ col_type(v[0], 0), col_type(0, v[1]) } {
 }
 
 // construct from 4 scalars. Note that the arrangement
 // of values in the constructor is the transpose of the matrix
 // notation.
 template<typename T>
-template <
-    typename A, typename B,
-    typename C, typename D>
-constexpr TMat22<T>::TMat22(A m00, B m01,
-                            C m10, D m11) {
-    m_value[0] = col_type(m00, m01);
-    m_value[1] = col_type(m10, m11);
+template<typename A, typename B,
+        typename C, typename D>
+constexpr TMat22<T>::TMat22(A m00, B m01, C m10, D m11) noexcept
+        : m_value{ col_type(m00, m01), col_type(m10, m11) } {
 }
 
-template <typename T>
-template <typename U>
-constexpr TMat22<T>::TMat22(const TMat22<U>& rhs) {
+template<typename T>
+template<typename U>
+constexpr TMat22<T>::TMat22(const TMat22<U>& rhs) noexcept {
     for (size_t col = 0; col < NUM_COLS; ++col) {
         m_value[col] = col_type(rhs[col]);
     }
 }
 
 // Construct from 2 column vectors.
-template <typename T>
-template <typename A, typename B>
-constexpr TMat22<T>::TMat22(const TVec2<A>& v0, const TVec2<B>& v1) {
-    m_value[0] = v0;
-    m_value[1] = v1;
-}
-
-// ----------------------------------------------------------------------------------------
-// Arithmetic operators outside of class
-// ----------------------------------------------------------------------------------------
-
-/* We use non-friend functions here to prevent the compiler from using
- * implicit conversions, for instance of a scalar to a vector. The result would
- * not be what the caller expects.
- *
- * Also note that the order of the arguments in the inner loop is important since
- * it determines the output type (only relevant when T != U).
- */
-
-// matrix * column-vector, result is a vector of the same type than the input vector
-template <typename T, typename U>
-constexpr typename TMat22<U>::col_type MATH_PURE operator *(const TMat22<T>& lhs, const TVec2<U>& rhs) {
-    // Result is initialized to zero.
-    typename TMat22<U>::col_type result = {};
-    for (size_t col = 0; col < TMat22<T>::NUM_COLS; ++col) {
-        result += lhs[col] * rhs[col];
-    }
-    return result;
-}
-
-// row-vector * matrix, result is a vector of the same type than the input vector
-template <typename T, typename U>
-constexpr typename TMat22<U>::row_type MATH_PURE operator *(const TVec2<U>& lhs, const TMat22<T>& rhs) {
-    typename TMat22<U>::row_type result;
-    for (size_t col = 0; col < TMat22<T>::NUM_COLS; ++col) {
-        result[col] = dot(lhs, rhs[col]);
-    }
-    return result;
-}
-
-// matrix * scalar, result is a matrix of the same type than the input matrix
-template<typename T, typename U>
-constexpr typename std::enable_if<std::is_arithmetic<U>::value, TMat22<T>>::type MATH_PURE
-operator*(TMat22<T> lhs, U rhs) {
-    return lhs *= rhs;
-}
-
-// scalar * matrix, result is a matrix of the same type than the input matrix
-template<typename T, typename U>
-constexpr typename std::enable_if<std::is_arithmetic<U>::value, TMat22<T>>::type MATH_PURE
-operator*(U lhs, const TMat22<T>& rhs) {
-    return rhs * lhs;
-}
-
-// ----------------------------------------------------------------------------------------
-
-/* FIXME: this should go into TMatSquareFunctions<> but for some reason
- * BASE<T>::col_type is not accessible from there (???)
- */
 template<typename T>
-constexpr typename TMat22<T>::col_type MATH_PURE diag(const TMat22<T>& m) {
-    return matrix::diag(m);
+template<typename A, typename B>
+constexpr TMat22<T>::TMat22(const TVec2<A>& v0, const TVec2<B>& v1) noexcept
+        : m_value{ v0, v1 } {
 }
 
 }  // namespace details
@@ -395,8 +314,9 @@ typedef details::TMat22<float> mat2f;
 }  // namespace filament
 
 namespace std {
-template <typename T>
-constexpr void swap( filament::math::details::TMat22<T>& lhs,  filament::math::details::TMat22<T>& rhs) noexcept {
+template<typename T>
+constexpr void swap(filament::math::details::TMat22<T>& lhs,
+        filament::math::details::TMat22<T>& rhs) noexcept {
     // This generates much better code than the default implementation
     // It's unclear why, I believe this is due to an optimization bug in the clang.
     //
@@ -424,4 +344,4 @@ constexpr void swap( filament::math::details::TMat22<T>& lhs,  filament::math::d
 }
 }
 
-#endif  // MATH_MAT2_H_
+#endif  // TNT_MATH_MAT2_H

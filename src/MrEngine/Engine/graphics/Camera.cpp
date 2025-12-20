@@ -7,6 +7,7 @@
 #include "Material.h"
 #include "SkinnedMeshRenderer.h"
 #include "Light.h"
+#include "Froxelizer.h"
 #include "time/Time.h"
 #include "Transform.h"
 #include "postprocessing/PostProcessing.h"
@@ -312,14 +313,38 @@ namespace moonriver
 		}
 
 		params.viewport.left = (int32_t) (m_viewport_rect.x * target_width);
-		params.viewport.bottom = (int32_t) ((1.0f - (m_viewport_rect.y + m_viewport_rect.h)) * target_height);
-		params.viewport.width = (uint32_t) (m_viewport_rect.w * target_width);
-		params.viewport.height = (uint32_t) (m_viewport_rect.h * target_height);
-		params.clearColor = filament::math::float4(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
+	params.viewport.bottom = (int32_t) ((1.0f - (m_viewport_rect.y + m_viewport_rect.h)) * target_height);
+	params.viewport.width = (uint32_t) (m_viewport_rect.w * target_width);
+	params.viewport.height = (uint32_t) (m_viewport_rect.h * target_height);
+	params.clearColor = filament::math::float4(m_clear_color.r, m_clear_color.g, m_clear_color.b, m_clear_color.a);
 
-		driver.beginRenderPass(target, params);
+	// Prepare Froxelizer
+	filament::backend::Viewport viewport;
+	viewport.left = params.viewport.left;
+	viewport.bottom = params.viewport.bottom;
+	viewport.width = params.viewport.width;
+	viewport.height = params.viewport.height;
+	//viewport.minDepth = 0.0f;
+	//viewport.maxDepth = 1.0f;
+
+	//if (m_froxelizer)
+	//{
+	//	m_froxelizer->setOptions(m_near_clip, m_far_clip);
+	//	m_froxelizer->prepare(driver, viewport, this->GetProjectionMatrix(), m_near_clip, m_far_clip);
+	//	m_froxelizer->froxelizeLights(Light::GetLights(), this->GetViewMatrix(), this->GetProjectionMatrix());
+	//	m_froxelizer->commit(driver);
+	//}
+
+	driver.beginRenderPass(target, params);
 
 		driver.bindUniformBuffer((size_t) Shader::BindingPoint::PerView, m_view_uniform_buffer);
+
+	// Bind Froxelizer buffers
+	//if (m_froxelizer)
+	//{
+	//	driver.bindUniformBuffer((size_t) Shader::BindingPoint::Froxels, m_froxelizer->getFroxelBuffer());
+	//	driver.bindUniformBuffer((size_t) Shader::BindingPoint::FroxelRecords, m_froxelizer->getRecordBuffer());
+	//}
 
         for (auto i : renderers)
         {
@@ -731,6 +756,7 @@ namespace moonriver
 		m_projection_matrix_dirty(true),
 		m_view_matrix_external(false),
 		m_projection_matrix_external(false)
+		//m_froxelizer(new Froxelizer())
     {
 		m_cameras.push_back(this);
 		m_cameras_order_dirty = true;
@@ -745,6 +771,13 @@ namespace moonriver
 			driver.destroyUniformBuffer(m_view_uniform_buffer);
 			m_view_uniform_buffer.clear();
 		}
+
+		//if (m_froxelizer)
+		//{
+		//	m_froxelizer->terminate(driver);
+		//	delete m_froxelizer;
+		//	m_froxelizer = nullptr;
+		//}
 
 		if (m_render_target)
 		{

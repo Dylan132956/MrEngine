@@ -36,10 +36,28 @@
 #    define UTILS_PUBLIC  
 #endif
 
+#if __has_attribute(deprecated)
+#   define UTILS_DEPRECATED [[deprecated]]
+#else
+#   define UTILS_DEPRECATED
+#endif
+
 #if __has_attribute(packed)
 #   define UTILS_PACKED __attribute__((packed))
 #else
 #   define UTILS_PACKED
+#endif
+
+#if __has_attribute(noreturn)
+#    define UTILS_NORETURN __attribute__((noreturn))
+#else
+#    define UTILS_NORETURN
+#endif
+
+#if __has_attribute(fallthrough)
+#   define UTILS_FALLTHROUGH [[fallthrough]]
+#else
+#   define UTILS_FALLTHROUGH
 #endif
 
 #if __has_attribute(visibility)
@@ -50,6 +68,24 @@
 #    endif
 #else
 #    define UTILS_PRIVATE
+#endif
+
+#define UTILS_NO_SANITIZE_THREAD
+#if __has_feature(thread_sanitizer)
+#undef UTILS_NO_SANITIZE_THREAD
+#define UTILS_NO_SANITIZE_THREAD __attribute__((no_sanitize("thread")))
+#endif
+
+#define UTILS_HAS_SANITIZE_THREAD 0
+#if __has_feature(thread_sanitizer) || defined(__SANITIZE_THREAD__)
+#undef UTILS_HAS_SANITIZE_THREAD
+#define UTILS_HAS_SANITIZE_THREAD 1
+#endif
+
+#define UTILS_HAS_SANITIZE_MEMORY 0
+#if __has_feature(memory_sanitizer)
+#undef UTILS_HAS_SANITIZE_MEMORY
+#define UTILS_HAS_SANITIZE_MEMORY 1
 #endif
 
 /*
@@ -64,8 +100,21 @@
 #      define UTILS_UNLIKELY( exp )  (__builtin_expect( !!(exp), 0 ))
 #   endif
 #else
-#   define UTILS_LIKELY( exp )    (exp)
-#   define UTILS_UNLIKELY( exp )  (exp)
+#   define UTILS_LIKELY( exp )    (!!(exp))
+#   define UTILS_UNLIKELY( exp )  (!!(exp))
+#endif
+
+#if __has_builtin(__builtin_expect_with_probability)
+#   ifdef __cplusplus
+#      define UTILS_VERY_LIKELY( exp )    (__builtin_expect_with_probability( !!(exp), true, 0.995 ))
+#      define UTILS_VERY_UNLIKELY( exp )  (__builtin_expect_with_probability( !!(exp), false, 0.995 ))
+#   else
+#      define UTILS_VERY_LIKELY( exp )    (__builtin_expect_with_probability( !!(exp), 1, 0.995 ))
+#      define UTILS_VERY_UNLIKELY( exp )  (__builtin_expect_with_probability( !!(exp), 0, 0.995 ))
+#   endif
+#else
+#   define UTILS_VERY_LIKELY( exp )    (!!(exp))
+#   define UTILS_VERY_UNLIKELY( exp )  (!!(exp))
 #endif
 
 #if __has_builtin(__builtin_prefetch)
@@ -86,8 +135,14 @@
 #   define UTILS_HAS_HYPER_THREADING 0
 #endif
 
-#if defined(__EMSCRIPTEN__) || defined(VR_UWP) || defined(UTILS_NO_THREADING)
+#if defined(FILAMENT_SINGLE_THREADED)
 #   define UTILS_HAS_THREADING 0
+#elif defined(__EMSCRIPTEN__)
+#   if defined(__EMSCRIPTEN_PTHREADS__) && defined(FILAMENT_WASM_THREADS)
+#      define UTILS_HAS_THREADING 1
+#   else
+#      define UTILS_HAS_THREADING 0
+#   endif
 #else
 #   define UTILS_HAS_THREADING 1
 #endif
@@ -110,7 +165,7 @@
 #define UTILS_PURE
 #endif
 
-#if __has_attribute(maybe_unused)
+#if __has_attribute(maybe_unused) || (defined(_MSC_VER) && _MSC_VER >= 1911)
 #define UTILS_UNUSED [[maybe_unused]]
 #define UTILS_UNUSED_IN_RELEASE [[maybe_unused]]
 #elif __has_attribute(unused)
@@ -129,22 +184,33 @@
 #    define UTILS_RESTRICT
 #endif
 
-#if __has_feature(cxx_thread_local)
-#   ifdef ANDROID
-#       // Android NDK lies about supporting cxx_thread_local
-#       define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 0
-#   else // ANDROID
-#       define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 1
-#   endif // ANDROID
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+#   define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 1
+#elif __has_feature(cxx_thread_local)
+#   define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 1
 #else
-#	ifdef WIN32
-#		define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 1
-#	else
-#		define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 0
-#	endif
+#   define UTILS_HAS_FEATURE_CXX_THREAD_LOCAL 0
 #endif
 
-#if __has_feature(cxx_rtti)
+#if defined(__clang__)
+#define UTILS_NONNULL _Nonnull
+#define UTILS_NULLABLE _Nullable
+#else
+#define UTILS_NONNULL
+#define UTILS_NULLABLE
+#endif
+
+#if defined(_MSC_VER)
+// MSVC does not support loop unrolling hints
+#   define UTILS_UNROLL
+#   define UTILS_NOUNROLL
+#else
+// C++11 allows pragmas to be specified as part of defines using the _Pragma syntax.
+#   define UTILS_UNROLL _Pragma("unroll")
+#   define UTILS_NOUNROLL _Pragma("nounroll")
+#endif
+
+#if __has_feature(cxx_rtti) || defined(_CPPRTTI)
 #   define UTILS_HAS_RTTI 1
 #else
 #   define UTILS_HAS_RTTI 0
@@ -179,8 +245,8 @@
 
 
 // ssize_t is a POSIX type.
-#if defined(WIN32)
-#include <BaseTsd.h>
+#if defined(WIN32) || defined(_WIN32)
+#include <Basetsd.h>
 typedef SSIZE_T ssize_t;
 #endif
 
@@ -190,10 +256,29 @@ typedef SSIZE_T ssize_t;
 #   define UTILS_EMPTY_BASES
 #endif
 
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
     #define IMPORTSYMB __declspec(dllimport)
 #else
     #define IMPORTSYMB
+#endif
+
+#if defined(_MSC_VER) && !defined(__PRETTY_FUNCTION__)
+#    define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif 
+
+
+#if defined(_MSC_VER)
+#   define UTILS_WARNING_PUSH _Pragma("warning( push )")
+#   define UTILS_WARNING_POP _Pragma("warning( pop )")
+#   define UTILS_WARNING_ENABLE_PADDED _Pragma("warning(1: 4324)")
+#elif defined(__clang__)
+#   define UTILS_WARNING_PUSH _Pragma("clang diagnostic push")
+#   define UTILS_WARNING_POP  _Pragma("clang diagnostic pop")
+#   define UTILS_WARNING_ENABLE_PADDED _Pragma("clang diagnostic warning \"-Wpadded\"")
+#else
+#   define UTILS_WARNING_PUSH
+#   define UTILS_WARNING_POP
+#   define UTILS_WARNING_ENABLE_PADDED
 #endif
 
 #endif // TNT_UTILS_COMPILER_H

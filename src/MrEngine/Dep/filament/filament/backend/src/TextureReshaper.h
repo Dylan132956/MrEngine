@@ -18,6 +18,7 @@
 #define TNT_TEXTURERESHAPER_H
 
 #include <backend/DriverEnums.h>
+#include <functional>
 
 namespace filament {
 namespace backend {

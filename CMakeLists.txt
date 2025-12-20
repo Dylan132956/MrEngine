@@ -36,7 +36,7 @@ set(CMAKE_C_FLAGS
     "${CMAKE_C_FLAGS} -DFT2_BUILD_LIBRARY -DAL_LIBTYPE_STATIC -DAL_ALEXT_PROTOTYPES -DFPM_DEFAULT -DSIZEOF_INT=4 -DENABLE_OPT=0 -DENABLE_HLSL")
 
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -DFT2_BUILD_LIBRARY -DAL_LIBTYPE_STATIC -DAL_ALEXT_PROTOTYPES -DFPM_DEFAULT -DSIZEOF_INT=4 -DENABLE_OPT=0 -DENABLE_HLSL")
+    "${CMAKE_CXX_FLAGS} -DFT2_BUILD_LIBRARY -DAL_LIBTYPE_STATIC -DAL_ALEXT_PROTOTYPES -DFPM_DEFAULT -DSIZEOF_INT=4 -DENABLE_OPT=0 -DENABLE_HLSL -D_ENABLE_EXTENDED_ALIGNED_STORAGE")
 
 file(GLOB MR3D_DEP_SRCS
 	 ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src/noop/NoopDriver.cpp
@@ -61,6 +61,7 @@ file(GLOB MR3D_DEP_SRCS
 	 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/Profiler.cpp
 	 ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/sstream.cpp
      ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/Systrace.cpp
+     ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/src/JobSystem.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/jpeg/*.c
      ${MR3D_LIB_SRC_DIR}/Engine/png/*.h
@@ -76,8 +77,11 @@ add_library(Mr3DDep STATIC ${MR3D_DEP_SRCS})
 target_include_directories(Mr3DDep PRIVATE
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/src
+                           ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/src
+                           ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/math/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include
+                           ${MR3D_LIB_SRC_DIR}/Dep/filament/third_party/robin-map
                            )
 
 file(GLOB MR3D_LIB_SRCS_HEADER
@@ -126,6 +130,8 @@ target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Engine/openal/include
                            ${MR3D_LIB_SRC_DIR}/Engine/openal/android
                            ${MR3D_LIB_SRC_DIR}/Engine/openal/OpenAL32/Include
+                           ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/include
+                           ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/src
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/filament/backend/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/math/include
 						   ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include

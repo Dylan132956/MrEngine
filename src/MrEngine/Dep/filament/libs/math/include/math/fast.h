@@ -17,10 +17,13 @@
 #ifndef TNT_MATH_FAST_H
 #define TNT_MATH_FAST_H
 
-#include <cmath>
-#include <stdint.h>
-#include <type_traits>
 #include <math/compiler.h>
+#include <math/scalar.h>
+
+#include <cmath>
+#include <type_traits>
+
+#include <stdint.h>
 
 #ifdef __ARM_NEON
 #include <arm_neon.h>
@@ -33,9 +36,9 @@ namespace fast {
 // fast cos(x), ~8 cycles (vs. 66 cycles on ARM)
 // can be vectorized
 // x between -pi and pi
-template<typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
+template<typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
 constexpr T MATH_PURE cos(T x) noexcept {
-    x *= T(M_1_PI / 2);
+    x *= T(F_1_PI / 2);
     x -= T(0.25) + std::floor(x + T(0.25));
     x *= T(16.0) * std::abs(x) - T(8.0);
     x += T(0.225) * x * (std::abs(x) - T(1.0));
@@ -45,9 +48,9 @@ constexpr T MATH_PURE cos(T x) noexcept {
 // fast sin(x), ~8 cycles (vs. 66 cycles on ARM)
 // can be vectorized
 // x between -pi and pi
-template <typename T, typename = typename std::enable_if<std::is_floating_point<T>::value>::type>
+template<typename T, typename = std::enable_if_t<std::is_floating_point<T>::value>>
 constexpr T MATH_PURE sin(T x) noexcept {
-    return filament::math::fast::cos<T>(x - T(M_PI_2));
+    return fast::cos<T>(x - T(F_PI_2));
 }
 
 constexpr inline float MATH_PURE ilog2(float x) noexcept {
@@ -55,7 +58,7 @@ constexpr inline float MATH_PURE ilog2(float x) noexcept {
         float val;
         int32_t x;
     } u = { x };
-    return ((u.x >> 23) & 0xff) - 127;
+    return float(((u.x >> 23) & 0xff) - 127);
 }
 
 constexpr inline float MATH_PURE log2(float x) noexcept {
@@ -111,29 +114,13 @@ constexpr unsigned int factorial(unsigned int x) noexcept {
 
 constexpr double exp(double x) noexcept {
     return 1.0 + x + pow(x, 2) / factorial(2) + pow(x, 3) / factorial(3)
-                   + pow(x, 4) / factorial(4) + pow(x, 5) / factorial(5)
-                   + pow(x, 6) / factorial(6) + pow(x, 7) / factorial(7)
-                   + pow(x, 8) / factorial(8) + pow(x, 9) / factorial(9);
+           + pow(x, 4) / factorial(4) + pow(x, 5) / factorial(5)
+           + pow(x, 6) / factorial(6) + pow(x, 7) / factorial(7)
+           + pow(x, 8) / factorial(8) + pow(x, 9) / factorial(9);
 }
 
 constexpr float exp(float x) noexcept {
     return float(exp(double(x)));
-}
-
-inline float MATH_PURE pow(float a, float b) noexcept {
-    constexpr int fudgeMinRMSE = 486411;
-    constexpr int K = (127<<23) - fudgeMinRMSE;
-    union { float f; int x; } u = { a };
-    u.x = (int)(b * (u.x - K) + K);
-    return u.f;
-}
-
-// this is more precise than pow() above
-inline float MATH_PURE pow2dot2(float a) noexcept {
-    union { float f; int x; } u = { a };
-    constexpr int K = (127<<23);
-    u.x = (int)(0.2f * (u.x - K) + K);
-    return a * a * u.f; // a^2 * a^0.2
 }
 
 /*
@@ -149,32 +136,34 @@ inline uint8_t  MATH_PURE qsub(uint8_t a,  uint8_t b)  noexcept { return vqsubb_
 inline uint16_t MATH_PURE qsub(uint16_t a, uint16_t b) noexcept { return vqsubh_s16(a, b); }
 inline uint32_t MATH_PURE qsub(uint32_t a, uint32_t b) noexcept { return vqsubs_s32(a, b); }
 #else
-template<typename T, typename = typename std::enable_if<
+
+template<typename T, typename = std::enable_if_t<
         std::is_same<uint8_t, T>::value ||
         std::is_same<uint16_t, T>::value ||
-        std::is_same<uint32_t, T>::value>::type>
-inline T MATH_PURE qadd(T a, T b)  noexcept {
+        std::is_same<uint32_t, T>::value>>
+inline T MATH_PURE qadd(T a, T b) noexcept {
     T r = a + b;
     return r | -T(r < a);
 }
 
-template<typename T, typename = typename std::enable_if<
+template<typename T, typename = std::enable_if_t<
         std::is_same<uint8_t, T>::value ||
         std::is_same<uint16_t, T>::value ||
-        std::is_same<uint32_t, T>::value>::type>
-inline T MATH_PURE qsub(T a,  T b)  noexcept {
+        std::is_same<uint32_t, T>::value>>
+inline T MATH_PURE qsub(T a, T b) noexcept {
     T r = a - b;
     return r & -T(r <= a);
 }
+
 #endif
 
 template<typename T>
-inline T MATH_PURE qinc(T a)  noexcept {
+inline T MATH_PURE qinc(T a) noexcept {
     return qadd(a, T(1));
 }
 
 template<typename T>
-inline T MATH_PURE qdec(T a)  noexcept {
+inline T MATH_PURE qdec(T a) noexcept {
     return qsub(a, T(1));
 }
 
