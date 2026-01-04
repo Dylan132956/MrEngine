@@ -52,6 +52,20 @@ struct MurmurHashFn {
     }
 };
 
+// combines two hashes together
+template<class T>
+inline void combine(size_t& seed, const T& v) noexcept {
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9u + (seed << 6u) + (seed >> 2u);
+}
+
+// combines two hashes together, faster but less good
+template<class T>
+inline void combine_fast(size_t& seed, const T& v) noexcept {
+	std::hash<T> hasher;
+	seed ^= hasher(v) << 1u;
+}
+
 } // namespace hash
 } // namespace utils
 

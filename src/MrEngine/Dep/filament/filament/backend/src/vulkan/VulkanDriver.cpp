@@ -789,12 +789,11 @@ void VulkanDriver::beginRenderPass(Handle<HwRenderTarget> rth,
         finalLayout,
         color.format,
         depth.format,
-		{
-			params.flags.clear,
-			params.flags.discardStart,
-			params.flags.discardEnd,
-			params.flags.dependencies
-		}
+		params.flags.clear,
+		params.flags.discardStart,
+		params.flags.discardEnd,
+		params.flags.dependencies
+		
     });
     mBinder.bindRenderPass(renderPass);
 

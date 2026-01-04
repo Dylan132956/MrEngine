@@ -41,22 +41,19 @@ public:
         VkImageLayout finalLayout;  // 4 bytes
         VkFormat colorFormat; // 4 bytes
         VkFormat depthFormat; // 4 bytes
-        union {
-            struct {
-                uint8_t clear;
-                uint8_t discardStart;
-                uint8_t discardEnd;
-                uint8_t dependencies;
-            };
-            uint32_t value; // 4 bytes
-        } flags;
+		TargetBufferFlags clear; // 4 bytes
+		TargetBufferFlags discardStart; // 4 bytes
+		TargetBufferFlags discardEnd; // 4 bytes
+        uint32_t dependencies;
+        uint32_t padding;
+
     };
     struct RenderPassVal {
         VkRenderPass handle;
         uint32_t timestamp;
     };
     static_assert(sizeof(VkFormat) == 4, "VkFormat has unexpected size.");
-    static_assert(sizeof(RenderPassKey) == 16, "RenderPassKey has unexpected size.");
+    static_assert(sizeof(RenderPassKey) == 32, "RenderPassKey has unexpected size.");
     using RenderPassHash = utils::hash::MurmurHashFn<RenderPassKey>;
     struct RenderPassEq {
         bool operator()(const RenderPassKey& k1, const RenderPassKey& k2) const;

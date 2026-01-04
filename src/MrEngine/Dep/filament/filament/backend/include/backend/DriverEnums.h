@@ -20,6 +20,7 @@
 #define TNT_FILAMENT_DRIVER_DRIVERENUMS_H
 
 #include <utils/unwindows.h> // Because we define ERROR in the FenceStatus enum.
+#include <utils/BitmaskEnum.h>
 
 #include <math/vec4.h>
 
@@ -61,41 +62,50 @@ enum class Backend : uint8_t {
     NOOP = 6,     //!< Selects the no-op driver for testing purposes.
 };
 
-/**
- * Bitmask for selecting render buffers
- */
-enum TargetBufferFlags : uint8_t {
-    NONE = 0x0,                 //!< No buffer selected.
-    COLOR = 0x1,                //!< Color buffer selected.
-    DEPTH = 0x2,                //!< Depth buffer selected.
-    STENCIL = 0x4,              //!< Stencil buffer selected.
-    COLOR_AND_DEPTH = COLOR | DEPTH,
-    COLOR_AND_STENCIL = COLOR | STENCIL,
-    DEPTH_AND_STENCIL = DEPTH | STENCIL,
-    ALL = COLOR | DEPTH | STENCIL
+enum TargetBufferFlags : uint32_t {
+    NONE = 0x0u,                            //!< No buffer selected.
+
+    COLOR0 = 0x00000001u,                   //!< Color buffer selected.
+    COLOR1 = 0x00000002u,                   //!< Color buffer selected.
+    COLOR2 = 0x00000004u,                   //!< Color buffer selected.
+    COLOR3 = 0x00000008u,                   //!< Color buffer selected.
+    COLOR4 = 0x00000010u,                   //!< Color buffer selected.
+    COLOR5 = 0x00000020u,                   //!< Color buffer selected.
+    COLOR6 = 0x00000040u,                   //!< Color buffer selected.
+    COLOR7 = 0x00000080u,                   //!< Color buffer selected.
+
+    COLOR = COLOR0,                         //!< \deprecated
+	DEPTH = 0x10000000u,                  //!< Depth buffer selected.
+	STENCIL = 0x20000000u,                  //!< Stencil buffer selected.
+    COLOR_ALL = COLOR0 | COLOR1 | COLOR2 | COLOR3 | COLOR4 | COLOR5 | COLOR6 | COLOR7,
+
+	COLOR_AND_DEPTH = COLOR | DEPTH,
+	COLOR_AND_STENCIL = COLOR | STENCIL,
+	DEPTH_AND_STENCIL = DEPTH | STENCIL,
+    ALL = COLOR_ALL | DEPTH | STENCIL,       //!< Color, depth and stencil buffer selected.
 };
 
 // implement requirement of BitmaskType
 inline constexpr TargetBufferFlags operator~(TargetBufferFlags rhs) noexcept {
-    return TargetBufferFlags(~uint8_t(rhs) & uint8_t(TargetBufferFlags::ALL));
+    return TargetBufferFlags(~uint32_t(rhs) & uint32_t(TargetBufferFlags::ALL));
 }
 inline constexpr TargetBufferFlags operator|=(TargetBufferFlags& lhs, TargetBufferFlags rhs) noexcept {
-    return lhs = TargetBufferFlags(uint8_t(lhs) | uint8_t(rhs));
+    return lhs = TargetBufferFlags(uint32_t(lhs) | uint32_t(rhs));
 }
 inline constexpr TargetBufferFlags operator&=(TargetBufferFlags& lhs, TargetBufferFlags rhs) noexcept {
-    return lhs = TargetBufferFlags(uint8_t(lhs) & uint8_t(rhs));
+    return lhs = TargetBufferFlags(uint32_t(lhs) & uint32_t(rhs));
 }
 inline constexpr TargetBufferFlags operator^=(TargetBufferFlags& lhs, TargetBufferFlags rhs) noexcept {
-    return lhs = TargetBufferFlags(uint8_t(lhs) ^ uint8_t(rhs));
+    return lhs = TargetBufferFlags(uint32_t(lhs) ^ uint32_t(rhs));
 }
 inline constexpr TargetBufferFlags operator|(TargetBufferFlags lhs, TargetBufferFlags rhs) noexcept {
-    return TargetBufferFlags(uint8_t(lhs) | uint8_t(rhs));
+    return TargetBufferFlags(uint32_t(lhs) | uint32_t(rhs));
 }
 inline constexpr TargetBufferFlags operator&(TargetBufferFlags lhs, TargetBufferFlags rhs) noexcept {
-    return TargetBufferFlags(uint8_t(lhs) & uint8_t(rhs));
+    return TargetBufferFlags(uint32_t(lhs) & uint32_t(rhs));
 }
 inline constexpr TargetBufferFlags operator^(TargetBufferFlags lhs, TargetBufferFlags rhs) noexcept {
-    return TargetBufferFlags(uint8_t(lhs) ^ uint8_t(rhs));
+    return TargetBufferFlags(uint32_t(lhs) ^ uint32_t(rhs));
 }
 
 /**
@@ -129,16 +139,30 @@ struct Offset3D {
 };
 
 struct RenderPassFlags {
-    uint8_t clear;
+    TargetBufferFlags clear;
     TargetBufferFlags discardStart;
     TargetBufferFlags discardEnd;
-    uint8_t dependencies;
+    uint32_t dependencies;
 
     static constexpr uint8_t DEPENDENCY_BY_REGION = 1; // see "framebuffer-local" in Vulkan spec.
 
     // Extra RenderPass-only flags stashed in the "clear" field.
     static const uint8_t IGNORE_SCISSOR = 0x10;
 };
+
+constexpr TargetBufferFlags getTargetBufferFlagsAt(size_t index) noexcept {
+	if (index == 0u) return TargetBufferFlags::COLOR0;
+	if (index == 1u) return TargetBufferFlags::COLOR1;
+	if (index == 2u) return TargetBufferFlags::COLOR2;
+	if (index == 3u) return TargetBufferFlags::COLOR3;
+	if (index == 4u) return TargetBufferFlags::COLOR4;
+	if (index == 5u) return TargetBufferFlags::COLOR5;
+	if (index == 6u) return TargetBufferFlags::COLOR6;
+	if (index == 7u) return TargetBufferFlags::COLOR7;
+	if (index == 8u) return TargetBufferFlags::DEPTH;
+	if (index == 9u) return TargetBufferFlags::STENCIL;
+	return TargetBufferFlags::NONE;
+}
 
 struct RenderPassParams {
     // RenderPass flags are 4 bytes.  The first three are buffer selections composed from
@@ -153,6 +177,10 @@ struct RenderPassParams {
     double clearDepth = 1.0;
     uint32_t clearStencil = 0;
     uint32_t reserved1 = 0;
+    uint16_t readOnlyDepthStencil = 0;
+
+	static constexpr uint16_t READONLY_DEPTH = 1 << 0;
+	static constexpr uint16_t READONLY_STENCIL = 1 << 1;
 };
 
 /**
@@ -498,14 +526,46 @@ enum class TextureFormat : uint16_t {
 
 size_t getTextureFormatSize(TextureFormat format) noexcept;
 
-enum TextureUsage : uint8_t {
-    COLOR_ATTACHMENT    = 0x1,
-    DEPTH_ATTACHMENT    = 0x2,
-    STENCIL_ATTACHMENT  = 0x4,
-    UPLOADABLE          = 0x8,
-    SAMPLEABLE          = 0x10,
-    DEFAULT = UPLOADABLE | SAMPLEABLE
+//TODO:
+//! Bitmask describing the intended Texture Usage
+enum TextureUsage : uint32_t {
+    TextureUsage_NONE = 0x0000,
+	COLOR_ATTACHMENT = 0x0001,            //!< Texture can be used as a color attachment
+	DEPTH_ATTACHMENT = 0x0002,            //!< Texture can be used as a depth attachment
+	STENCIL_ATTACHMENT = 0x0004,            //!< Texture can be used as a stencil attachment
+	UPLOADABLE = 0x0008,            //!< Data can be uploaded into this texture (default)
+	SAMPLEABLE = 0x0010,            //!< Texture can be sampled (default)
+	SUBPASS_INPUT = 0x0020,            //!< Texture can be used as a subpass input
+	BLIT_SRC = 0x0040,            //!< Texture can be used the source of a blit()
+	BLIT_DST = 0x0080,            //!< Texture can be used the destination of a blit()
+	PROTECTED = 0x0100,            //!< Texture can be used for protected content
+	GEN_MIPMAPPABLE = 0x0200,            //!< Texture can be used with generateMipmaps()
+	DEFAULT = UPLOADABLE | SAMPLEABLE,   //!< Default texture usage
+	ALL_ATTACHMENTS = COLOR_ATTACHMENT | DEPTH_ATTACHMENT | STENCIL_ATTACHMENT | SUBPASS_INPUT,   //!< Mask of all attachments
 };
+
+// implement requirement of BitmaskType
+inline constexpr TextureUsage operator~(TextureUsage rhs) noexcept {
+    return TextureUsage(~uint32_t(rhs) & 0x1Fu);
+}
+inline constexpr TextureUsage operator|=(TextureUsage& lhs, TextureUsage rhs) noexcept {
+    return lhs = TextureUsage(uint32_t(lhs) | uint32_t(rhs));
+}
+inline constexpr TextureUsage operator&=(TextureUsage& lhs, TextureUsage rhs) noexcept {
+    return lhs = TextureUsage(uint32_t(lhs) & uint32_t(rhs));
+}
+inline constexpr TextureUsage operator^=(TextureUsage& lhs, TextureUsage rhs) noexcept {
+    return lhs = TextureUsage(uint32_t(lhs) ^ uint32_t(rhs));
+}
+inline constexpr TextureUsage operator|(TextureUsage lhs, TextureUsage rhs) noexcept {
+    return TextureUsage(uint32_t(lhs) | uint32_t(rhs));
+}
+inline constexpr TextureUsage operator&(TextureUsage lhs, TextureUsage rhs) noexcept {
+    return TextureUsage(uint32_t(lhs) & uint32_t(rhs));
+}
+inline constexpr TextureUsage operator^(TextureUsage lhs, TextureUsage rhs) noexcept {
+    return TextureUsage(uint32_t(lhs) ^ uint32_t(rhs));
+}
 
 //! Texture swizzle
 enum class TextureSwizzle : uint8_t {
@@ -516,29 +576,6 @@ enum class TextureSwizzle : uint8_t {
 	CHANNEL_2,
 	CHANNEL_3
 };
-
-// implement requirement of BitmaskType
-inline constexpr TextureUsage operator~(TextureUsage rhs) noexcept {
-    return TextureUsage(~uint8_t(rhs) & 0x1Fu);
-}
-inline constexpr TextureUsage operator|=(TextureUsage& lhs, TextureUsage rhs) noexcept {
-    return lhs = TextureUsage(uint8_t(lhs) | uint8_t(rhs));
-}
-inline constexpr TextureUsage operator&=(TextureUsage& lhs, TextureUsage rhs) noexcept {
-    return lhs = TextureUsage(uint8_t(lhs) & uint8_t(rhs));
-}
-inline constexpr TextureUsage operator^=(TextureUsage& lhs, TextureUsage rhs) noexcept {
-    return lhs = TextureUsage(uint8_t(lhs) ^ uint8_t(rhs));
-}
-inline constexpr TextureUsage operator|(TextureUsage lhs, TextureUsage rhs) noexcept {
-    return TextureUsage(uint8_t(lhs) | uint8_t(rhs));
-}
-inline constexpr TextureUsage operator&(TextureUsage lhs, TextureUsage rhs) noexcept {
-    return TextureUsage(uint8_t(lhs) & uint8_t(rhs));
-}
-inline constexpr TextureUsage operator^(TextureUsage lhs, TextureUsage rhs) noexcept {
-    return TextureUsage(uint8_t(lhs) ^ uint8_t(rhs));
-}
 
 //! returns whether this format is an ETC2 compressed format
 static constexpr bool isETC2Compression(TextureFormat format) noexcept
@@ -830,5 +867,9 @@ struct RasterState {
 
 } // namespace backend
 } // namespace filament
+template<> struct utils::EnableBitMaskOperators<filament::backend::TargetBufferFlags>
+	: public std::true_type {};
+template<> struct utils::EnableBitMaskOperators<filament::backend::TextureUsage>
+	: public std::true_type {};
 
 #endif // TNT_FILAMENT_DRIVER_DRIVERENUMS_H

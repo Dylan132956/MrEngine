@@ -27,7 +27,7 @@ bool VulkanFboCache::RenderPassEq::operator()(const RenderPassKey& k1,
             k1.finalLayout == k2.finalLayout &&
             k1.colorFormat == k2.colorFormat &&
             k1.depthFormat == k2.depthFormat &&
-            k1.flags.value == k2.flags.value;
+            k1.dependencies == k2.dependencies;
 }
 
 bool VulkanFboCache::FboKeyEqualFn::operator()(const FboKey& k1, const FboKey& k2) const {
@@ -108,13 +108,13 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
 	VkImageLayout color_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImageLayout depth_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	if (config.flags.clear & TargetBufferFlags::COLOR)
+	if (config.clear & TargetBufferFlags::COLOR)
 	{
 		color_load = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	}
 	else
 	{
-		if (config.flags.discardStart & TargetBufferFlags::COLOR)
+		if (config.discardStart & TargetBufferFlags::COLOR)
 		{
 			color_load = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		}
@@ -125,13 +125,13 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
 		}
 	}
 
-	if (config.flags.clear & TargetBufferFlags::DEPTH)
+	if (config.clear & TargetBufferFlags::DEPTH)
 	{
 		depth_load = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	}
 	else
 	{
-		if (config.flags.discardStart & TargetBufferFlags::DEPTH)
+		if (config.discardStart & TargetBufferFlags::DEPTH)
 		{
 			depth_load = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		}
@@ -177,7 +177,7 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_ACCESS_MEMORY_READ_BIT,
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        config.flags.dependencies
+        config.dependencies
     }, {
         0,
         VK_SUBPASS_EXTERNAL,
@@ -185,7 +185,7 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         VK_ACCESS_MEMORY_READ_BIT,
-        config.flags.dependencies
+        config.dependencies
     }};
 
     // Finally, create the VkRenderPass.
@@ -198,8 +198,8 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
         attachments,
 		1,
 		&subpass,
-        config.flags.dependencies ? 2u : 0u,
-        config.flags.dependencies ? dependencies : nullptr
+        config.dependencies ? 2u : 0u,
+        config.dependencies ? dependencies : nullptr
     };
     if (hasColor) {
         attachments[renderPassInfo.attachmentCount++] = colorAttachment;

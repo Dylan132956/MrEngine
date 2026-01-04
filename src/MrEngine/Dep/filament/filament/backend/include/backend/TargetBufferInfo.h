@@ -50,7 +50,57 @@ public:
     TargetBufferInfo() noexcept { }
 };
 
+class MRT {
+public:
+	static constexpr uint8_t MIN_SUPPORTED_RENDER_TARGET_COUNT = 4u;
+
+	// When updating this, make sure to also take care of RenderTarget.java
+	static constexpr uint8_t MAX_SUPPORTED_RENDER_TARGET_COUNT = 8u;
+
+private:
+	TargetBufferInfo mInfos[MAX_SUPPORTED_RENDER_TARGET_COUNT];
+
+public:
+	TargetBufferInfo const& operator[](size_t const i) const noexcept {
+		return mInfos[i];
+	}
+
+	TargetBufferInfo& operator[](size_t const i) noexcept {
+		return mInfos[i];
+	}
+
+	MRT() noexcept = default;
+
+	MRT(TargetBufferInfo const& color) noexcept // NOLINT(hicpp-explicit-conversions, *-explicit-constructor)
+		: mInfos{ color } {
+	}
+
+	MRT(TargetBufferInfo const& color0, TargetBufferInfo const& color1) noexcept
+		: mInfos{ color0, color1 } {
+	}
+
+	MRT(TargetBufferInfo const& color0, TargetBufferInfo const& color1,
+		TargetBufferInfo const& color2) noexcept
+		: mInfos{ color0, color1, color2 } {
+	}
+
+	MRT(TargetBufferInfo const& color0, TargetBufferInfo const& color1,
+		TargetBufferInfo const& color2, TargetBufferInfo const& color3) noexcept
+		: mInfos{ color0, color1, color2, color3 } {
+	}
+
+	// this is here for backward compatibility
+	MRT(Handle<HwTexture> handle, uint8_t level, uint16_t layer) noexcept
+		: mInfos{ { handle, level, layer } } {
+	}
+};
+
 } // namespace backend
 } // namespace filament
+
+#if !defined(NDEBUG)
+utils::io::ostream& operator<<(utils::io::ostream& out, const filament::backend::TargetBufferInfo& tbi);
+utils::io::ostream& operator<<(utils::io::ostream& out, const filament::backend::MRT& mrt);
+#endif
 
 #endif //TNT_FILAMENT_DRIVER_TARGETBUFFERINFO_H
