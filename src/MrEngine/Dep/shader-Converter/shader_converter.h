@@ -18,6 +18,11 @@ struct compile_arguments
     bool set_msl_version = false;
     unsigned int msl_version = 0;
     bool msl_decoration_binding = false;
+    //hlsl
+    bool hlsl = false;
+    bool set_shader_model = false;
+    uint32_t shader_model = 0;
+    bool hlsl_compat = false;
 };
 
 struct st_outres

@@ -73,15 +73,14 @@ private:
     static constexpr uint8_t FRAGMENT_SHADER_BIT = uint8_t(1) << size_t(backend::Program::Shader::FRAGMENT);
 
     struct BlockInfo {
-        uint8_t binding : 3;    // binding (i.e.: index in mSamplerBindings)
-        uint8_t unused  : 1;    // padding / available
+        uint8_t binding : 4;    // binding (i.e.: index in mSamplerBindings)
         uint8_t count   : 4;    // number of TMUs actually used minus 1
 
         // if TEXTURE_UNIT_COUNT > 16, the count bitfield must be increased accordingly
         static_assert(TEXTURE_UNIT_COUNT <= 16, "TEXTURE_UNIT_COUNT must be <= 16");
 
-        // if SAMPLER_BINDING_COUNT > 8, the binding bitfield must be increased accordingly
-        static_assert(backend::Program::SAMPLER_BINDING_COUNT <= 8, "SAMPLER_BINDING_COUNT must be <= 8");
+        // if SAMPLER_BINDING_COUNT > 10, the binding bitfield must be increased accordingly
+        static_assert(backend::Program::SAMPLER_BINDING_COUNT <= 10, "SAMPLER_BINDING_COUNT must be <= 10");
     };
 
     uint8_t mUsedBindingsCount = 0;

@@ -7,6 +7,7 @@
 #include "math/Vector2.h"
 #include "shader_converter.h"
 #include "graphics/sprivShader/spirv_shader.h"
+#include "time/Time.h"
 
 // triangle vertices
 
@@ -128,13 +129,45 @@ namespace moonriver
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D12)
         {
-            std::string vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
-            std::string fs = fs_hlsl;
+			const char* c_vs_hlsl[1];
+			const char* c_fs_hlsl[1];
 
-            vs_data.resize(vs.size());
-            memcpy(&vs_data[0], &vs[0], vs_data.size());
-            fs_data.resize(fs.size());
-            memcpy(&fs_data[0], &fs[0], fs_data.size());
+			c_vs_hlsl[0] = vs_hlsl.c_str();
+			c_fs_hlsl[0] = fs_hlsl.c_str();
+
+			const char* c_vs_path[1];
+			const char* c_fs_path[1];
+			c_vs_path[0] = vs_path[0].c_str();
+			c_fs_path[0] = fs_path[0].c_str();
+
+			std::vector<unsigned int> vs_spriv;
+			int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+			std::string entryPointName = "vert";
+			converter_spirv(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+			std::vector<unsigned int> fs_spriv;
+			option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+			entryPointName = "frag";
+			converter_spirv(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+			compile_arguments arg;
+			arg.hlsl = true;
+			arg.set_shader_model = true;
+			arg.shader_model = 40;
+			std::string vs_hlsl = spirv_converter(arg, vs_spriv);
+			std::string fs_hlsl = spirv_converter(arg, fs_spriv);
+
+			vs_data.resize(vs_hlsl.size());
+			memcpy(&vs_data[0], &vs_hlsl[0], vs_data.size());
+			fs_data.resize(fs_hlsl.size());
+			memcpy(&fs_data[0], &fs_hlsl[0], fs_data.size());
+            //std::string vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
+            //std::string fs = fs_hlsl;
+
+            //vs_data.resize(vs.size());
+            //memcpy(&vs_data[0], &vs[0], vs_data.size());
+            //fs_data.resize(fs.size());
+            //memcpy(&fs_data[0], &fs[0], fs_data.size());
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
         {
@@ -194,8 +227,9 @@ namespace moonriver
         const float aspect = (float)Engine::Instance()->GetWidth() / Engine::Instance()->GetHeight();
 
         m_uniforms.uWorldMatrix = Matrix4x4::Identity();
-        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -1.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
-        m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 10.);
+        m_uniforms.uViewMatrix = Matrix4x4::LookTo(Vector3(0., 0., -18.), Vector3(0., 0., 1.), Vector3(0., 1., 0.));
+        //m_uniforms.uProjectionMatrix = Matrix4x4::Ortho(-aspect * ZOOM, aspect * ZOOM, -ZOOM, ZOOM, 0., 10.);
+        m_uniforms.uProjectionMatrix = Matrix4x4::Perspective(18., aspect, 0.1, 1000.);
     }
 
     triangle::~triangle()
@@ -233,7 +267,7 @@ namespace moonriver
 
         filament::backend::RenderTargetHandle target = *(filament::backend::RenderTargetHandle*)Engine::Instance()->GetDefaultRenderTarget();
         filament::backend::RenderPassParams params;
-        params.flags.clear = filament::backend::TargetBufferFlags::COLOR;//| filament::backend::TargetBufferFlags::DEPTH;
+        params.flags.clear = filament::backend::TargetBufferFlags::NONE;
 
         params.viewport.left = (int32_t)0;
         params.viewport.bottom = (int32_t)0;
@@ -241,10 +275,12 @@ namespace moonriver
         params.viewport.height = Engine::Instance()->GetHeight();
         params.clearColor = filament::math::float4(0.22, 0.22, 0.22, 1.0);
 
-        static float angle = 0.01;
-        angle += 0.01;
-        Vector3 r = Vector3(1., 1., 1.);
-        m_uniforms.uWorldMatrix = Matrix4x4::RotMat(r, angle);
+		static float angle = 0.00;
+		angle = Time::GetRealTimeSinceStartup();
+		Vector3 r = Vector3(0., 0., 1.);
+		Vector3 t = Vector3(4, 2., 0.);
+		Vector3 s = Vector3(1.0, 1.0, 1.0);
+		m_uniforms.uWorldMatrix = Matrix4x4::Translation(t) * Matrix4x4::RotMat(r, angle) * Matrix4x4::Scaling(s);
 
         void* buffer = driver.allocate(sizeof(mvpUniforms));
         memcpy(buffer, &m_uniforms, sizeof(mvpUniforms));

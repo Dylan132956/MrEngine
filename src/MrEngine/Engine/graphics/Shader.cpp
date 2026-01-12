@@ -200,12 +200,23 @@ namespace moonriver
             }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D12)
             {
-                std::string vs = define + vs_hlsl;
-                std::string fs = define + fs_hlsl;
-                vs_data.resize(vs.size());
-                memcpy(&vs_data[0], &vs[0], vs_data.size());
-                fs_data.resize(fs.size());
-                memcpy(&fs_data[0], &fs[0], fs_data.size());
+				compile_arguments arg;
+				arg.hlsl = true;
+				arg.set_shader_model = true;
+				arg.shader_model = 40;
+				std::string vs_hlsl = spirv_converter(arg, vs_spriv);
+				std::string fs_hlsl = spirv_converter(arg, fs_spriv);
+
+				vs_data.resize(vs_hlsl.size());
+				memcpy(&vs_data[0], &vs_hlsl[0], vs_data.size());
+				fs_data.resize(fs_hlsl.size());
+				memcpy(&fs_data[0], &fs_hlsl[0], fs_data.size());
+                //std::string vs = define + vs_hlsl;
+                //std::string fs = define + fs_hlsl;
+                //vs_data.resize(vs.size());
+                //memcpy(&vs_data[0], &vs[0], vs_data.size());
+                //fs_data.resize(fs.size());
+                //memcpy(&fs_data[0], &fs[0], fs_data.size());
             }
             else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
             {
@@ -331,6 +342,10 @@ namespace moonriver
 
 		for (int i = 0; i < pass.uniforms.size(); ++i)
 		{
+			if (pass.uniforms[i].name == "$Global")
+			{
+				pass.uniforms[i].binding = 0;
+			}
 			pb.setUniformBlock(pass.uniforms[i].binding, utils::CString(pass.uniforms[i].name.c_str()));
 		}
 

@@ -14,7 +14,7 @@ CGPROGRAM
 #include "vso.h.hlsl"
 #include "pbr.inc"
 
-cbuffer PerView : register(b0)
+cbuffer PerView : register(b1)
 {
     float4x4 u_view_matrix;
     float4x4 u_projection_matrix;
@@ -22,17 +22,19 @@ cbuffer PerView : register(b0)
     float4 u_time;
 }
 
-cbuffer PerRenderer : register(b1)
+cbuffer PerRenderer : register(b2)
 {
     float4x4 u_model_matrix;
 }
 
 #if (SKIN_ON == 1)
-cbuffer PerRendererBones : register(b2)
+cbuffer PerRendererBones : register(b3)
 {
     float4 u_bones[210];
 };
 #endif
+//Testing uniform variable support
+float4 MR_color;
 
 struct appdata
 {
@@ -46,7 +48,7 @@ struct appdata
     float4 boneIndices : BLENDINDICES;
 };
 
-cbuffer PerLightFragment : register(b6)
+cbuffer PerLightFragment : register(b7)
 {
     float4 u_ambient_color;
     float4 u_light_pos;
@@ -86,7 +88,7 @@ v2f vert(appdata v)
     o.normal.w = worldpos.x;
     o.tangent.w = worldpos.y;
     o.binormal.w = worldpos.z;
-    o.color = v.color;
+    o.color = v.color * MR_color;
     o.u_camera_pos = u_camera_pos;
     o.uv = v.uv;
     o.uv2 = v.uv2;
@@ -126,7 +128,7 @@ void frag(in v2f _entryPointOutput, out float4 outColor: SV_Target0)
     radianceOut += u_ambient_color.rgb * mat.diffuseColor * mat.occlusion;
     radianceOut += mat.emissive;
     //radianceOut = mat.diffuseColor;
-    outColor = float4(toGammaAccurate(tonemap_aces_luminance(radianceOut)), 1.0);
+    outColor = float4(toGammaAccurate(tonemap_aces_luminance(radianceOut)), 1.0) * _entryPointOutput.color;
 }
 ENDCG
 #END_PASSES

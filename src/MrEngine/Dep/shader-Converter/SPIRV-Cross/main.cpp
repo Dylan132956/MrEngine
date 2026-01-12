@@ -1962,6 +1962,10 @@ std::string spirv_converter(compile_arguments &arg, std::vector<uint32_t> &spirv
     args.set_msl_version = arg.set_msl_version;
     args.msl_version = arg.msl_version;
     args.msl_decoration_binding = arg.msl_decoration_binding;
+	//hlsl
+	args.hlsl = arg.hlsl;
+	args.shader_model = arg.shader_model;
+	args.set_shader_model = arg.set_shader_model;
 	return compile_iteration(args, spirv_file, ores);
 }
 

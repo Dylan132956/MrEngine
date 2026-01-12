@@ -292,13 +292,45 @@ namespace moonriver
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D12)
         {
-            std::string vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
-            std::string fs = fs_hlsl;
+			const char* c_vs_hlsl[1];
+			const char* c_fs_hlsl[1];
 
-            vs_data.resize(vs.size());
-            memcpy(&vs_data[0], &vs[0], vs_data.size());
-            fs_data.resize(fs.size());
-            memcpy(&fs_data[0], &fs[0], fs_data.size());
+			c_vs_hlsl[0] = vs_hlsl.c_str();
+			c_fs_hlsl[0] = fs_hlsl.c_str();
+
+			const char* c_vs_path[1];
+			const char* c_fs_path[1];
+			c_vs_path[0] = vs_path[0].c_str();
+			c_fs_path[0] = fs_path[0].c_str();
+
+			std::vector<unsigned int> vs_spriv;
+			int option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+			std::string entryPointName = "vert";
+			converter_spirv(EShLangVertex, c_vs_hlsl, vs_path, c_vs_path, entryPointName.c_str(), 1, option, vs_spriv);
+
+			std::vector<unsigned int> fs_spriv;
+			option = (1 << 11) | (1 << 13) | (1 << 5) | (1 << 17);
+			entryPointName = "frag";
+			converter_spirv(EShLangFragment, c_fs_hlsl, fs_path, c_fs_path, entryPointName.c_str(), 1, option, fs_spriv);
+
+			compile_arguments arg;
+			arg.hlsl = true;
+			arg.set_shader_model = true;
+			arg.shader_model = 40;
+			std::string vs_hlsl = spirv_converter(arg, vs_spriv);
+			std::string fs_hlsl = spirv_converter(arg, fs_spriv);
+
+			vs_data.resize(vs_hlsl.size());
+			memcpy(&vs_data[0], &vs_hlsl[0], vs_data.size());
+			fs_data.resize(fs_hlsl.size());
+			memcpy(&fs_data[0], &fs_hlsl[0], fs_data.size());
+            //std::string vs = "#define COMPILER_HLSL 1\n" + vs_hlsl;
+            //std::string fs = fs_hlsl;
+
+            //vs_data.resize(vs.size());
+            //memcpy(&vs_data[0], &vs[0], vs_data.size());
+            //fs_data.resize(fs.size());
+            //memcpy(&fs_data[0], &fs[0], fs_data.size());
         }
         else if (Engine::Instance()->GetBackend() == filament::backend::Backend::VULKAN)
         {

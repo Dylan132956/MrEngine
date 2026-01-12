@@ -953,10 +953,19 @@ namespace filament
 				{
 					if (primitive->enabled_attributes & (1 << i))
 					{
+						//const auto& attribute = vertex_buffer->attributes[i];
+						//D3D12_INPUT_ELEMENT_DESC desc = { };
+						//desc.SemanticName = Semantics[attribute.Semantic].SemanticName;
+						//desc.SemanticIndex = Semantics[attribute.Semantic].SemanticIndex;
+						//desc.Format = get_format(attribute.type);
+						//desc.InputSlot = (UINT)0;
+						//desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+						//desc.AlignedByteOffset = attribute.offset;
+						//program->meshInputLayout.push_back(desc);
 						const auto& attribute = vertex_buffer->attributes[i];
 						D3D12_INPUT_ELEMENT_DESC desc = { };
-						desc.SemanticName = Semantics[attribute.Semantic].SemanticName;
-						desc.SemanticIndex = Semantics[attribute.Semantic].SemanticIndex;
+						desc.SemanticName = "TEXCOORD";
+						desc.SemanticIndex = (UINT)i;
 						desc.Format = get_format(attribute.type);
 						desc.InputSlot = (UINT)0;
 						desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
@@ -982,7 +991,8 @@ namespace filament
 				{
 					int bindpoint = program->vert_cbv[i].BindPoint;
 					//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
-					m_context->m_commandList->SetGraphicsRootConstantBufferView(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
+					if (m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef)
+						m_context->m_commandList->SetGraphicsRootConstantBufferView(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
 				}
 
                 const auto& samplers = program->info.getSamplerGroupInfo();

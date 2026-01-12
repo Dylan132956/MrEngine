@@ -31,15 +31,16 @@ namespace moonriver
 
         enum class BindingPoint
         {
-            PerView = 0,
-            PerRenderer = 1,
-            PerRendererBones = 2,
-            PerMaterialVertex = 3,
-            PerMaterialFragment = 4,
-            PerLightVertex = 5,
-            PerLightFragment = 6,
-            Froxels = 7,
-            FroxelRecords = 8,
+            Global = 0,
+            PerView = 1,
+            PerRenderer = 2,
+            PerRendererBones = 3,
+            PerMaterialVertex = 4,
+            PerMaterialFragment = 5,
+            PerLightVertex = 6,
+            PerLightFragment = 7,
+            Froxels = 8,
+            FroxelRecords = 9,
 
             Count = filament::backend::CONFIG_UNIFORM_BINDING_COUNT,
         };

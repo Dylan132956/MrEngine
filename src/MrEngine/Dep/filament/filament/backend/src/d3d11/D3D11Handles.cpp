@@ -161,13 +161,13 @@ namespace filament
 				{
 					//target = "vs_4_0_level_9_3";
 					target = "vs_5_0";
-                    sEntrypoint = "vert";
+                    sEntrypoint = "main";
 				}
 				else if (type == Program::Shader::FRAGMENT)
 				{
 					//target = "ps_4_0_level_9_3";
 					target = "ps_4_0";
-                    sEntrypoint = "frag";
+                    sEntrypoint = "main";
 				}
 
 				ID3DBlob* binary = nullptr;

@@ -66,7 +66,7 @@ SamplerState g_AOSampler : reg(s3, space1);
 Texture2D g_EmissiveMap : reg(t4, space1);
 SamplerState g_EmissiveSampler : reg(s4, space1);
 
-cbuffer PerMaterialFragment : register(b4)
+cbuffer PerMaterialFragment : register(b5)
 {
     GLTFMaterialShaderInfo g_MaterialInfo;
 }
@@ -173,6 +173,8 @@ PBRMaterial pbrMaterial(float2 texcoord)
     mat.roughness = metallicRoughness.g;
 #if (_NORMALMAP_ON == 1)
     mat.normal = pbrNormal(texcoord);
+#else
+    mat.normal = float3(0.0, 0.0, 0.0);
 #endif
     mat.occlusion = pbrOcclusion(texcoord);
     mat.emissive = pbrEmissive(texcoord);

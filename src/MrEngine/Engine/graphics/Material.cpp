@@ -1,6 +1,7 @@
 #include "Material.h"
 #include "Engine.h"
 
+//#define UNIFORM_TEST
 namespace moonriver
 {
     std::shared_ptr<Material> Material::m_shared_bounds_material;
@@ -41,7 +42,12 @@ namespace moonriver
         this->SetTexture(MaterialProperty::TEXTURE, Texture::GetSharedWhiteTexture());
         this->SetVector(MaterialProperty::TEXTURE_SCALE_OFFSET, Vector4(1, 1, 0, 0));
         this->SetColor(MaterialProperty::COLOR, Color(1, 1, 1, 1));
-
+        //传递uniform 变量到const buffer $Global
+#ifdef UNIFORM_TEST
+        this->SetVector("MR_color", Vector4(135. / 255., 206. / 255., 235. / 255., 1.0));
+#else
+        this->SetVector("MR_color", Vector4(1.0, 1.0, 1.0, 1.0));
+#endif
         std::string shaderName = shader->GetName();
         if (shaderName == "standard") {
             m_isPbr = true;
