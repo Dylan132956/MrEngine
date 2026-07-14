@@ -52,5 +52,6 @@ namespace moonriver
     {
         m_triangle->Render();
         m_cube->Render();
+        m_Scene->Render();
     }
 }

@@ -10,6 +10,10 @@ get_filename_component(MR3D_APP_SRC_DIR
                        ${CMAKE_SOURCE_DIR}/src/MrEngine/App
                        ABSOLUTE)
 
+get_filename_component(ASYNCLOAD_ROOT_DIR
+                       ${CMAKE_SOURCE_DIR}/..
+                       ABSOLUTE)
+
 function(string_ends_with str suffix var)
     string(LENGTH "${str}" str_length)
     string(LENGTH "${suffix}" suffix_length)
@@ -86,6 +90,9 @@ target_include_directories(Mr3DDep PRIVATE
 
 file(GLOB MR3D_LIB_SRCS_HEADER
      ${MR3D_LIB_SRC_DIR}/Engine/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/asset/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/asset/image/*.h
+     ${MR3D_LIB_SRC_DIR}/Engine/renderupload/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.h
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/sprivShader/*.h
@@ -103,6 +110,9 @@ file(GLOB MR3D_LIB_SRCS_HEADER
 
 file(GLOB MR3D_LIB_SRCS_SOURCE
      ${MR3D_LIB_SRC_DIR}/Engine/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/asset/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/asset/image/*.cpp
+     ${MR3D_LIB_SRC_DIR}/Engine/renderupload/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/animation/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/graphics/*.cpp
      ${MR3D_LIB_SRC_DIR}/Engine/cmdbuf/*.cpp
@@ -143,6 +153,7 @@ target_include_directories(Mr3D PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/shader-Converter
                            ${MR3D_LIB_SRC_DIR}/Dep/json11
                            ${MR3D_LIB_SRC_DIR}/Dep/cb
+                           #${ASYNCLOAD_ROOT_DIR}/third_party/tiny_gltf
                            )
 
 if (${Target} MATCHES "Windows" OR
@@ -759,6 +770,7 @@ target_include_directories(Mr3DApp PRIVATE
                            ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/math/include
                            ${MR3D_LIB_SRC_DIR}/Dep/filament/libs/utils/include
                            ${MR3D_LIB_SRC_DIR}
+                           ${ASYNCLOAD_ROOT_DIR}/third_party/tiny_gltf
                            )
 
 add_subdirectory(src/MrEngine/Dep/json11)

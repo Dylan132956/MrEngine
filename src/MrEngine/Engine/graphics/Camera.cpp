@@ -673,6 +673,7 @@ namespace moonriver
 			vertices[2].vertex = Vector3(1, -1, 0);
 			vertices[3].vertex = Vector3(1, 1, 0);
 			
+			//全屏后处理dx和gl差异化处理
 			if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL)
 			{
 				vertices[0].uv = Vector2(0, 1);

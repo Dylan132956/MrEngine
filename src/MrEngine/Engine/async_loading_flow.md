@@ -1,0 +1,85 @@
+```mermaid
+flowchart TB
+    subgraph MainThread["主线程 / 逻辑线程"]
+        direction TB
+        StartGLTF["Scene::LoadSceneAsync(path)"]
+        StartSeq["Scene::LoadImageSequenceAsync(name, frames, fps, loop)"]
+        Render["Scene::Render() / Dispatch"]
+
+        subgraph GLTFInstance["SceneAsyncLoadInstance"]
+            GTick["Tick()"]
+            GState1["State: LoadingCpu"]
+            GState2["State: LoadingSources"]
+            GState3["State: SubmittingImageDecodes"]
+            GState4["State: DecodingImages"]
+            GState5["State: UploadingTextures"]
+            GState6["State: AssemblingScene"]
+            GState7["State: Ready"]
+        end
+
+        subgraph SeqInstance["ImageSequenceLoadInstance"]
+            STick["Tick()"]
+            SState1["State: LoadingSources"]
+            SState2["State: SubmittingImageDecodes"]
+            SState3["State: DecodingImages"]
+            SState4["State: UploadingTextures"]
+            SState5["State: Ready"]
+        end
+
+        subgraph UploadDispatch["上传调度 (每帧)"]
+            GSubmit["glTF.SubmitTextureUploads(budget)"]
+            SSubmit["Seq.SubmitTextureUploads(budget)"]
+            FUS["FrameUploadScheduler\nSubmitFrameForOwner(ownerId)"]
+        end
+    end
+
+    subgraph WorkerThread["AssetManager Worker 线程池"]
+        direction TB
+        WP1["GLTFAsyncCpuLoader::Load()"]
+        WP2["ImageSequenceCpuLoader::Load()"]
+        WP3["ImageDecodeLoader::Load()"]
+    end
+
+    subgraph SharedPipeline["通用图片管线"]
+        direction TB
+        IDB["ImageDecodeBatch\n(分帧提交解码请求)"]
+        TUB_GLTF["TextureUploadBatch\nbatchId=1"]
+        TUB_SEQ["TextureUploadBatch\nbatchId=2"]
+    end
+
+    %% glTF 路径
+    StartGLTF -->|"创建 instance\nStart()"| GState1
+    GState1 -->|"AssetManager::LoadAsync(SceneAsyncCpuAsset)"| WP1
+    WP1 -->|"worker 解析 glTF\n生成 SceneAsyncCpuAsset\n(含 images, meshes, materials...)"| GState2
+    GState2 -->|"cpuHandle_.IsDone()\n提取 images"| IDB
+    IDB -->|"ImageDecodeBatch::Submit()\n分帧提交到 AssetManager"| WP3
+    WP3 -->|"stbi / Image::LoadFromMemory\n生成 DecodedImageAsset"| GState3
+    GState3 -->|"Poll() 收集 decode 结果"| GState4
+    GState4 -->|"BeginTextureUploads()\nTextureUploadBatch.Reset()\n设置 request.ownerId = batchId"| TUB_GLTF
+    TUB_GLTF -->|"Enqueue 到\nFrameUploadScheduler"| FUS
+    FUS -->|"预算内提交\n回调创建 Texture"| GState5
+    GState5 -->|"AreTextureUploadsCompleted()\nTick()"| GState6
+    GState6 -->|"BuildNodeRecursive()\n组装 Entity / Mesh / Material"| GState7
+
+    StartSeq -->|"创建 instance\nStart()"| SState1
+    SState1 -->|"AssetManager::LoadAsync(ImageSequenceCpuAsset)\n(FromVirtual + userData)"| WP2
+    WP2 -->|"worker 读取所有 frame 文件\n生成 ImageSequenceCpuAsset\n(含 ImageSource 列表)"| SState2
+    SState2 -->|"cpuHandle_.IsDone()\n提取 ImageSources"| IDB
+    IDB -->|"ImageDecodeBatch::Submit()\n分帧提交到 AssetManager"| WP3
+    WP3 -->|"解码每张图片"| SState3
+    SState3 -->|"Poll() 收集 decode 结果"| SState4
+    SState4 -->|"BeginTextureUploads()\nTextureUploadBatch.Reset()\n设置 request.ownerId = batchId"| TUB_SEQ
+    TUB_SEQ -->|"Enqueue 到\nFrameUploadScheduler"| FUS
+    FUS -->|"预算内提交\n回调创建 Texture"| SState5
+
+    Render --> GTick
+    Render --> STick
+    GTick --> GSubmit
+    STick --> SSubmit
+    GSubmit -->|"ownerId=1\n只提交 glTF 任务"| FUS
+    SSubmit -->|"ownerId=2\n只提交 Seq 任务"| FUS
+
+    style MainThread fill:#e1f5e1
+    style WorkerThread fill:#fff2e1
+    style SharedPipeline fill:#e1f0ff
+```

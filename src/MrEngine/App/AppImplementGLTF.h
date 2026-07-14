@@ -17,6 +17,11 @@ namespace moonriver
         Vector3 m_camera_rot = Vector3(0, 180, 0);
         float m_start_time = -1;
         bool m_audio_init = false;
+        GLTFAsyncLoadHandle m_gltf_async_handle;
+        ImagePipeline::ImageSequenceLoadHandle m_sequenceHandle;
+        bool m_sequence_async_done = false;
+        std::shared_ptr<Entity> m_model;
+        bool m_gltf_async_done = false;
 
         AppImplementGLTF(Engine* pEngine)
         {
@@ -26,12 +31,35 @@ namespace moonriver
             //m_pScene->LoadGLTF("/model/DamagedHelmet/DamagedHelmet.gltf");
             ///model/BrainStem/glTF/BrainStem.gltf
 
-            auto model = m_pScene->LoadGLTF("/model/BrainStem/glTF/BrainStem.gltf");
-            AABB aabb = model->RecalculateBoundsInternal();
-            //model->GetTransform()->SetPosition(Vector3(0, 0, 1));
-            model->GetTransform()->SetPosition(-aabb.GetCenter());
-            model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
-            //model->GetTransform()->SetScale(Vector3(1, 1, 1));
+            //auto model = m_pScene->LoadGLTF("/model/BrainStem/glTF/BrainStem.gltf");
+            //auto model = m_pScene->LoadGLTF("/model/Sponza/Sponza.gltf");
+            m_gltf_async_handle = m_pScene->LoadGLTFAsync("/model/Sponza/Sponza.gltf");
+            // async glTF result is handled in Update().
+
+            // Image sequence async loading example. Replace paths with existing frame images under data path.
+			std::vector<std::string> sequenceFrames;
+			sequenceFrames.push_back("/effect/sequence/01_00000.png");
+			sequenceFrames.push_back("/effect/sequence/01_00001.png");
+			sequenceFrames.push_back("/effect/sequence/01_00002.png");
+			sequenceFrames.push_back("/effect/sequence/01_00003.png");
+			sequenceFrames.push_back("/effect/sequence/01_00004.png");
+			sequenceFrames.push_back("/effect/sequence/01_00005.png");
+			sequenceFrames.push_back("/effect/sequence/01_00006.png");
+			sequenceFrames.push_back("/effect/sequence/01_00007.png");
+			sequenceFrames.push_back("/effect/sequence/01_00008.png");
+			sequenceFrames.push_back("/effect/sequence/01_00009.png");
+			sequenceFrames.push_back("/effect/sequence/01_00010.png");
+			sequenceFrames.push_back("/effect/sequence/01_00011.png");
+			sequenceFrames.push_back("/effect/sequence/01_00012.png");
+			sequenceFrames.push_back("/effect/sequence/01_00013.png");
+			sequenceFrames.push_back("/effect/sequence/01_00014.png");
+			sequenceFrames.push_back("/effect/sequence/01_00015.png");
+			sequenceFrames.push_back("/effect/sequence/01_00016.png");
+			sequenceFrames.push_back("/effect/sequence/01_00017.png");
+			sequenceFrames.push_back("/effect/sequence/01_00018.png");
+            m_sequenceHandle = m_pScene->LoadImageSequenceAsync("example_sequence", sequenceFrames, 24.0f, true);
+            // Use sequenceHandle.IsDone(), sequenceHandle.IsReady(), sequenceHandle.GetAsset(),
+            // and ImageSequenceAsset::Sample(timeSeconds) to fetch the current frame texture.
             std::shared_ptr<Camera> camera = m_pScene->CreateEntity("camera")->AddComponent<Camera>();
             Camera::SetMainCamera(camera);
             camera->GetTransform()->SetPosition(Vector3(0.f, 0.0f, 3.5f));
@@ -43,11 +71,6 @@ namespace moonriver
             camera->SetClearColor(Color(0.22, 0.22, 0.22, 1.0));
             //camera->SetLeftHandSpace(true);
 
-			auto animations = model->GetComponentsInChildren<Animation>();
-			if (animations.size() > 0)
-			{
-				animations[0]->Play(0);
-			}
             auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
             light->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
             light->SetType(LightType::Directional);
@@ -82,8 +105,44 @@ namespace moonriver
 
         void Update()
         {
+            if (!m_gltf_async_done && m_gltf_async_handle.IsDone())
+            {
+                m_gltf_async_done = true;
+                if (m_gltf_async_handle.IsReady())
+                {
+                    m_model = m_gltf_async_handle.GetRoot();
+                    if (m_model)
+                    {
+                        AABB aabb = m_model->RecalculateBoundsInternal();
+                        m_model->GetTransform()->SetPosition(-aabb.GetCenter());
+                        m_model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
 
-
+                        auto animations = m_model->GetComponentsInChildren<Animation>();
+                        if (animations.size() > 0)
+                        {
+                            animations[0]->Play(0);
+                        }
+                    }
+                }
+                else
+                {
+                    printf("LoadGLTFAsync failed: %s\n", m_gltf_async_handle.GetError().c_str());
+                }
+            }
+            if (!m_sequence_async_done && m_sequenceHandle.IsDone())
+            {
+                m_sequence_async_done = true;
+                if (m_sequenceHandle.IsReady())
+                {
+                    auto res = m_sequenceHandle.GetAsset();
+                    auto tex = res->Sample(0.5);
+                    auto tex1 = res->GetFrame(0);
+                    auto count = res->GetFrameCount();
+             
+					// Use sequenceHandle.IsDone(), sequenceHandle.IsReady(), sequenceHandle.GetAsset(),
+// and ImageSequenceAsset::Sample(timeSeconds) to fetch the current frame texture.
+                }
+            }
         }
     };
 }
