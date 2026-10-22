@@ -91,10 +91,18 @@ static std::shared_ptr<Entity> BuildNodeRecursive(const std::shared_ptr<SceneAsy
                 renderer->SetMesh(engineMesh);
                 renderer->SetMaterials(rendererMaterials);
                 renderer->EnableShaderKeyword("SKIN_ON");
+                if (!rendererMaterials.empty() && rendererMaterials[0] &&
+                    rendererMaterials[0]->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND) {
+                    renderer->EnableShaderKeyword("ALPHA_BLEND_ON");
+                }
             } else {
                 std::shared_ptr<MeshRenderer> renderer = entity->AddComponent<MeshRenderer>();
                 renderer->SetMesh(engineMesh);
                 renderer->SetMaterials(rendererMaterials);
+                if (!rendererMaterials.empty() && rendererMaterials[0] &&
+                    rendererMaterials[0]->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND) {
+                    renderer->EnableShaderKeyword("ALPHA_BLEND_ON");
+                }
             }
         }
     }
@@ -315,6 +323,10 @@ void SceneAsyncLoadInstance::AssembleScene() {
             "SPIRV_Cross_Combinedg_AOMapg_AOSampler", Texture::GetSharedWhiteTexture());
         SetMaterialTexture(material, textures_, Material::TEXTURE_ID_EMISSIVE,
             "SPIRV_Cross_Combinedg_EmissiveMapg_EmissiveSampler", Texture::GetSharedBlackTexture());
+        if (material->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND)
+        {
+            material->SetQueue((int)Shader::Queue::Transparent);
+        }
         materials_.push_back(material);
     }
 

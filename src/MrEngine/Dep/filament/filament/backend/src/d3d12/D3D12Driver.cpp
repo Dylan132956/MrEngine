@@ -606,7 +606,8 @@ namespace filament
 
 		bool D3D12Driver::canGenerateMipmaps()
 		{
-			return true;
+			// D3D12Texture::GenerateMipmaps has no implementation; callers must upload mips themselves.
+			return false;
 		}
 
 		void D3D12Driver::loadUniformBuffer(Handle<HwUniformBuffer> ubh, BufferDescriptor&& data)

@@ -330,7 +330,12 @@ namespace moonriver
             SetTexture(Material::TEXTURE_ID_NORMAL_MAP, "SPIRV_Cross_Combinedg_NormalMapg_NormalSampler", Texture::GetSharedNormalTexture());
             SetTexture(Material::TEXTURE_ID_OCCLUSION, "SPIRV_Cross_Combinedg_AOMapg_AOSampler", Texture::GetSharedWhiteTexture());
             SetTexture(Material::TEXTURE_ID_EMISSIVE, "SPIRV_Cross_Combinedg_EmissiveMapg_EmissiveSampler", Texture::GetSharedBlackTexture());
-     
+
+            if (Mat->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND)
+            {
+                Mat->SetQueue((int)Shader::Queue::Transparent);
+            }
+
             cache->Materials.push_back(Mat);
         }
         cache->Materials.push_back(std::shared_ptr<Material>());
@@ -619,6 +624,11 @@ namespace moonriver
                     vMaterial.push_back(cache->Materials[primitive.material]);
                     renderer->SetMaterials(vMaterial);
                     renderer->EnableShaderKeyword("SKIN_ON");
+                    if (cache->Materials[primitive.material] &&
+                        cache->Materials[primitive.material]->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND)
+                    {
+                        renderer->EnableShaderKeyword("ALPHA_BLEND_ON");
+                    }
                 }
                 else
                 {
@@ -627,6 +637,11 @@ namespace moonriver
                     std::vector<std::shared_ptr<Material>> vMaterial;
                     vMaterial.push_back(cache->Materials[primitive.material]);
                     renderer->SetMaterials(vMaterial);
+                    if (cache->Materials[primitive.material] &&
+                        cache->Materials[primitive.material]->Attribs.AlphaMode == Material::ALPHA_MODE_BLEND)
+                    {
+                        renderer->EnableShaderKeyword("ALPHA_BLEND_ON");
+                    }
                 }
 
             }

@@ -608,6 +608,14 @@ namespace moonriver
 		SamplerAddressMode wrap_mode,
 		bool gen_mipmap)
 	{
+		auto& driver = Engine::Instance()->GetDriverApi();
+		bool cpu_mipmap = gen_mipmap && !driver.canGenerateMipmaps();
+		if (cpu_mipmap && format != TextureFormat::R8G8B8A8)
+		{
+			gen_mipmap = false;
+			cpu_mipmap = false;
+		}
+
 		Ref<Texture> texture = Texture::CreateTexture2D(
 			width,
 			height,
@@ -618,7 +626,39 @@ namespace moonriver
 
 		texture->UpdateTexture(pixels, 0, 0, 0, 0, width, height);
 
-		if (gen_mipmap)
+		if (cpu_mipmap)
+		{
+			ByteBuffer prev = pixels;
+			int prev_w = width;
+			int prev_h = height;
+			for (int level = 1; level < texture->GetMipmapLevelCount(); ++level)
+			{
+				int w = Mathf::Max(1, prev_w / 2);
+				int h = Mathf::Max(1, prev_h / 2);
+				ByteBuffer next(w * h * 4);
+				for (int y = 0; y < h; ++y)
+				{
+					int y0 = Mathf::Min(y * 2, prev_h - 1);
+					int y1 = Mathf::Min(y * 2 + 1, prev_h - 1);
+					for (int x = 0; x < w; ++x)
+					{
+						int x0 = Mathf::Min(x * 2, prev_w - 1);
+						int x1 = Mathf::Min(x * 2 + 1, prev_w - 1);
+						for (int c = 0; c < 4; ++c)
+						{
+							int sum = prev[(y0 * prev_w + x0) * 4 + c] + prev[(y0 * prev_w + x1) * 4 + c] +
+								prev[(y1 * prev_w + x0) * 4 + c] + prev[(y1 * prev_w + x1) * 4 + c];
+							next[(y * w + x) * 4 + c] = (byte)((sum + 2) / 4);
+						}
+					}
+				}
+				texture->UpdateTexture(next, 0, level, 0, 0, w, h);
+				prev = next;
+				prev_w = w;
+				prev_h = h;
+			}
+		}
+		else if (gen_mipmap)
 		{
 			texture->GenMipmaps();
 		}
@@ -977,8 +1017,18 @@ namespace moonriver
 
 	Texture::~Texture()
 	{
-		auto& driver = Engine::Instance()->GetDriverApi();
-
+		if (!m_texture)
+		{
+			return;
+		}
+		// Static singletons (e.g. PBREnvironment) may outlive Engine; skip GPU destroy after shutdown.
+		Engine* engine = Engine::Instance();
+		if (!engine)
+		{
+			m_texture.clear();
+			return;
+		}
+		auto& driver = engine->GetDriverApi();
 		driver.destroyTexture(m_texture);
 		m_texture.clear();
 	}

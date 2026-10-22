@@ -51,6 +51,10 @@ namespace moonriver
         std::string shaderName = shader->GetName();
         if (shaderName == "standard") {
             m_isPbr = true;
+            // IBL defaults; PBREnvironment overwrites these after precompute.
+            this->SetTexture("SPIRV_Cross_Combinedg_IrradianceMapg_IrradianceSampler", Texture::GetSharedCubemap());
+            this->SetTexture("SPIRV_Cross_Combinedg_PrefilteredMapg_PrefilteredSampler", Texture::GetSharedCubemap());
+            this->SetTexture("SPIRV_Cross_Combinedg_BRDFLUTg_BRDFLUTSampler", Texture::GetSharedWhiteTexture());
         }
         else
         {
@@ -60,7 +64,15 @@ namespace moonriver
 
     Material::~Material()
     {
-        auto& driver = Engine::Instance()->GetDriverApi();
+        Engine* engine = Engine::Instance();
+        if (!engine)
+        {
+            m_unifrom_buffers.clear();
+            m_samplers.clear();
+            m_pbr_uniform_buffers.clear();
+            return;
+        }
+        auto& driver = engine->GetDriverApi();
 
         for (int i = 0; i < m_unifrom_buffers.size(); ++i)
         {
@@ -320,8 +332,6 @@ namespace moonriver
 				SetVector("fs.PerMaterialFragment.g_MaterialInfo.BaseColorFactor", Attribs.BaseColorFactor);
 				SetVector("fs.PerMaterialFragment.g_MaterialInfo.EmissiveFactor", Attribs.EmissiveFactor);
 				SetVector("fs.PerMaterialFragment.g_MaterialInfo.SpecularFactor", Attribs.SpecularFactor);
-				SetVector("fs.PerMaterialFragment.g_MaterialInfo.MroFactor", Vector4(Attribs.NormalSlice, Attribs.OcclusionSlice, Attribs.EmissiveSlice, Attribs.MetallicFactor));
-				SetVector("fs.PerMaterialFragment.g_MaterialInfo.RacFactor", Vector4(Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.AlphaCutoff, Attribs.Dummy0));
             }
             //SetVector("_242.g_MaterialInfo.SpecularFactor", Vector4(Attribs.MetallicFactor, Attribs.RoughnessFactor, Attribs.AlphaMode, Attribs.));
         }

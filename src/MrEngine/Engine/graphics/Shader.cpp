@@ -100,7 +100,8 @@ namespace moonriver
         std::string define;
         if (Engine::Instance()->GetBackend() == filament::backend::Backend::OPENGL) {
         }
-        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 || Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11)
+        else if (Engine::Instance()->GetBackend() == filament::backend::Backend::D3D11 ||
+                 Engine::Instance()->GetBackend() == filament::backend::Backend::D3D12)
         {
             define = "#define COMPILER_HLSL 1\n";
         }
@@ -265,6 +266,9 @@ namespace moonriver
 		SetGlobalInt(L, "Transparent", (int)Queue::Transparent);
 		SetGlobalInt(L, "Overlay", (int)Queue::Overlay);
 
+		SetGlobalInt(L, "None", (int)LightMode::None);
+		SetGlobalInt(L, "Forward", (int)LightMode::Forward);
+
 		if (luaL_dostring(L, str_param.c_str()) != 0)
 		{
 			std::string error = lua_tostring(L, -1);
@@ -324,6 +328,21 @@ namespace moonriver
 			pass.pipeline.rasterState.blendFunctionSrcAlpha = src_alpha_blend;
 			pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE;
 			pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE;
+		}
+
+		std::vector<std::string>::iterator it_blend = std::find(m_keywords.begin(), m_keywords.end(), "ALPHA_BLEND_ON");
+		if (it_blend != m_keywords.end())
+		{
+			pass.pipeline.rasterState.depthWrite = false;
+			pass.pipeline.rasterState.blendFunctionSrcRGB = filament::backend::BlendFunction::SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionSrcAlpha = filament::backend::BlendFunction::SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionDstRGB = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
+			pass.pipeline.rasterState.blendFunctionDstAlpha = filament::backend::BlendFunction::ONE_MINUS_SRC_ALPHA;
+			pass.queue = (int)Queue::Transparent;
+			if (m_queue < pass.queue)
+			{
+				m_queue = pass.queue;
+			}
 		}
 		lua_pop(L, 1);
 		lua_close(L);

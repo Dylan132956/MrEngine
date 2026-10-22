@@ -474,14 +474,12 @@ namespace filament
 			*sb = std::move(sg);
 		}
 
-		StagingBuffer createStagingBuffer(D3D12Context* context, const ComPtr<ID3D12Resource>& resource, UINT firstSubresource, UINT numSubresources, const D3D12_SUBRESOURCE_DATA* data)
+		static StagingBuffer createStagingBufferFromDesc(D3D12Context* context, const D3D12_RESOURCE_DESC& resourceDesc, UINT firstSubresource, UINT numSubresources, const D3D12_SUBRESOURCE_DATA* data)
 		{
 			StagingBuffer stagingBuffer;
 			stagingBuffer.firstSubresource = firstSubresource;
 			stagingBuffer.numSubresources = numSubresources;
 			stagingBuffer.layouts.resize(numSubresources);
-
-			const D3D12_RESOURCE_DESC resourceDesc = resource->GetDesc();
 
 			UINT64 numBytesTotal;
 			std::vector<UINT> numRows{ numSubresources };
@@ -496,6 +494,10 @@ namespace filament
 				nullptr,
 				IID_PPV_ARGS(&stagingBuffer.buffer))))
 			{
+				fprintf(stderr, "Failed to create GPU staging buffer: %llux%u array=%u mips=%u fmt=%d sub=%u bytes=%llu\n",
+					(unsigned long long)resourceDesc.Width, resourceDesc.Height, resourceDesc.DepthOrArraySize, resourceDesc.MipLevels,
+					(int)resourceDesc.Format, firstSubresource, (unsigned long long)numBytesTotal);
+				fflush(stderr);
 				throw std::runtime_error("Failed to create GPU staging buffer");
 			}
 
@@ -524,6 +526,11 @@ namespace filament
 				stagingBuffer.buffer->Unmap(0, nullptr);
 			}
 			return stagingBuffer;
+		}
+
+		StagingBuffer createStagingBuffer(D3D12Context* context, const ComPtr<ID3D12Resource>& resource, UINT firstSubresource, UINT numSubresources, const D3D12_SUBRESOURCE_DATA* data)
+		{
+			return createStagingBufferFromDesc(context, resource->GetDesc(), firstSubresource, numSubresources, data);
 		}
 
 		void D3D12Texture::createTextureSRV(D3D12Context* context, D3D12_SRV_DIMENSION dimension, UINT mostDetailedMip, UINT mipLevels)
@@ -623,9 +630,14 @@ namespace filament
 			HwTexture(target, levels, samples, width, height, depth, format, usage)
 		{
 			UINT mip_levels = levels;
-			UINT array_size = depth;
 			UINT bind_flags = 0;
 			UINT misc_flags = 0;
+
+			if (target == backend::SamplerType::SAMPLER_CUBEMAP)
+			{
+				depth = 6;
+			}
+			UINT array_size = depth;
 
 			assert(depth == 1 || depth == 6);
 
@@ -704,19 +716,39 @@ namespace filament
 			}
 
 
+			const D3D12_RESOURCE_DESC texDesc = texture->GetDesc();
+			const UINT subresource = D3D12CalcSubresource(level, layer, 0, texDesc.MipLevels, texDesc.DepthOrArraySize);
+			const UINT mipWidth = std::max<UINT>(1, (UINT)texDesc.Width >> level);
+			const UINT mipHeight = std::max<UINT>(1, texDesc.Height >> level);
+			const bool fullSubresource = x == 0 && y == 0 && (UINT)w == mipWidth && (UINT)h == mipHeight;
+
 			StagingBuffer textureStagingBuffer;
 			{
 				const D3D12_SUBRESOURCE_DATA sdata{ data.buffer, row_pitch };
-				textureStagingBuffer = createStagingBuffer(context, texture, 0, 1, &sdata);
+				if (fullSubresource || bc_block_bytes > 0)
+				{
+					textureStagingBuffer = createStagingBuffer(context, texture, subresource, 1, &sdata);
+				}
+				else
+				{
+					D3D12_RESOURCE_DESC regionDesc = texDesc;
+					regionDesc.Width = w;
+					regionDesc.Height = h;
+					regionDesc.DepthOrArraySize = 1;
+					regionDesc.MipLevels = 1;
+					textureStagingBuffer = createStagingBufferFromDesc(context, regionDesc, 0, 1, &sdata);
+				}
 			}
 
 			{
-				const CD3DX12_TEXTURE_COPY_LOCATION destCopyLocation{ texture.Get(), 0 };
+				const CD3DX12_TEXTURE_COPY_LOCATION destCopyLocation{ texture.Get(), subresource };
 				const CD3DX12_TEXTURE_COPY_LOCATION srcCopyLocation{ textureStagingBuffer.buffer.Get(), textureStagingBuffer.layouts[0] };
+				const UINT dstX = fullSubresource ? 0 : (UINT)x;
+				const UINT dstY = fullSubresource ? 0 : (UINT)y;
 
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, 0));
-				context->m_commandList->CopyTextureRegion(&destCopyLocation, 0, 0, 0, &srcCopyLocation, nullptr);
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, 0));
+				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, subresource));
+				context->m_commandList->CopyTextureRegion(&destCopyLocation, dstX, dstY, 0, &srcCopyLocation, nullptr);
+				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, subresource));
 			}
 
 			context->executeCommandList();

@@ -43,7 +43,7 @@ namespace moonriver
 			for (int k = 0; k < uniformVariables; ++k)
 			{
 				glslang::TObjectReflection ReflectionVariables = program.getUniform(k);
-				if (ReflectionVariables.glDefineType == GL_SAMPLER_2D)
+				if (ReflectionVariables.glDefineType == GL_SAMPLER_2D || ReflectionVariables.glDefineType == GL_SAMPLER_CUBE)
 				{
 					glslang::TObjectReflection ReflectionVariables_next = program.getUniform(k + 1);
 					Shader::Sampler s;

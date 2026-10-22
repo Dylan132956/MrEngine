@@ -16,6 +16,7 @@
 #include "graphics/RenderTarget.h"
 #include "graphics/Camera.h"
 #include "graphics/Renderer.h"
+#include "graphics/PBREnvironment.h"
 #include "string/stringutils.h"
 #include <thread>
 #include "audio/AudioManager.h"
@@ -174,6 +175,9 @@ namespace moonriver
         void Shutdown()
         {
             AudioManager::DestroyListener();
+            // Drop scene (meshes/materials/textures) before tearing down shared GPU resources / driver.
+            m_scene_manager = nullptr;
+            PBREnvironment::Instance().Shutdown();
             Mesh::Done();
             AudioManager::Done();
             RenderTarget::Done();
@@ -181,7 +185,6 @@ namespace moonriver
             Camera::Done();
             Texture::Done();
             Shader::Done();
-            m_scene_manager = nullptr;
 
             m_thread_pool.reset();
 			// detach this thread from the JobSystem

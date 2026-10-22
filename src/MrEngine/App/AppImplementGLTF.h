@@ -3,6 +3,10 @@
 #include "Audio/AudioListener.h"
 #include "Audio/AudioClip.h"
 #include "Audio/AudioSource.h"
+#include "graphics/Mesh.h"
+#include "graphics/Material.h"
+#include "graphics/Shader.h"
+#include "graphics/PBREnvironment.h"
 
 namespace moonriver
 {
@@ -10,97 +14,137 @@ namespace moonriver
     {
     public:
         Camera* m_camera = nullptr;
-        Camera* m_reflection_camera = nullptr;
-        Camera* m_back_screen_camera = nullptr;
-        Material* m_reflection_material = nullptr;
         Vector2 m_last_touch_pos;
-        Vector3 m_camera_rot = Vector3(0, 180, 0);
-        float m_start_time = -1;
-        bool m_audio_init = false;
+        Vector3 m_camera_rot = Vector3(5, 180, 0);
         GLTFAsyncLoadHandle m_gltf_async_handle;
-        ImagePipeline::ImageSequenceLoadHandle m_sequenceHandle;
-        bool m_sequence_async_done = false;
         std::shared_ptr<Entity> m_model;
+        std::shared_ptr<Entity> m_skybox;
         bool m_gltf_async_done = false;
+
+        static std::shared_ptr<Mesh> CreateSkyboxCubeMesh()
+        {
+            // Unit cube; skybox shader culls front faces so we see the interior.
+            const float s = 1.0f;
+            auto makeV = [](float x, float y, float z) {
+                Mesh::Vertex v = {};
+                v.vertex = Vector4(x, y, z, 1);
+                v.color = Color(1, 1, 1, 1);
+                v.normal = Vector3(x, y, z);
+                return v;
+            };
+
+            std::vector<Mesh::Vertex> vertices = {
+                makeV(-s, -s, -s), makeV(s, -s, -s), makeV(s, s, -s), makeV(-s, s, -s),
+                makeV(-s, -s,  s), makeV(s, -s,  s), makeV(s, s,  s), makeV(-s, s,  s),
+            };
+            std::vector<unsigned int> indices = {
+                0,1,2, 0,2,3,
+                4,6,5, 4,7,6,
+                0,3,7, 0,7,4,
+                1,5,6, 1,6,2,
+                3,2,6, 3,6,7,
+                0,4,5, 0,5,1,
+            };
+            return std::make_shared<Mesh>(std::move(vertices), std::move(indices));
+        }
+
+        void CreateSkybox()
+        {
+            auto& ibl = PBREnvironment::Instance();
+            m_skybox = m_pScene->CreateEntity("skybox");
+            auto renderer = m_skybox->AddComponent<MeshRenderer>();
+            renderer->SetMesh(CreateSkyboxCubeMesh());
+            auto mat = std::make_shared<Material>(Shader::Find("skybox"));
+            mat->SetTexture("SPIRV_Cross_Combinedg_SkyboxMapg_SkyboxSampler", ibl.GetPrefilteredMap());
+            mat->SetQueue((int)Shader::Queue::Background);
+            renderer->SetMaterial(mat);
+            m_skybox->SetLayer(0);
+        }
 
         AppImplementGLTF(Engine* pEngine)
         {
             m_pEngine = pEngine;
             m_pScene = m_pEngine->CreateScene();
-            ///model/Sponza/Sponza.gltf
-            //m_pScene->LoadGLTF("/model/DamagedHelmet/DamagedHelmet.gltf");
-            ///model/BrainStem/glTF/BrainStem.gltf
 
-            //auto model = m_pScene->LoadGLTF("/model/BrainStem/glTF/BrainStem.gltf");
-            //auto model = m_pScene->LoadGLTF("/model/Sponza/Sponza.gltf");
-            m_gltf_async_handle = m_pScene->LoadGLTFAsync("/model/Sponza/Sponza.gltf");
-            // async glTF result is handled in Update().
+            // Prefer a real HDRI (Poly Haven studio); fall back to high-contrast procedural.
+            {
+                std::string dataPath = Engine::Instance()->GetDataPath();
+                // Same environment as DiligentSamples GLTFViewer. Diligent mirrors glTF Y (InvYAxis), so the
+                // cubemap is Y-flipped relative to the model there; papermill_mrengine.ktx bakes in that flip.
+                const std::string orientedKtx = dataPath + "/env/papermill_mrengine.ktx";
+                bool hdrOk = PBREnvironment::Instance().InitializeFromKTX(orientedKtx);
+                if (!hdrOk)
+                {
+                    hdrOk = PBREnvironment::Instance().InitializeFromKTXReoriented(
+                        dataPath + "/env/papermill.ktx", 1.0f, -1.0f, 1.0f, orientedKtx);
+                }
+                const char* hdrCandidates[] = {
+                    "/env/photo_studio_loft_hall_1k.hdr",
+                    "/env/brown_photostudio_02_1k.hdr",
+                    "/env/studio_small_03_1k.hdr",
+                };
+                for (const char* rel : hdrCandidates)
+                {
+                    if (hdrOk)
+                    {
+                        break;
+                    }
+                    if (PBREnvironment::Instance().InitializeFromHDR(dataPath + rel))
+                    {
+                        hdrOk = true;
+                        break;
+                    }
+                }
+                if (!hdrOk)
+                {
+                    PBREnvironment::Instance().InitializeProcedural();
+                }
+            }
 
-            // Image sequence async loading example. Replace paths with existing frame images under data path.
-			std::vector<std::string> sequenceFrames;
-			sequenceFrames.push_back("/effect/sequence/01_00000.png");
-			sequenceFrames.push_back("/effect/sequence/01_00001.png");
-			sequenceFrames.push_back("/effect/sequence/01_00002.png");
-			sequenceFrames.push_back("/effect/sequence/01_00003.png");
-			sequenceFrames.push_back("/effect/sequence/01_00004.png");
-			sequenceFrames.push_back("/effect/sequence/01_00005.png");
-			sequenceFrames.push_back("/effect/sequence/01_00006.png");
-			sequenceFrames.push_back("/effect/sequence/01_00007.png");
-			sequenceFrames.push_back("/effect/sequence/01_00008.png");
-			sequenceFrames.push_back("/effect/sequence/01_00009.png");
-			sequenceFrames.push_back("/effect/sequence/01_00010.png");
-			sequenceFrames.push_back("/effect/sequence/01_00011.png");
-			sequenceFrames.push_back("/effect/sequence/01_00012.png");
-			sequenceFrames.push_back("/effect/sequence/01_00013.png");
-			sequenceFrames.push_back("/effect/sequence/01_00014.png");
-			sequenceFrames.push_back("/effect/sequence/01_00015.png");
-			sequenceFrames.push_back("/effect/sequence/01_00016.png");
-			sequenceFrames.push_back("/effect/sequence/01_00017.png");
-			sequenceFrames.push_back("/effect/sequence/01_00018.png");
-            m_sequenceHandle = m_pScene->LoadImageSequenceAsync("example_sequence", sequenceFrames, 24.0f, true);
-            // Use sequenceHandle.IsDone(), sequenceHandle.IsReady(), sequenceHandle.GetAsset(),
-            // and ImageSequenceAsset::Sample(timeSeconds) to fetch the current frame texture.
+            // DamagedHelmet is the DiligentFX README reference model.
+            // Sponza: m_pScene->LoadGLTFAsync("/model/Sponza/Sponza.gltf");
+            m_gltf_async_handle = m_pScene->LoadGLTFAsync("/model/DamagedHelmet/DamagedHelmet.gltf");
+
             std::shared_ptr<Camera> camera = m_pScene->CreateEntity("camera")->AddComponent<Camera>();
             Camera::SetMainCamera(camera);
+            m_camera = camera.get();
             camera->GetTransform()->SetPosition(Vector3(0.f, 0.0f, 3.5f));
             camera->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
             camera->SetNearClip(0.03f);
             camera->SetFarClip(100);
             camera->SetDepth(2);
             camera->SetCullingMask((1 << 0) | (1 << 4) | (1 << 8));
-            camera->SetClearColor(Color(0.22, 0.22, 0.22, 1.0));
-            //camera->SetLeftHandSpace(true);
+            camera->SetClearColor(Color(0.02f, 0.02f, 0.03f, 1.0f));
 
             auto light = m_pScene->CreateEntity("light")->AddComponent<Light>();
-            light->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
+            light->GetTransform()->SetRotation(Quaternion::Euler(35.0f, 180.0f, 0.0f));
             light->SetType(LightType::Directional);
-            light->SetAmbientColor(Color(0.22, 0.22, 0.22, 1.0));
+            light->SetColor(Color(1.0f, 0.98f, 0.92f, 1.0f));
+            light->SetIntensity(3.0f);
+            // IBL provides indirect lighting; keep ambient off to avoid wash-out.
+            Light::SetAmbientColor(Color(0.0f, 0.0f, 0.0f, 1.0f));
 
-            InitAudio(); 
+            CreateSkybox();
+            InitAudio();
         }
 
-		void InitAudio()
-		{
-			//auto listener = AudioManager::GetListener(m_pScene);
-			//listener->GetTransform()->SetLocalPosition(Vector3(0, 0, 0));
-			//listener->GetTransform()->SetLocalRotation(Quaternion::Euler(0, 0, 0));
-
+        void InitAudio()
+        {
 #if !VR_WASM
-			auto audio_path = "audio/lightning.mp3";
-			auto audio_clip = AudioClip::LoadMp3FromFile(Engine::Instance()->GetDataPath() + "/" + audio_path);
-			auto audio_source = m_pScene->CreateEntity("as")->AddComponent<AudioSource>().get();
-			audio_source->SetClip(audio_clip);
-			audio_source->SetLoop(false);
-			audio_source->Play();
+            auto audio_path = "audio/lightning.mp3";
+            auto audio_clip = AudioClip::LoadMp3FromFile(Engine::Instance()->GetDataPath() + "/" + audio_path);
+            auto audio_source = m_pScene->CreateEntity("as")->AddComponent<AudioSource>().get();
+            audio_source->SetClip(audio_clip);
+            audio_source->SetLoop(false);
+            audio_source->Play();
 #else
-			auto audio_path = "audio/Unite In The Sky (full).mp3";
-			AudioManager::PlayAudio(audio_path, false);
+            auto audio_path = "audio/Unite In The Sky (full).mp3";
+            AudioManager::PlayAudio(audio_path, false);
 #endif
-		}
+        }
 
         virtual ~AppImplementGLTF()
         {
-
         }
 
         void Update()
@@ -122,25 +166,14 @@ namespace moonriver
                         {
                             animations[0]->Play(0);
                         }
+
+                        // Materials are created during async assemble; bind IBL now.
+                        PBREnvironment::Instance().ApplyToSceneMaterials();
                     }
                 }
                 else
                 {
                     printf("LoadGLTFAsync failed: %s\n", m_gltf_async_handle.GetError().c_str());
-                }
-            }
-            if (!m_sequence_async_done && m_sequenceHandle.IsDone())
-            {
-                m_sequence_async_done = true;
-                if (m_sequenceHandle.IsReady())
-                {
-                    auto res = m_sequenceHandle.GetAsset();
-                    auto tex = res->Sample(0.5);
-                    auto tex1 = res->GetFrame(0);
-                    auto count = res->GetFrameCount();
-             
-					// Use sequenceHandle.IsDone(), sequenceHandle.IsReady(), sequenceHandle.GetAsset(),
-// and ImageSequenceAsset::Sample(timeSeconds) to fetch the current frame texture.
                 }
             }
         }

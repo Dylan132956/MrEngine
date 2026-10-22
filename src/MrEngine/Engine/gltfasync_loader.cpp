@@ -157,10 +157,21 @@ static bool ConvertMeshes(const tinygltf::Model& model, GLTFAsyncCpuAsset& asset
                 uv0Stride = accessor.ByteStride(view) / tinygltf::GetComponentSizeInBytes(accessor.componentType);
             }
 
+            const float* tangent = nullptr;
+            int tangentStride = 0;
+            std::map<std::string, int>::const_iterator tangentIt = primitive.attributes.find("TANGENT");
+            if (tangentIt != primitive.attributes.end()) {
+                const tinygltf::Accessor& accessor = model.accessors[tangentIt->second];
+                const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                tangent = reinterpret_cast<const float*>(AccessorData(model, accessor));
+                tangentStride = accessor.ByteStride(view) / tinygltf::GetComponentSizeInBytes(accessor.componentType);
+            }
+
             for (std::size_t v = 0; v < vertexCount; ++v) {
                 Mesh::Vertex& vertex = dstPrim.vertices[v];
                 vertex.vertex = Vector4(Vector3::MakeVector(pos + v * posStride), 1.0f);
                 vertex.normal = normal ? Vector3::Normalize(Vector3::MakeVector(normal + v * normalStride)) : Vector3{};
+                vertex.tangent = tangent ? Vector4::MakeVector(tangent + v * tangentStride) : Vector4{};
                 vertex.uv = uv0 ? Vector2::MakeVector(uv0 + v * uv0Stride) : Vector2{};
             }
 

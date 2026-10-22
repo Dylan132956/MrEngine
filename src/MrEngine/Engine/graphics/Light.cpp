@@ -329,10 +329,9 @@ namespace moonriver
         {
             m_spot_angle = angle;
 
-			// clamp the inner/outer angles to [0.5 degrees, 90 degrees]
-			float innerClamped = Mathf::Clamp(m_spot_angle / 4.0f, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
-			float const outerClamped = Mathf::Clamp(m_spot_angle / 2.0f, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
-			// inner must always be smaller than outer
+			// Spot angle is authored in degrees; convert to radians then clamp.
+			float innerClamped = Mathf::Clamp(m_spot_angle * 0.25f * Mathf::Deg2Rad, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
+			float outerClamped = Mathf::Clamp(m_spot_angle * 0.5f * Mathf::Deg2Rad, 0.5f * Mathf::Deg2Rad, Mathf::PI / 2.0f);
 			innerClamped = std::min(innerClamped, outerClamped);
 
 			float const cosOuter = cos(outerClamped);
@@ -532,8 +531,10 @@ namespace moonriver
 		}
 		if (this->GetType() == LightType::Spot)
 		{
-			light_uniforms.light_atten.x = cos(this->GetSpotAngle() / 2 * Mathf::Deg2Rad);
-			light_uniforms.light_atten.y = 1.0f / (light_uniforms.light_atten.x - cos(this->GetSpotAngle() / 4 * Mathf::Deg2Rad));
+			float cosOuter = cos(this->GetSpotAngle() * 0.5f * Mathf::Deg2Rad);
+			float cosInner = cos(this->GetSpotAngle() * 0.25f * Mathf::Deg2Rad);
+			light_uniforms.light_atten.x = cosOuter;
+			light_uniforms.light_atten.y = 1.0f / std::max(1.0f / 1024.0f, cosInner - cosOuter);
 			light_uniforms.spot_light_dir = -this->GetTransform()->GetForward();
 		}
 		light_uniforms.shadow_params = Vector4(m_shadow_strength, m_shadow_z_bias, m_shadow_slope_bias, 1.0f / m_shadow_texture_size * 3);

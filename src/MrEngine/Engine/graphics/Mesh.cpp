@@ -351,8 +351,16 @@ namespace moonriver
     
     Mesh::~Mesh()
     {
-        auto& driver = Engine::Instance()->GetDriverApi();
-        
+		Engine* engine = Engine::Instance();
+		if (!engine)
+		{
+			m_vb.clear();
+			m_ib.clear();
+			m_primitives.clear();
+			return;
+		}
+        auto& driver = engine->GetDriverApi();
+
 		driver.destroyVertexBuffer(m_vb);
 		m_vb.clear();
 
