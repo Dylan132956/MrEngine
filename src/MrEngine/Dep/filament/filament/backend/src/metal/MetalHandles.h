@@ -167,6 +167,8 @@ public:
     uint8_t getColorLevel() { return level; }
     
     void createDepth(MTLPixelFormat format, uint32_t width, uint32_t height);
+    // Enable MSAA for the default (swapchain) target; resolve goes into the drawable.
+    void ensureDefaultMSAA(uint8_t sampleCount, id<MTLTexture> drawableTexture);
 
 private:
     static id<MTLTexture> createMultisampledTexture(id<MTLDevice> device, MTLPixelFormat format,

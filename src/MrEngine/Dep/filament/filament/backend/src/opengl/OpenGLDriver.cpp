@@ -358,6 +358,7 @@ void OpenGLDriver::initExtensions(ExtentionSet const& exts)
 }
 
 void OpenGLDriver::terminate() {
+	releaseDefaultMSAA();
 	if (mSharedDrawFramebuffer) {
 		glDeleteFramebuffers(1, &mSharedDrawFramebuffer);
 		mSharedDrawFramebuffer = 0;
@@ -1496,6 +1497,75 @@ void OpenGLDriver::framebufferRenderbuffer(GLTexture const* t,
     CHECK_GL_FRAMEBUFFER_STATUS(utils::slog.e)
 }
 
+void OpenGLDriver::releaseDefaultMSAA() noexcept {
+    if (mDefaultMsaaFbo) {
+        glDeleteFramebuffers(1, &mDefaultMsaaFbo);
+        mDefaultMsaaFbo = 0;
+    }
+    if (mDefaultMsaaColorRb) {
+        glDeleteRenderbuffers(1, &mDefaultMsaaColorRb);
+        mDefaultMsaaColorRb = 0;
+    }
+    if (mDefaultMsaaDepthRb) {
+        glDeleteRenderbuffers(1, &mDefaultMsaaDepthRb);
+        mDefaultMsaaDepthRb = 0;
+    }
+    mDefaultMsaaWidth = 0;
+    mDefaultMsaaHeight = 0;
+}
+
+void OpenGLDriver::ensureDefaultMSAA(GLRenderTarget* rt, uint32_t width, uint32_t height) noexcept {
+    if (mDefaultMsaaSamples <= 1 || width == 0 || height == 0) {
+        return;
+    }
+
+    GLint maxSamples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    uint8_t samples = mDefaultMsaaSamples;
+    if (maxSamples > 0 && samples > (uint8_t)maxSamples) {
+        samples = (uint8_t)maxSamples;
+    }
+    if (samples <= 1) {
+        return;
+    }
+
+    if (mDefaultMsaaFbo && mDefaultMsaaWidth == width && mDefaultMsaaHeight == height &&
+        rt->gl.samples == samples) {
+        return;
+    }
+
+    // Keep the platform default FBO as the resolve destination.
+    if (!mDefaultMsaaFbo) {
+        mDefaultResolveFbo = rt->gl.fbo;
+    }
+
+    releaseDefaultMSAA();
+
+    glGenRenderbuffers(1, &mDefaultMsaaColorRb);
+    glBindRenderbuffer(GL_RENDERBUFFER, mDefaultMsaaColorRb);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_RGBA8, (GLsizei)width, (GLsizei)height);
+
+    glGenRenderbuffers(1, &mDefaultMsaaDepthRb);
+    glBindRenderbuffer(GL_RENDERBUFFER, mDefaultMsaaDepthRb);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, (GLsizei)width, (GLsizei)height);
+
+    glGenFramebuffers(1, &mDefaultMsaaFbo);
+    bindFramebuffer(GL_FRAMEBUFFER, mDefaultMsaaFbo);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, mDefaultMsaaColorRb);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mDefaultMsaaDepthRb);
+    CHECK_GL_FRAMEBUFFER_STATUS(utils::slog.e)
+
+    mDefaultMsaaWidth = width;
+    mDefaultMsaaHeight = height;
+    rt->width = width;
+    rt->height = height;
+    rt->gl.fbo = mDefaultMsaaFbo;
+    rt->gl.fbo_read = mDefaultResolveFbo;
+    rt->gl.resolve = TargetBufferFlags::COLOR;
+    rt->gl.samples = samples;
+    printf("OpenGL MSAA samples: %u (%ux%u)\n", (unsigned)samples, width, height);
+}
+
 void OpenGLDriver::createDefaultRenderTargetR(
         Handle<HwRenderTarget> rth, int) {
     DEBUG_MARKER()
@@ -1507,7 +1577,10 @@ void OpenGLDriver::createDefaultRenderTargetR(
 
     GLRenderTarget* rt = handle_cast<GLRenderTarget*>(rth);
     rt->gl.fbo = framebuffer;
+    rt->gl.fbo_read = 0;
     rt->gl.samples = 1;
+    mDefaultResolveFbo = framebuffer;
+    mDefaultRenderTarget = rth;
 }
 
 void OpenGLDriver::createRenderTargetR(Handle<HwRenderTarget> rth,
@@ -2713,6 +2786,15 @@ void OpenGLDriver::beginRenderPass(Handle<HwRenderTarget> rth,
     TargetBufferFlags discardFlags = params.flags.discardStart;
 
     GLRenderTarget* rt = handle_cast<GLRenderTarget*>(rth);
+
+    // Default (swapchain) target: render into an MSAA FBO and resolve on endRenderPass.
+    if (mDefaultMsaaSamples > 1 && rth == mDefaultRenderTarget) {
+        const uint32_t width = std::max(rt->width, params.viewport.left + params.viewport.width);
+        const uint32_t height = std::max(rt->height, params.viewport.bottom + params.viewport.height);
+        if (width > 0 && height > 0) {
+            ensureDefaultMSAA(rt, width, height);
+        }
+    }
     
     if (UTILS_UNLIKELY(state.draw_fbo != rt->gl.fbo)) {
         bindFramebuffer(GL_FRAMEBUFFER, rt->gl.fbo);

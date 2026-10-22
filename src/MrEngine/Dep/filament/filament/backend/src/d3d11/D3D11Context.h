@@ -73,6 +73,20 @@ namespace filament
 #if defined(_DEBUG)
 			bool sdk_layers_available = false;
 #endif
+			// Preferred MSAA sample count for the default (swapchain) pass. 1 disables MSAA.
+			UINT maxSamples = 16;
+			UINT msaaSamples = 4;
+			ID3D11Texture2D1* msaaColor = nullptr;
+			ID3D11Texture2D1* msaaDepth = nullptr;
+			ID3D11RenderTargetView1* msaaColorView = nullptr;
+			ID3D11DepthStencilView* msaaDepthView = nullptr;
+			UINT msaaWidth = 0;
+			UINT msaaHeight = 0;
+			DXGI_FORMAT msaaColorFormat = DXGI_FORMAT_UNKNOWN;
+
+			void ensureMSAA(UINT width, UINT height, DXGI_FORMAT colorFormat);
+			void releaseMSAA();
+
 			D3D11SwapChain* current_swap_chain = nullptr;
 			D3D11RenderTarget* current_render_target = nullptr;
 			RenderPassFlags current_render_pass_flags;

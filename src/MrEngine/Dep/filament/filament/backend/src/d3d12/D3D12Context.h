@@ -25,6 +25,8 @@
 #include "D3D12MemoryAllocator.h"
 #include "D3D12HeapSlotAllocator.h"
 #include "D3D12Buffer.h"
+#include "D3D12View.h"
+#include <memory>
 
 using Microsoft::WRL::ComPtr;
 
@@ -113,11 +115,12 @@ struct FrameBuffer
 {
 	ComPtr<ID3D12Resource> colorTexture;
 	ComPtr<ID3D12Resource> depthStencilTexture;
-	Descriptor rtv;
-	Descriptor dsv;
-	Descriptor srv;
-	UINT width, height;
-	UINT samples;
+	std::unique_ptr<filament::backend::MD3D12RenderTargetView> RTV;
+	std::unique_ptr<filament::backend::MD3D12DepthStencilView> DSV;
+	std::unique_ptr<filament::backend::MD3D12ShaderResourceView> SRV;
+	UINT width = 0;
+	UINT height = 0;
+	UINT samples = 1;
 };
 
 struct ConstantBufferView
@@ -162,7 +165,7 @@ namespace filament
 			~D3D12Context();
 			ComPtr<IDXGIAdapter1> getAdapter(const ComPtr<IDXGIFactory4>& factory);
 			DescriptorHeap createDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_DESC& desc) const;
-			//FrameBuffer createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat);
+			FrameBuffer createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat);
 			void executeCommandList(bool reset=true) const;
 			void waitForGPU() const;
 			void SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc);
@@ -232,7 +235,6 @@ namespace filament
 			static const UINT NumFrames = 2;
 			ComPtr<ID3D12CommandAllocator> m_commandAllocators[NumFrames];
 			FrameBuffer m_framebuffers[NumFrames];
-			FrameBuffer m_resolveFramebuffers[NumFrames];
 			ConstantBufferView m_transformCBVs[NumFrames];
 			ConstantBufferView m_shadingCBVs[NumFrames];
 
@@ -241,7 +243,9 @@ namespace filament
 			HANDLE m_fenceCompletionEvent;
 			mutable UINT64 m_fenceValues[NumFrames] = {};
 
-			int maxSamples = 16;
+			// Preferred MSAA sample count for the default (swapchain) pass. 1 disables MSAA.
+			UINT maxSamples = 16;
+			UINT msaaSamples = 4;
 
 			D3D_ROOT_SIGNATURE_VERSION m_rootSignatureVersion;
 			//////////////////////////////////////////////////////////////////////////

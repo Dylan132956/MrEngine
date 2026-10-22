@@ -3,6 +3,10 @@
 #include <utils/compiler.h>
 #include <utils/CountDownLatch.h>
 #include <utils/JobSystem.h>
+#include <cstdlib>
+#include <cctype>
+#include <cstdio>
+#include <string>
 #include "private/backend/CommandStream.h"
 #include "private/backend/CommandBufferQueue.h"
 #include "triangle.h"
@@ -126,7 +130,18 @@ namespace moonriver
             m_height(height),
             m_window_flags(flags)
         {
-
+            // Optional override: MRENGINE_BACKEND=d3d11|d3d12|vulkan|opengl|gl|vk
+            if (const char* env = std::getenv("MRENGINE_BACKEND"))
+            {
+                std::string name = env;
+                for (auto& c : name) { c = (char)tolower((unsigned char)c); }
+                if (name == "d3d11" || name == "dx11") m_backend = backend::Backend::D3D11;
+                else if (name == "d3d12" || name == "dx12") m_backend = backend::Backend::D3D12;
+                else if (name == "vulkan" || name == "vk") m_backend = backend::Backend::VULKAN;
+                else if (name == "opengl" || name == "gl" || name == "gles") m_backend = backend::Backend::OPENGL;
+                else if (name == "metal") m_backend = backend::Backend::METAL;
+                printf("MRENGINE_BACKEND override -> %s\n", env);
+            }
         }
 
         ~MrEngine()

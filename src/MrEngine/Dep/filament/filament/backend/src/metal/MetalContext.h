@@ -80,6 +80,9 @@ struct MetalContext {
     MTLPixelFormat currentSurfacePixelFormat = MTLPixelFormatInvalid;
     MTLPixelFormat currentDepthPixelFormat = MTLPixelFormatInvalid;
 
+    // Preferred MSAA sample count for the default (swapchain) pass. 1 disables MSAA.
+    uint8_t msaaSamples = 4;
+
     // External textures.
     CVMetalTextureCacheRef textureCache = nullptr;
 

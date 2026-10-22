@@ -45,7 +45,7 @@ public:
 		TargetBufferFlags discardStart; // 4 bytes
 		TargetBufferFlags discardEnd; // 4 bytes
         uint32_t dependencies;
-        uint32_t padding;
+        uint32_t samples; // MSAA sample count (1, 2, 4, 8...)
 
     };
     struct RenderPassVal {

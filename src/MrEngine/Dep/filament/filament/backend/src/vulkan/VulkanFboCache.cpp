@@ -27,7 +27,8 @@ bool VulkanFboCache::RenderPassEq::operator()(const RenderPassKey& k1,
             k1.finalLayout == k2.finalLayout &&
             k1.colorFormat == k2.colorFormat &&
             k1.depthFormat == k2.depthFormat &&
-            k1.dependencies == k2.dependencies;
+            k1.dependencies == k2.dependencies &&
+            k1.samples == k2.samples;
 }
 
 bool VulkanFboCache::FboKeyEqualFn::operator()(const FboKey& k1, const FboKey& k2) const {
@@ -142,11 +143,20 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
 		}
 	}
 
+	VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
+	switch (config.samples) {
+		case 2: sampleCount = VK_SAMPLE_COUNT_2_BIT; break;
+		case 4: sampleCount = VK_SAMPLE_COUNT_4_BIT; break;
+		case 8: sampleCount = VK_SAMPLE_COUNT_8_BIT; break;
+		case 16: sampleCount = VK_SAMPLE_COUNT_16_BIT; break;
+		default: sampleCount = VK_SAMPLE_COUNT_1_BIT; break;
+	}
+
 	// The attachment description specifies the layout to transition to at the END of the render pass.
     VkAttachmentDescription colorAttachment {
 		0,
         config.colorFormat,
-        VK_SAMPLE_COUNT_1_BIT,
+        sampleCount,
 		color_load,
         VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -157,7 +167,7 @@ VkRenderPass VulkanFboCache::getRenderPass(RenderPassKey config) noexcept {
     VkAttachmentDescription depthAttachment {
 		0,
         config.depthFormat,
-        VK_SAMPLE_COUNT_1_BIT,
+        sampleCount,
 		depth_load,
         VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE,

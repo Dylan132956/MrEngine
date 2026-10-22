@@ -47,10 +47,14 @@ namespace filament
 
 		void D3D12Driver::beginFrame(int64_t monotonic_clock_ns, uint32_t frame_id)
 		{
-			//Indicate a state transition on the resource usage.
-			SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[m_context->m_frameIndex];
-			m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(scb.buffer.Get(),
-				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+			// With MSAA the swapchain is only a resolve destination (handled in commit).
+			// Without MSAA, transition the backbuffer to RENDER_TARGET for direct drawing.
+			if (m_context->msaaSamples <= 1)
+			{
+				SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[m_context->m_frameIndex];
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(scb.buffer.Get(),
+					D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+			}
 		}
 
 		void D3D12Driver::endFrame(uint32_t frame_id)
@@ -383,6 +387,10 @@ namespace filament
 		void D3D12Driver::destroySwapChain(Handle<HwSwapChain> sch)
 		{
 			m_context->waitForGPU();
+			for (UINT i = 0; i < D3D12Context::NumFrames; ++i)
+			{
+				m_context->m_framebuffers[i] = FrameBuffer{};
+			}
 			destruct_handle<D3D12SwapChain>(m_handle_map, sch);
 		}
 
@@ -635,51 +643,92 @@ namespace filament
 
 			uint32_t target_height = 0;
 
+			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = {};
+			D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
+			bool hasColor = false;
+			bool hasDepth = false;
+
 			// set render target
 			if (render_target->default_render_target)
 			{
 				UINT frameIndex = m_context->m_frameIndex;
-				SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[frameIndex];
-				fb.colorTexture = scb.buffer;
-				fb.rtv.cpuHandle = scb.RTV->GetDescriptorHandle();
-				
-				if (render_target->depthStencilTexture == nullptr)
+				FrameBuffer& msaaFb = m_context->m_framebuffers[frameIndex];
+
+				if (m_context->msaaSamples > 1 && msaaFb.colorTexture)
 				{
-					DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = { };
-					m_context->current_swap_chain->m_swapChain->GetDesc1(&swap_chain_desc);
-
-					render_target->CreateDepth(
-						m_context,
-						DXGI_FORMAT_D24_UNORM_S8_UINT, 
-						1,
-						swap_chain_desc.Width,
-						swap_chain_desc.Height);
-					render_target->height = swap_chain_desc.Height;
+					fb.colorTexture = msaaFb.colorTexture;
+					fb.depthStencilTexture = msaaFb.depthStencilTexture;
+					rtvHandle = msaaFb.RTV->GetDescriptorHandle();
+					dsvHandle = msaaFb.DSV->GetDescriptorHandle();
+					hasColor = true;
+					hasDepth = true;
+					target_height = msaaFb.height;
+					render_target->samples = msaaFb.samples;
+					render_target->height = msaaFb.height;
+					render_target->width = msaaFb.width;
 				}
+				else
+				{
+					SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[frameIndex];
+					fb.colorTexture = scb.buffer;
+					rtvHandle = scb.RTV->GetDescriptorHandle();
+					hasColor = true;
 
-				fb.depthStencilTexture = render_target->depthStencilTexture;
-				fb.dsv.cpuHandle = render_target->DSV->GetDescriptorHandle();
-				target_height = render_target->height;
-				// Indicate a state transition on the resource usage.
+					if (render_target->depthStencilTexture == nullptr)
+					{
+						DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = { };
+						m_context->current_swap_chain->m_swapChain->GetDesc1(&swap_chain_desc);
+
+						render_target->CreateDepth(
+							m_context,
+							DXGI_FORMAT_D24_UNORM_S8_UINT,
+							1,
+							swap_chain_desc.Width,
+							swap_chain_desc.Height);
+						render_target->height = swap_chain_desc.Height;
+						render_target->width = swap_chain_desc.Width;
+						render_target->samples = 1;
+					}
+
+					fb.depthStencilTexture = render_target->depthStencilTexture;
+					dsvHandle = render_target->DSV->GetDescriptorHandle();
+					hasDepth = true;
+					target_height = render_target->height;
+				}
 			}
 			else
 			{
 				fb.colorTexture = render_target->colorTexture;
-				fb.rtv.cpuHandle = render_target->SRV->GetDescriptorHandle();
 				fb.depthStencilTexture = render_target->depthStencilTexture;
-				fb.dsv.cpuHandle = render_target->DSV->GetDescriptorHandle();
+				if (render_target->SRV)
+				{
+					rtvHandle = render_target->SRV->GetDescriptorHandle();
+					hasColor = render_target->colorTexture != nullptr;
+				}
+				if (render_target->DSV)
+				{
+					dsvHandle = render_target->DSV->GetDescriptorHandle();
+					hasDepth = render_target->depthStencilTexture != nullptr;
+				}
 				target_height = render_target->height;
-				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(fb.colorTexture.Get(),
-					D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+				if (fb.colorTexture)
+				{
+					m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(fb.colorTexture.Get(),
+						D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+				}
 			}
 
-			if (fb.colorTexture)
+			if (hasColor && hasDepth)
 			{
-				m_context->m_commandList->OMSetRenderTargets(1, &fb.rtv.cpuHandle, false, &fb.dsv.cpuHandle);
+				m_context->m_commandList->OMSetRenderTargets(1, &rtvHandle, false, &dsvHandle);
 			}
-			else
+			else if (hasDepth)
 			{
-				m_context->m_commandList->OMSetRenderTargets(0, nullptr, false, &fb.dsv.cpuHandle);
+				m_context->m_commandList->OMSetRenderTargets(0, nullptr, false, &dsvHandle);
+			}
+			else if (hasColor)
+			{
+				m_context->m_commandList->OMSetRenderTargets(1, &rtvHandle, false, nullptr);
 			}
 
 			// set viewport
@@ -694,9 +743,9 @@ namespace filament
 			// clear
 			if (params.flags.clear & filament::backend::TargetBufferFlags::COLOR)
 			{
-				if (fb.colorTexture)
+				if (hasColor)
 				{
-					m_context->m_commandList->ClearRenderTargetView(fb.rtv.cpuHandle, (float*) &params.clearColor, 0, nullptr);
+					m_context->m_commandList->ClearRenderTargetView(rtvHandle, (float*) &params.clearColor, 0, nullptr);
 				}
 			}
 			if (params.flags.clear & filament::backend::TargetBufferFlags::DEPTH ||
@@ -712,9 +761,9 @@ namespace filament
 					flags |= D3D12_CLEAR_FLAG_STENCIL;
 				}
 
-				if (fb.depthStencilTexture)
+				if (hasDepth)
 				{
-					m_context->m_commandList->ClearDepthStencilView(fb.dsv.cpuHandle, flags, 1.0f, 0, 0, nullptr);
+					m_context->m_commandList->ClearDepthStencilView(dsvHandle, flags, 1.0f, 0, 0, nullptr);
 				}
 			}
 			m_context->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -803,10 +852,38 @@ namespace filament
 
 		void D3D12Driver::commit(Handle<HwSwapChain> sch)
 		{
-			//Indicate a state transition on the resource usage.
 			SwapChainBuffer& scb = m_context->current_swap_chain->m_backbuffers[m_context->m_frameIndex];
-			m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(scb.buffer.Get(),
-				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+			FrameBuffer& msaaFb = m_context->m_framebuffers[m_context->m_frameIndex];
+
+			if (m_context->msaaSamples > 1 && msaaFb.colorTexture)
+			{
+				// Resolve MSAA color into the swapchain backbuffer, then present.
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					msaaFb.colorTexture.Get(),
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					D3D12_RESOURCE_STATE_RESOLVE_SOURCE));
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					scb.buffer.Get(),
+					D3D12_RESOURCE_STATE_PRESENT,
+					D3D12_RESOURCE_STATE_RESOLVE_DEST));
+				m_context->m_commandList->ResolveSubresource(
+					scb.buffer.Get(), 0,
+					msaaFb.colorTexture.Get(), 0,
+					DXGI_FORMAT_R8G8B8A8_UNORM);
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					msaaFb.colorTexture.Get(),
+					D3D12_RESOURCE_STATE_RESOLVE_SOURCE,
+					D3D12_RESOURCE_STATE_RENDER_TARGET));
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+					scb.buffer.Get(),
+					D3D12_RESOURCE_STATE_RESOLVE_DEST,
+					D3D12_RESOURCE_STATE_PRESENT));
+			}
+			else
+			{
+				m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(scb.buffer.Get(),
+					D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+			}
 
 			m_context->executeCommandList(false);
 			auto swap_chain = handle_cast<D3D12SwapChain>(m_handle_map, sch);

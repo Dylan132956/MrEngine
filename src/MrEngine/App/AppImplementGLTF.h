@@ -7,6 +7,7 @@
 #include "graphics/Material.h"
 #include "graphics/Shader.h"
 #include "graphics/PBREnvironment.h"
+#include "OrbitCameraController.h"
 
 namespace moonriver
 {
@@ -14,8 +15,7 @@ namespace moonriver
     {
     public:
         Camera* m_camera = nullptr;
-        Vector2 m_last_touch_pos;
-        Vector3 m_camera_rot = Vector3(5, 180, 0);
+        OrbitCameraController m_camera_controller;
         GLTFAsyncLoadHandle m_gltf_async_handle;
         std::shared_ptr<Entity> m_model;
         std::shared_ptr<Entity> m_skybox;
@@ -108,8 +108,8 @@ namespace moonriver
             std::shared_ptr<Camera> camera = m_pScene->CreateEntity("camera")->AddComponent<Camera>();
             Camera::SetMainCamera(camera);
             m_camera = camera.get();
-            camera->GetTransform()->SetPosition(Vector3(0.f, 0.0f, 3.5f));
-            camera->GetTransform()->SetRotation(Quaternion::Euler(m_camera_rot));
+            // Model is recentered to the origin once loaded; same framing as the previous fixed camera.
+            m_camera_controller.Init(m_camera, Vector3(0, 0, 0), 3.5f, 5.0f, 180.0f);
             camera->SetNearClip(0.03f);
             camera->SetFarClip(100);
             camera->SetDepth(2);
@@ -149,6 +149,8 @@ namespace moonriver
 
         void Update()
         {
+            m_camera_controller.Update();
+
             if (!m_gltf_async_done && m_gltf_async_handle.IsDone())
             {
                 m_gltf_async_done = true;
@@ -158,8 +160,7 @@ namespace moonriver
                     if (m_model)
                     {
                         AABB aabb = m_model->RecalculateBoundsInternal();
-                        m_model->GetTransform()->SetPosition(-aabb.GetCenter());
-                        m_model->GetTransform()->SetRotation(Quaternion::Euler(0, 0, 0));
+                        m_camera_controller.SetModel(m_model->GetTransform(), aabb.GetCenter());
 
                         auto animations = m_model->GetComponentsInChildren<Animation>();
                         if (animations.size() > 0)

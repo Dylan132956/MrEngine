@@ -434,7 +434,15 @@ MetalRenderTarget::MetalRenderTarget(MetalContext* context, uint32_t width, uint
 
 id<MTLTexture> MetalRenderTarget::getColor() {
     if (defaultRenderTarget) {
-        return acquireDrawable(context).texture;
+        id<MTLTexture> drawableTex = acquireDrawable(context).texture;
+        if (multisampledColor) {
+            if (color != drawableTex) {
+                [color release];
+                color = [drawableTex retain];
+            }
+            return multisampledColor;
+        }
+        return drawableTex;
     }
     if (multisampledColor) {
         return multisampledColor;
@@ -493,11 +501,17 @@ MTLStoreAction MetalRenderTarget::getStoreAction(const RenderPassParams& params,
     }
     if (buffer & TargetBufferFlags::COLOR) {
         const bool shouldResolveColor = (multisampledColor && color);
-        return shouldResolveColor ? MTLStoreActionMultisampleResolve : MTLStoreActionStore;
+        if (shouldResolveColor) {
+            return MTLStoreActionMultisampleResolve;
+        }
+        return multisampledColor ? MTLStoreActionDontCare : MTLStoreActionStore;
     }
     if (buffer & TargetBufferFlags::DEPTH) {
         const bool shouldResolveDepth = (multisampledDepth && depth);
-        return shouldResolveDepth ? MTLStoreActionMultisampleResolve : MTLStoreActionStore;
+        if (shouldResolveDepth) {
+            return MTLStoreActionMultisampleResolve;
+        }
+        return multisampledDepth ? MTLStoreActionDontCare : MTLStoreActionStore;
     }
     // Shouldn't get here.
     return MTLStoreActionStore;
@@ -511,18 +525,54 @@ MetalRenderTarget::~MetalRenderTarget() {
 }
     
 void MetalRenderTarget::createDepth(MTLPixelFormat format, uint32_t width, uint32_t height) {
-    MTLTextureDescriptor* descriptor =
-        [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
-                                                           width:width
-                                                          height:height
-                                                       mipmapped:false];
-    descriptor.mipmapLevelCount = 1;
-    descriptor.textureType = MTLTextureType2D;
-    descriptor.sampleCount = 1;
-    descriptor.usage = MTLTextureUsageRenderTarget;
-    descriptor.storageMode = MTLStorageModePrivate;
+    [depth release];
+    depth = nil;
+    [multisampledDepth release];
+    multisampledDepth = nil;
 
-    depth = [context->device newTextureWithDescriptor:descriptor];
+    if (samples > 1) {
+        multisampledDepth = createMultisampledTexture(context->device, format, width, height, samples);
+    } else {
+        MTLTextureDescriptor* descriptor =
+            [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:format
+                                                               width:width
+                                                              height:height
+                                                           mipmapped:false];
+        descriptor.mipmapLevelCount = 1;
+        descriptor.textureType = MTLTextureType2D;
+        descriptor.sampleCount = 1;
+        descriptor.usage = MTLTextureUsageRenderTarget;
+        descriptor.storageMode = MTLStorageModePrivate;
+        depth = [context->device newTextureWithDescriptor:descriptor];
+    }
+}
+
+void MetalRenderTarget::ensureDefaultMSAA(uint8_t sampleCount, id<MTLTexture> drawableTexture) {
+    if (!defaultRenderTarget || sampleCount <= 1 || !drawableTexture) {
+        return;
+    }
+    samples = sampleCount;
+    const uint32_t w = (uint32_t)drawableTexture.width;
+    const uint32_t h = (uint32_t)drawableTexture.height;
+    const MTLPixelFormat format = drawableTexture.pixelFormat;
+
+    if (multisampledColor &&
+        multisampledColor.width == w &&
+        multisampledColor.height == h &&
+        multisampledColor.pixelFormat == format &&
+        multisampledColor.sampleCount == sampleCount) {
+        return;
+    }
+
+    [multisampledColor release];
+    multisampledColor = createMultisampledTexture(context->device, format, w, h, sampleCount);
+
+    // Resolve target is the drawable; refreshed each frame in getColor().
+    [color release];
+    color = [drawableTexture retain];
+
+    this->width = w;
+    this->height = h;
 }
 
 id<MTLTexture> MetalRenderTarget::createMultisampledTexture(id<MTLDevice> device,

@@ -1,6 +1,7 @@
 
 #include "D3D11Context.h"
 #include <assert.h>
+#include <cstdio>
 
 namespace filament
 {
@@ -87,10 +88,85 @@ namespace filament
 
 			SAFE_RELEASE(device_0);
 			SAFE_RELEASE(context_0);
+
+			// Determine maximum supported MSAA level for the swapchain color format.
+			UINT samples;
+			for (samples = maxSamples; samples > 1; samples /= 2) {
+				UINT colorLevels = 0;
+				UINT depthLevels = 0;
+				device->CheckMultisampleQualityLevels(DXGI_FORMAT_B8G8R8A8_UNORM, samples, &colorLevels);
+				device->CheckMultisampleQualityLevels(DXGI_FORMAT_D24_UNORM_S8_UINT, samples, &depthLevels);
+				if (colorLevels > 0 && depthLevels > 0) {
+					break;
+				}
+			}
+			maxSamples = samples;
+			if (msaaSamples > maxSamples) {
+				msaaSamples = maxSamples;
+			}
+			std::printf("D3D11 MSAA samples: %u (max %u)\n", msaaSamples, maxSamples);
+		}
+
+		void D3D11Context::releaseMSAA()
+		{
+			SAFE_RELEASE(msaaColorView);
+			SAFE_RELEASE(msaaDepthView);
+			SAFE_RELEASE(msaaColor);
+			SAFE_RELEASE(msaaDepth);
+			msaaWidth = 0;
+			msaaHeight = 0;
+			msaaColorFormat = DXGI_FORMAT_UNKNOWN;
+		}
+
+		void D3D11Context::ensureMSAA(UINT width, UINT height, DXGI_FORMAT colorFormat)
+		{
+			if (msaaSamples <= 1) {
+				return;
+			}
+			if (msaaColor && msaaWidth == width && msaaHeight == height && msaaColorFormat == colorFormat) {
+				return;
+			}
+			releaseMSAA();
+			msaaWidth = width;
+			msaaHeight = height;
+			msaaColorFormat = colorFormat;
+
+			D3D11_TEXTURE2D_DESC1 colorDesc = {};
+			colorDesc.Width = width;
+			colorDesc.Height = height;
+			colorDesc.MipLevels = 1;
+			colorDesc.ArraySize = 1;
+			colorDesc.Format = colorFormat;
+			colorDesc.SampleDesc.Count = msaaSamples;
+			colorDesc.SampleDesc.Quality = 0;
+			colorDesc.Usage = D3D11_USAGE_DEFAULT;
+			colorDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+			HRESULT hr = device->CreateTexture2D1(&colorDesc, nullptr, &msaaColor);
+			assert(SUCCEEDED(hr));
+
+			D3D11_RENDER_TARGET_VIEW_DESC1 rtvDesc = {};
+			rtvDesc.Format = colorFormat;
+			rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+			hr = device->CreateRenderTargetView1(msaaColor, &rtvDesc, &msaaColorView);
+			assert(SUCCEEDED(hr));
+
+			D3D11_TEXTURE2D_DESC1 depthDesc = colorDesc;
+			depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+			hr = device->CreateTexture2D1(&depthDesc, nullptr, &msaaDepth);
+			assert(SUCCEEDED(hr));
+
+			D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+			dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+			hr = device->CreateDepthStencilView(msaaDepth, &dsvDesc, &msaaDepthView);
+			assert(SUCCEEDED(hr));
 		}
 
 		D3D11Context::~D3D11Context()
 		{
+			releaseMSAA();
+
 			for (auto i : samplers)
 			{
 				SAFE_RELEASE(i.second);

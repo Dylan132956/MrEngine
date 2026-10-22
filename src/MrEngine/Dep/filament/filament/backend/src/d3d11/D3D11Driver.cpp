@@ -322,6 +322,7 @@ namespace filament
 
 		void D3D11Driver::destroySwapChain(Handle<HwSwapChain> sch)
 		{
+			m_context->releaseMSAA();
 			destruct_handle<D3D11SwapChain>(m_handle_map, sch);
 		}
 
@@ -572,23 +573,33 @@ namespace filament
 			// set render target
 			if (render_target->default_render_target)
 			{
-				color = m_context->current_swap_chain->color_view;
-				
-				if (render_target->depth_view == nullptr)
-				{
-					DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = { };
-					m_context->current_swap_chain->swap_chain->GetDesc1(&swap_chain_desc);
-
-					render_target->CreateDepth(
-						m_context,
-						DXGI_FORMAT_D24_UNORM_S8_UINT,
-						swap_chain_desc.Width,
-						swap_chain_desc.Height);
-					render_target->height = swap_chain_desc.Height;
-				}
-
-				depth = render_target->depth_view;
+				DXGI_SWAP_CHAIN_DESC1 swap_chain_desc = { };
+				m_context->current_swap_chain->swap_chain->GetDesc1(&swap_chain_desc);
+				render_target->width = swap_chain_desc.Width;
+				render_target->height = swap_chain_desc.Height;
 				target_height = render_target->height;
+
+				if (m_context->msaaSamples > 1)
+				{
+					m_context->ensureMSAA(swap_chain_desc.Width, swap_chain_desc.Height, swap_chain_desc.Format);
+					color = m_context->msaaColorView;
+					depth = m_context->msaaDepthView;
+				}
+				else
+				{
+					color = m_context->current_swap_chain->color_view;
+
+					if (render_target->depth_view == nullptr)
+					{
+						render_target->CreateDepth(
+							m_context,
+							DXGI_FORMAT_D24_UNORM_S8_UINT,
+							swap_chain_desc.Width,
+							swap_chain_desc.Height);
+					}
+
+					depth = render_target->depth_view;
+				}
 			}
 			else
 			{
@@ -720,6 +731,17 @@ namespace filament
 		void D3D11Driver::commit(Handle<HwSwapChain> sch)
 		{
 			auto swap_chain = handle_cast<D3D11SwapChain>(m_handle_map, sch);
+			if (m_context->msaaSamples > 1 && m_context->msaaColor)
+			{
+				ID3D11Texture2D1* back_buffer = nullptr;
+				HRESULT hrGet = swap_chain->swap_chain->GetBuffer(0, IID_PPV_ARGS(&back_buffer));
+				assert(SUCCEEDED(hrGet));
+				m_context->context->ResolveSubresource(
+					back_buffer, 0,
+					m_context->msaaColor, 0,
+					m_context->msaaColorFormat);
+				SAFE_RELEASE(back_buffer);
+			}
 			DXGI_PRESENT_PARAMETERS parameters = { };
 			HRESULT hr = swap_chain->swap_chain->Present1(1, 0, &parameters);
 			assert(SUCCEEDED(hr));

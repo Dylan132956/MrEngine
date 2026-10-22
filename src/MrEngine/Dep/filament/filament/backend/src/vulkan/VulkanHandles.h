@@ -59,16 +59,22 @@ struct VulkanRenderTarget : private HwRenderTarget {
     VkExtent2D getExtent() const;
     VulkanAttachment getColor() const;
     VulkanAttachment getDepth() const;
+    VulkanAttachment getResolveColor() const;
     uint32_t getColorLevel() const { return mColorLevel; }
+    uint32_t getSamples() const { return mSamples; }
     void createDepthImage(VkFormat format);
+    void ensureDefaultMSAA(uint32_t samples, VkFormat colorFormat);
     void setColorImage(VulkanAttachment c);
     void setDepthImage(VulkanAttachment d);
 private:
+    void destroyMsaaImages();
     VulkanAttachment mColor = {};
     VulkanAttachment mDepth = {};
+    VulkanAttachment mMsaaColor = {};
     VulkanContext& mContext;
     bool mOffscreen;
     uint32_t mColorLevel;
+    uint32_t mSamples = 1;
     bool mSharedColorImage = true;
     bool mSharedDepthImage = true;
 };

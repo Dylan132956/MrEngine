@@ -27,9 +27,11 @@ namespace filament
 
 		void MD3D12View::Destroy()
 		{
-			if (HeapSlotAllocator)
+			if (HeapSlotAllocator && HeapSlot.Handle.ptr != 0)
 			{
 				HeapSlotAllocator->FreeHeapSlot(HeapSlot);
+				HeapSlot = {};
+				HeapSlotAllocator = nullptr;
 			}
 		}
 

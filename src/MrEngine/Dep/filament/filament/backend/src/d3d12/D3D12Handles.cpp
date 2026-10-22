@@ -52,27 +52,26 @@ namespace filament
 			context->m_dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
 			// Create window swap chain.
 			// Create per-frame resources.
+			const UINT samples = context->msaaSamples > 1 ? context->msaaSamples : 1;
 			for (UINT frameIndex = 0; frameIndex < context->NumFrames; ++frameIndex) {
 				if (FAILED(m_swapChain->GetBuffer(frameIndex, IID_PPV_ARGS(&m_backbuffers[frameIndex].buffer)))) {
 					throw std::runtime_error("Failed to retrieve swap chain back buffer");
 				}
 
-				//m_backbuffers[frameIndex].rtv = context->m_descHeapRTV.alloc();
 				D3D12_RENDER_TARGET_VIEW_DESC RtvDesc = {};
 				RtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 				RtvDesc.Texture2D.MipSlice = 0;
 				RtvDesc.Texture2D.PlaneSlice = 0;
 				RtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 				m_backbuffers[frameIndex].RTV = std::make_unique<MD3D12RenderTargetView>(context, RtvDesc, m_backbuffers[frameIndex].buffer.Get());
-				//context->m_device->CreateRenderTargetView(m_backbuffers[frameIndex].buffer.Get(), nullptr, m_backbuffers[frameIndex].rtv.cpuHandle);
 
-				//context->m_framebuffers[frameIndex] = context->createFrameBuffer(window_width, window_height, samples, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT);
-				//if (samples > 1) {
-				//	context->m_resolveFramebuffers[frameIndex] = context->createFrameBuffer(window_width, window_height, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, (DXGI_FORMAT)0);
-				//}
-				//else {
-				//	context->m_resolveFramebuffers[frameIndex] = context->m_framebuffers[frameIndex];
-				//}
+				// MSAA color+depth for the default pass; resolved into the swapchain on commit.
+				context->m_framebuffers[frameIndex] = context->createFrameBuffer(
+					(UINT)window_width,
+					(UINT)window_height,
+					samples,
+					DXGI_FORMAT_R8G8B8A8_UNORM,
+					DXGI_FORMAT_D24_UNORM_S8_UINT);
 			}
 		}
 
@@ -99,6 +98,7 @@ namespace filament
 			HwRenderTarget(0, 0)
 		{
 			default_render_target = true;
+			samples = context->msaaSamples > 1 ? context->msaaSamples : 1;
 		}
 
 		D3D12RenderTarget::~D3D12RenderTarget()
@@ -337,7 +337,19 @@ namespace filament
 
 		ComPtr<ID3D12PipelineState> D3D12Program::GetPSO(D3D12Context* context, const backend::PipelineState& ps)
 		{
-			if (m_PipelineState == nullptr) {
+			UINT samples = 1;
+			if (context->current_render_target && context->current_render_target->samples > 0)
+			{
+				samples = context->current_render_target->samples;
+			}
+			else if (context->msaaSamples > 1)
+			{
+				samples = context->msaaSamples;
+			}
+
+			if (m_PipelineState == nullptr || m_psoSamples != samples) {
+				m_PipelineState.Reset();
+				m_psoSamples = samples;
 				UINT total_size = vert_cbv.size() + vert_srv.size() + frag_cbv.size() + frag_srv.size();
 				std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
 				std::vector<CD3DX12_DESCRIPTOR_RANGE1> descriptorRanges;
@@ -421,7 +433,7 @@ namespace filament
 				psoDesc.NumRenderTargets = 1;
 				psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 				psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-				psoDesc.SampleDesc.Count = 1;
+				psoDesc.SampleDesc.Count = samples;
 				psoDesc.SampleMask = UINT_MAX;
 
 				if (FAILED(context->m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)))) {

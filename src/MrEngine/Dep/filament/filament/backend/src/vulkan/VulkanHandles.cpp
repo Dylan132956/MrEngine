@@ -88,7 +88,18 @@ VulkanProgram::~VulkanProgram() {
     vkDestroyShaderModule(context.device, bundle.fragment, VKALLOC);
 }
 
+static VkSampleCountFlagBits toVkSampleCount(uint32_t samples) {
+    switch (samples) {
+        case 2: return VK_SAMPLE_COUNT_2_BIT;
+        case 4: return VK_SAMPLE_COUNT_4_BIT;
+        case 8: return VK_SAMPLE_COUNT_8_BIT;
+        case 16: return VK_SAMPLE_COUNT_16_BIT;
+        default: return VK_SAMPLE_COUNT_1_BIT;
+    }
+}
+
 VulkanRenderTarget::~VulkanRenderTarget() {
+    destroyMsaaImages();
     if (!mSharedColorImage) {
         vkDestroyImageView(mContext.device, mColor.view, VKALLOC);
         vkDestroyImage(mContext.device, mColor.image, VKALLOC);
@@ -98,6 +109,15 @@ VulkanRenderTarget::~VulkanRenderTarget() {
         vkDestroyImageView(mContext.device, mDepth.view, VKALLOC);
         vkDestroyImage(mContext.device, mDepth.image, VKALLOC);
         vkFreeMemory(mContext.device, mDepth.memory, VKALLOC);
+    }
+}
+
+void VulkanRenderTarget::destroyMsaaImages() {
+    if (mMsaaColor.view) {
+        vkDestroyImageView(mContext.device, mMsaaColor.view, VKALLOC);
+        vkDestroyImage(mContext.device, mMsaaColor.image, VKALLOC);
+        vkFreeMemory(mContext.device, mMsaaColor.memory, VKALLOC);
+        mMsaaColor = {};
     }
 }
 
@@ -152,11 +172,100 @@ VkExtent2D VulkanRenderTarget::getExtent() const {
 }
 
 VulkanAttachment VulkanRenderTarget::getColor() const {
-    return mOffscreen ? mColor : getSwapContext(mContext).attachment;
+    if (mOffscreen) {
+        return mColor;
+    }
+    if (mSamples > 1 && mMsaaColor.image) {
+        return mMsaaColor;
+    }
+    return getSwapContext(mContext).attachment;
+}
+
+VulkanAttachment VulkanRenderTarget::getResolveColor() const {
+    if (!mOffscreen && mSamples > 1 && mMsaaColor.image) {
+        return getSwapContext(mContext).attachment;
+    }
+    return {};
 }
 
 VulkanAttachment VulkanRenderTarget::getDepth() const {
     return mDepth;
+}
+
+void VulkanRenderTarget::ensureDefaultMSAA(uint32_t samples, VkFormat colorFormat) {
+    if (mOffscreen || samples <= 1) {
+        return;
+    }
+    const VkExtent2D extent = getExtent();
+    if (mMsaaColor.image && mSamples == samples && mMsaaColor.format == colorFormat &&
+        (uint32_t)this->width == extent.width && (uint32_t)this->height == extent.height) {
+        return;
+    }
+    this->width = extent.width;
+    this->height = extent.height;
+
+    // Cap to device limits.
+    const auto& limits = mContext.physicalDeviceProperties.limits;
+    VkSampleCountFlags supported = limits.framebufferColorSampleCounts & limits.framebufferDepthSampleCounts;
+    while (samples > 1 && (supported & toVkSampleCount(samples)) == 0) {
+        samples /= 2;
+    }
+    if (samples <= 1) {
+        mSamples = 1;
+        destroyMsaaImages();
+        return;
+    }
+
+    destroyMsaaImages();
+    if (!mSharedDepthImage && mDepth.image) {
+        vkDestroyImageView(mContext.device, mDepth.view, VKALLOC);
+        vkDestroyImage(mContext.device, mDepth.image, VKALLOC);
+        vkFreeMemory(mContext.device, mDepth.memory, VKALLOC);
+        mDepth = {};
+        mSharedDepthImage = true;
+    }
+
+    mSamples = samples;
+    const VkSampleCountFlagBits vkSamples = toVkSampleCount(samples);
+
+    VkImageCreateInfo colorInfo = {};
+    colorInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    colorInfo.imageType = VK_IMAGE_TYPE_2D;
+    colorInfo.extent = { extent.width, extent.height, 1 };
+    colorInfo.format = colorFormat;
+    colorInfo.mipLevels = 1;
+    colorInfo.arrayLayers = 1;
+    colorInfo.samples = vkSamples;
+    colorInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    colorInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    colorInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VkResult error = vkCreateImage(mContext.device, &colorInfo, VKALLOC, &mMsaaColor.image);
+    ASSERT_POSTCONDITION(!error, "Unable to create MSAA color image.");
+    mMsaaColor.format = colorFormat;
+
+    VkMemoryRequirements memReqs;
+    vkGetImageMemoryRequirements(mContext.device, mMsaaColor.image, &memReqs);
+    VkMemoryAllocateInfo allocInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr, memReqs.size,
+        selectMemoryType(mContext, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+    };
+    error = vkAllocateMemory(mContext.device, &allocInfo, nullptr, &mMsaaColor.memory);
+    ASSERT_POSTCONDITION(!error, "Unable to allocate MSAA color memory.");
+    error = vkBindImageMemory(mContext.device, mMsaaColor.image, mMsaaColor.memory, 0);
+    ASSERT_POSTCONDITION(!error, "Unable to bind MSAA color memory.");
+
+    VkImageViewCreateInfo viewInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0, mMsaaColor.image,
+        VK_IMAGE_VIEW_TYPE_2D, colorFormat,
+        {}, { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+    };
+    error = vkCreateImageView(mContext.device, &viewInfo, VKALLOC, &mMsaaColor.view);
+    ASSERT_POSTCONDITION(!error, "Unable to create MSAA color view.");
+
+    printf("Vulkan MSAA samples: %u (%ux%u)\n", (unsigned)mSamples, extent.width, extent.height);
+
+    // Depth will be (re)created with matching sample count on demand.
 }
 
 void VulkanRenderTarget::createDepthImage(VkFormat format) {
@@ -179,7 +288,7 @@ void VulkanRenderTarget::createDepthImage(VkFormat format) {
 	depthImageInfo.mipLevels = 1;
 	depthImageInfo.arrayLayers = 1;
 	depthImageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	depthImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthImageInfo.samples = toVkSampleCount(mSamples);
 
     VkResult error = vkCreateImage(mContext.device, &depthImageInfo, VKALLOC, &mDepth.image);
     ASSERT_POSTCONDITION(!error, "Unable to create depth attachment.");

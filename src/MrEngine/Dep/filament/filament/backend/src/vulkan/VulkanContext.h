@@ -85,6 +85,9 @@ struct VulkanContext {
     VkFormat depthFormat;
     VmaAllocator allocator;
 
+    // Preferred MSAA sample count for the default (swapchain) pass. 1 disables MSAA.
+    uint32_t msaaSamples = 4;
+
     // The work context is used for activities unrelated to the swap chain or draw calls, such as
     // uploads, blits, and transitions.
     VulkanCommandBuffer work;

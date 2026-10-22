@@ -600,7 +600,11 @@ void MetalDriver::beginRenderPass(Handle<HwRenderTarget> rth,
     const auto discardColor = (discardFlags & TargetBufferFlags::COLOR);
     const auto discardDepth = (discardFlags & TargetBufferFlags::DEPTH);
 
-    // Color
+    // Color — for the default target, optionally create MSAA targets that resolve into the drawable.
+    if (renderTarget->isDefaultRenderTarget() && mContext->msaaSamples > 1) {
+        id<MTLTexture> drawableTex = acquireDrawable(mContext).texture;
+        renderTarget->ensureDefaultMSAA(mContext->msaaSamples, drawableTex);
+    }
 
     const auto& colorAttachment = descriptor.colorAttachments[0];
     colorAttachment.texture = renderTarget->getColor();
@@ -618,7 +622,10 @@ void MetalDriver::beginRenderPass(Handle<HwRenderTarget> rth,
     // Depth
     
     if (mContext->currentRenderTarget->isDefaultRenderTarget()) {
-        if (renderTarget->getDepth() == nil) {
+        if (renderTarget->getDepth() == nil ||
+            renderTarget->getDepth().width != colorAttachment.texture.width ||
+            renderTarget->getDepth().height != colorAttachment.texture.height ||
+            renderTarget->getDepth().sampleCount != renderTarget->getSamples()) {
 #if VR_MAC
             MTLPixelFormat depthFormat = MTLPixelFormatDepth24Unorm_Stencil8;
             if (!mContext->device.depth24Stencil8PixelFormatSupported) {

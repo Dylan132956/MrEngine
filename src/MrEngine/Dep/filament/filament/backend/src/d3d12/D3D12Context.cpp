@@ -79,10 +79,10 @@ namespace filament
 
 			std::printf("Direct3D 12 Renderer [%s]\n", dxgiAdapterDescription.c_str());
 
-			// Determine maximum supported MSAA level.
+			// Determine maximum supported MSAA level for the swapchain color format.
 			UINT samples;
 			for (samples = maxSamples; samples > 1; samples /= 2) {
-				D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS mqlColor = { DXGI_FORMAT_R16G16B16A16_FLOAT, samples };
+				D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS mqlColor = { DXGI_FORMAT_R8G8B8A8_UNORM, samples };
 				D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS mqlDepthStencil = { DXGI_FORMAT_D24_UNORM_S8_UINT, samples };
 				m_device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &mqlColor, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS));
 				m_device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &mqlDepthStencil, sizeof(D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS));
@@ -90,6 +90,11 @@ namespace filament
 					break;
 				}
 			}
+			maxSamples = samples;
+			if (msaaSamples > maxSamples) {
+				msaaSamples = maxSamples;
+			}
+			std::printf("MSAA samples: %u (max %u)\n", msaaSamples, maxSamples);
 
 			for (UINT frameIndex = 0; frameIndex < NumFrames; ++frameIndex) {
 
@@ -288,81 +293,75 @@ namespace filament
 			return heap;
 		}
 
-		//FrameBuffer D3D12Context::createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat)
-		//{
-		//	FrameBuffer fb = {};
-		//	fb.width = width;
-		//	fb.height = height;
-		//	fb.samples = samples;
+		FrameBuffer D3D12Context::createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat)
+		{
+			FrameBuffer fb = {};
+			fb.width = width;
+			fb.height = height;
+			fb.samples = samples;
 
-		//	D3D12_RESOURCE_DESC desc = {};
-		//	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		//	desc.Width = width;
-		//	desc.Height = height;
-		//	desc.DepthOrArraySize = 1;
-		//	desc.MipLevels = 1;
-		//	desc.SampleDesc.Count = samples;
+			D3D12_RESOURCE_DESC desc = {};
+			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			desc.Width = width;
+			desc.Height = height;
+			desc.DepthOrArraySize = 1;
+			desc.MipLevels = 1;
+			desc.SampleDesc.Count = samples;
 
-		//	if (colorFormat != DXGI_FORMAT_UNKNOWN) {
-		//		desc.Format = colorFormat;
-		//		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+			if (colorFormat != DXGI_FORMAT_UNKNOWN) {
+				desc.Format = colorFormat;
+				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
-		//		const float optimizedClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		//		if (FAILED(m_device->CreateCommittedResource(
-		//			&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-		//			D3D12_HEAP_FLAG_NONE,
-		//			&desc,
-		//			D3D12_RESOURCE_STATE_RENDER_TARGET,
-		//			&CD3DX12_CLEAR_VALUE{ colorFormat, optimizedClearColor },
-		//			IID_PPV_ARGS(&fb.colorTexture))))
-		//		{
-		//			throw std::runtime_error("Failed to create FrameBuffer color texture");
-		//		}
+				const float optimizedClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+				if (FAILED(m_device->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+					D3D12_HEAP_FLAG_NONE,
+					&desc,
+					D3D12_RESOURCE_STATE_RENDER_TARGET,
+					&CD3DX12_CLEAR_VALUE{ colorFormat, optimizedClearColor },
+					IID_PPV_ARGS(&fb.colorTexture))))
+				{
+					throw std::runtime_error("Failed to create FrameBuffer color texture");
+				}
 
-		//		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-		//		rtvDesc.Format = desc.Format;
-		//		rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
+				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+				rtvDesc.Format = desc.Format;
+				rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
+				fb.RTV = std::make_unique<MD3D12RenderTargetView>(this, rtvDesc, fb.colorTexture.Get());
 
-		//		fb.rtv = m_descHeapRTV.alloc();
-		//		m_device->CreateRenderTargetView(fb.colorTexture.Get(), &rtvDesc, fb.rtv.cpuHandle);
+				if (samples <= 1) {
+					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+					srvDesc.Format = desc.Format;
+					srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+					srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+					srvDesc.Texture2D.MostDetailedMip = 0;
+					srvDesc.Texture2D.MipLevels = 1;
+					fb.SRV = std::make_unique<MD3D12ShaderResourceView>(this, srvDesc, fb.colorTexture.Get());
+				}
+			}
 
-		//		if (samples <= 1) {
-		//			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		//			srvDesc.Format = desc.Format;
-		//			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		//			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		//			srvDesc.Texture2D.MostDetailedMip = 0;
-		//			srvDesc.Texture2D.MipLevels = 1;
+			if (depthstencilFormat != DXGI_FORMAT_UNKNOWN) {
+				desc.Format = depthstencilFormat;
+				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
 
-		//			fb.srv = m_descHeapCBV_SRV_UAV.alloc();
-		//			m_device->CreateShaderResourceView(fb.colorTexture.Get(), &srvDesc, fb.srv.cpuHandle);
-		//		}
-		//	}
+				if (FAILED(m_device->CreateCommittedResource(
+					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+					D3D12_HEAP_FLAG_NONE,
+					&desc,
+					D3D12_RESOURCE_STATE_DEPTH_WRITE,
+					&CD3DX12_CLEAR_VALUE{ depthstencilFormat, 1.0f, 0 },
+					IID_PPV_ARGS(&fb.depthStencilTexture))))
+				{
+					throw std::runtime_error("Failed to create FrameBuffer depth-stencil texture");
+				}
 
-		//	if (depthstencilFormat != DXGI_FORMAT_UNKNOWN) {
-		//		desc.Format = depthstencilFormat;
-		//		desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-
-		//		if (FAILED(m_device->CreateCommittedResource(
-		//			&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-		//			D3D12_HEAP_FLAG_NONE,
-		//			&desc,
-		//			D3D12_RESOURCE_STATE_DEPTH_WRITE,
-		//			&CD3DX12_CLEAR_VALUE{ depthstencilFormat, 1.0f, 0 },
-		//			IID_PPV_ARGS(&fb.depthStencilTexture))))
-		//		{
-		//			throw std::runtime_error("Failed to create FrameBuffer depth-stencil texture");
-		//		}
-
-		//		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-		//		dsvDesc.Format = desc.Format;
-		//		dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
-
-		//		fb.dsv = m_descHeapDSV.alloc();
-		//		m_device->CreateDepthStencilView(fb.depthStencilTexture.Get(), &dsvDesc, fb.dsv.cpuHandle);
-		//	}
-		//	return fb;
-		//}
+				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+				dsvDesc.Format = desc.Format;
+				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+				fb.DSV = std::make_unique<MD3D12DepthStencilView>(this, dsvDesc, fb.depthStencilTexture.Get());
+			}
+			return fb;
+		}
 
 		void D3D12Context::TransitionResource(MD3D12Resource* Resource, D3D12_RESOURCE_STATES StateAfter)
 		{
@@ -423,7 +422,11 @@ namespace filament
 
 		D3D12Context::~D3D12Context()
 		{
-
+			// Release MSAA targets before descriptor heaps (declared later) are destroyed.
+			for (UINT i = 0; i < NumFrames; ++i)
+			{
+				m_framebuffers[i] = FrameBuffer{};
+			}
 		}
 
 		void D3D12Context::SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc)

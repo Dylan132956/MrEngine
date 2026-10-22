@@ -737,8 +737,11 @@ void VulkanDriver::beginRenderPass(Handle<HwRenderTarget> rth,
     mDisposer.acquire(rt, mContext.currentCommands->resources);
 
 	if (!rt->isOffscreen()) {
-		if (rt->getDepth().format == VK_FORMAT_UNDEFINED) {
-			// create depth image for default render target
+		const auto swapColor = getSwapContext(mContext).attachment;
+		rt->ensureDefaultMSAA(mContext.msaaSamples, swapColor.format);
+		if (rt->getDepth().format == VK_FORMAT_UNDEFINED ||
+			rt->getDepth().image == VK_NULL_HANDLE) {
+			// create depth image for default render target (matches MSAA sample count)
 			rt->createDepthImage(mContext.depthFormat);
 		}
 	}
@@ -748,12 +751,16 @@ void VulkanDriver::beginRenderPass(Handle<HwRenderTarget> rth,
     const bool hasColor = color.format != VK_FORMAT_UNDEFINED;
     const bool hasDepth = depth.format != VK_FORMAT_UNDEFINED;
     const bool depthOnly = hasDepth && !hasColor;
+    const bool msaaDefault = !rt->isOffscreen() && rt->getSamples() > 1;
 
     VkImageLayout finalLayout;
     if (!rt->isOffscreen()) {
-        finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        // MSAA default targets resolve after the pass; keep COLOR_ATTACHMENT until then.
+        finalLayout = msaaDefault ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+                                  : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-		if ((params.flags.clear & TargetBufferFlags::COLOR) == 0 &&
+		if (!msaaDefault &&
+			(params.flags.clear & TargetBufferFlags::COLOR) == 0 &&
 			(params.flags.discardStart & TargetBufferFlags::COLOR) == 0) {
 			VulkanTexture::transitionImageLayout(
 				swapContext.commands.cmdbuffer,
@@ -792,8 +799,8 @@ void VulkanDriver::beginRenderPass(Handle<HwRenderTarget> rth,
 		params.flags.clear,
 		params.flags.discardStart,
 		params.flags.discardEnd,
-		params.flags.dependencies
-		
+		params.flags.dependencies,
+		rt->getSamples()
     });
     mBinder.bindRenderPass(renderPass);
 
@@ -864,7 +871,62 @@ void VulkanDriver::endRenderPass(int) {
     assert(mContext.currentCommands);
     assert(mContext.currentSurface);
     assert(mCurrentRenderTarget);
+    VulkanRenderTarget* rt = mCurrentRenderTarget;
     vkCmdEndRenderPass(mContext.currentCommands->cmdbuffer);
+
+    // Resolve MSAA default color into the swapchain image, then mark it presentable.
+    if (!rt->isOffscreen() && rt->getSamples() > 1) {
+        const auto src = rt->getColor();
+        const auto dst = rt->getResolveColor();
+        if (src.image && dst.image) {
+            VulkanTexture::transitionImageLayout(
+                mContext.currentCommands->cmdbuffer, src.image,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+
+            VulkanTexture::transitionImageLayout(
+                mContext.currentCommands->cmdbuffer, dst.image,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                (VkAccessFlagBits)0);
+
+            const VkExtent2D extent = rt->getExtent();
+            VkImageResolve region = {};
+            region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+            region.extent = { extent.width, extent.height, 1 };
+            vkCmdResolveImage(mContext.currentCommands->cmdbuffer,
+                src.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                dst.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &region);
+
+            VulkanTexture::transitionImageLayout(
+                mContext.currentCommands->cmdbuffer, dst.image,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                VK_ACCESS_TRANSFER_WRITE_BIT);
+
+            VulkanTexture::transitionImageLayout(
+                mContext.currentCommands->cmdbuffer, src.image,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_TRANSFER_READ_BIT);
+        }
+    }
+
     mCurrentRenderTarget = VK_NULL_HANDLE;
     mContext.currentRenderPass.renderPass = VK_NULL_HANDLE;
 }
@@ -1146,6 +1208,18 @@ void VulkanDriver::draw(PipelineState pipelineState, Handle<HwRenderPrimitive> r
     auto& vkraster = mContext.rasterState.rasterization;
     vkraster.cullMode = getCullMode(rasterState.culling);
     vkraster.frontFace = getFrontFace(rasterState.inverseFrontFaces);
+
+    // Match pipeline sample count to the current render target (required for MSAA).
+    uint32_t samples = mCurrentRenderTarget ? mCurrentRenderTarget->getSamples() : 1;
+    VkSampleCountFlagBits vkSamples = VK_SAMPLE_COUNT_1_BIT;
+    switch (samples) {
+        case 2: vkSamples = VK_SAMPLE_COUNT_2_BIT; break;
+        case 4: vkSamples = VK_SAMPLE_COUNT_4_BIT; break;
+        case 8: vkSamples = VK_SAMPLE_COUNT_8_BIT; break;
+        case 16: vkSamples = VK_SAMPLE_COUNT_16_BIT; break;
+        default: vkSamples = VK_SAMPLE_COUNT_1_BIT; break;
+    }
+    mContext.rasterState.multisampling.rasterizationSamples = vkSamples;
     vkraster.depthBiasEnable = (depthOffset.constant || depthOffset.slope) ? VK_TRUE : VK_FALSE;
     vkraster.depthBiasConstantFactor = depthOffset.constant;
     vkraster.depthBiasSlopeFactor = depthOffset.slope;

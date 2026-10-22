@@ -591,6 +591,18 @@ private:
 	GLuint mSharedDrawFramebuffer = 0;
 	GLuint mSharedReadFramebuffer = 0;
 	GLuint mSharedVAO = 0;
+
+	// Default (swapchain) MSAA. 1 disables.
+	uint8_t mDefaultMsaaSamples = 4;
+	GLuint mDefaultMsaaFbo = 0;
+	GLuint mDefaultMsaaColorRb = 0;
+	GLuint mDefaultMsaaDepthRb = 0;
+	GLuint mDefaultResolveFbo = 0;
+	uint32_t mDefaultMsaaWidth = 0;
+	uint32_t mDefaultMsaaHeight = 0;
+	backend::RenderTargetHandle mDefaultRenderTarget;
+	void ensureDefaultMSAA(GLRenderTarget* rt, uint32_t width, uint32_t height) noexcept;
+	void releaseDefaultMSAA() noexcept;
 };
 
 // ------------------------------------------------------------------------------------------------

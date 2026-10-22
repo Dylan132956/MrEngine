@@ -89,6 +89,7 @@ namespace filament
 
 			ComPtr<ID3D12RootSignature> m_RootSignature;
 			ComPtr<ID3D12PipelineState> m_PipelineState;
+			UINT m_psoSamples = 0;
 		};
 
 		struct D3D12UniformBuffer : public HwUniformBuffer
