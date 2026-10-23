@@ -1,5 +1,6 @@
 #include "D3D12Context.h"
 #include "D3D12DescriptorCache.h"
+#include <stdexcept>
 
 namespace filament
 {
@@ -38,7 +39,10 @@ namespace filament
 		{
 			// Append to heap
 			uint32_t SlotsNeeded = (uint32_t)SrcDescriptors.size();
-			assert(CbvSrvUavDescriptorOffset + SlotsNeeded < MaxCbvSrvUavDescripotrCount);
+			assert(CbvSrvUavDescriptorOffset + SlotsNeeded <= CbvSrvUavRegionEnd);
+			if (CbvSrvUavDescriptorOffset + SlotsNeeded > CbvSrvUavRegionEnd) {
+				throw std::runtime_error("D3D12 descriptor cache overflow for this frame");
+			}
 
 			auto CpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(CacheCbvSrvUavDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), CbvSrvUavDescriptorOffset, CbvSrvUavDescriptorSize);
 			m_context->m_device->CopyDescriptors(1, &CpuDescriptorHandle, &SlotsNeeded, SlotsNeeded, SrcDescriptors.data(), nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -52,9 +56,11 @@ namespace filament
 			return GpuDescriptorHandle;
 		}
 
-		void MD3D12DescriptorCache::ResetCacheCbvSrvUavDescriptorHeap()
+		void MD3D12DescriptorCache::ResetCacheCbvSrvUavDescriptorHeap(uint32_t FrameSlot)
 		{
-			CbvSrvUavDescriptorOffset = 0;
+			const uint32_t RegionSize = MaxCbvSrvUavDescripotrCount / kD3D12FrameSlots;
+			CbvSrvUavDescriptorOffset = (FrameSlot % kD3D12FrameSlots) * RegionSize;
+			CbvSrvUavRegionEnd = CbvSrvUavDescriptorOffset + RegionSize;
 		}
 
 		void MD3D12DescriptorCache::CreateCacheRtvDescriptorHeap()
@@ -75,7 +81,7 @@ namespace filament
 		{
 			// Append to heap
 			uint32_t SlotsNeeded = (uint32_t)RtvDescriptors.size();
-			assert(RtvDescriptorOffset + SlotsNeeded < MaxRtvDescriptorCount);
+			assert(RtvDescriptorOffset + SlotsNeeded <= RtvRegionEnd);
 
 			auto CpuDescriptorHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(CacheRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), RtvDescriptorOffset, RtvDescriptorSize);
 			m_context->m_device->CopyDescriptors(1, &CpuDescriptorHandle, &SlotsNeeded, SlotsNeeded, RtvDescriptors.data(), nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -88,16 +94,18 @@ namespace filament
 			RtvDescriptorOffset += SlotsNeeded;
 		}
 
-		void MD3D12DescriptorCache::ResetCacheRtvDescriptorHeap()
+		void MD3D12DescriptorCache::ResetCacheRtvDescriptorHeap(uint32_t FrameSlot)
 		{
-			RtvDescriptorOffset = 0;
+			const uint32_t RegionSize = MaxRtvDescriptorCount / kD3D12FrameSlots;
+			RtvDescriptorOffset = (FrameSlot % kD3D12FrameSlots) * RegionSize;
+			RtvRegionEnd = RtvDescriptorOffset + RegionSize;
 		}
 
-		void MD3D12DescriptorCache::Reset()
+		void MD3D12DescriptorCache::Reset(uint32_t FrameSlot)
 		{
-			ResetCacheCbvSrvUavDescriptorHeap();
+			ResetCacheCbvSrvUavDescriptorHeap(FrameSlot);
 
-			ResetCacheRtvDescriptorHeap();
+			ResetCacheRtvDescriptorHeap(FrameSlot);
 		}
 
 	}

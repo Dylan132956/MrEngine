@@ -13,9 +13,15 @@ namespace filament
 {
 	namespace backend
 	{
+		// Must match D3D12Context::NumFrames.
+		static const uint32_t kD3D12FrameSlots = 2;
+
 		class MD3D12BuddyAllocator
 		{
 		public:
+			// Frame slot currently being recorded; frees are queued against it.
+			static uint32_t CurrentFrameSlot;
+
 			enum class EAllocationStrategy
 			{
 				PlacedResource,
@@ -42,7 +48,7 @@ namespace filament
 
 			void Deallocate(MD3D12ResourceLocation& ResourceLocation);
 
-			void CleanUpAllocations();
+			void CleanUpAllocations(uint32_t FrameSlot);
 
 			ID3D12Heap* GetBackingHeap() { return BackingHeap; }
 
@@ -96,7 +102,7 @@ namespace filament
 
 			std::vector<std::set<uint32_t>> FreeBlocks;
 
-			std::vector<MD3D12BuddyBlockData> DeferredDeletionQueue;
+			std::vector<MD3D12BuddyBlockData> DeferredDeletionQueue[kD3D12FrameSlots];
 
 			ID3D12Device* D3DDevice;
 
@@ -114,7 +120,7 @@ namespace filament
 
 			bool AllocResource(uint32_t Size, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation);
 
-			void CleanUpAllocations();
+			void CleanUpAllocations(uint32_t FrameSlot);
 
 		private:
 			std::vector<std::shared_ptr<MD3D12BuddyAllocator>> Allocators;
@@ -131,7 +137,7 @@ namespace filament
 
 			void* AllocUploadResource(uint32_t Size, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation);
 
-			void CleanUpAllocations();
+			void CleanUpAllocations(uint32_t FrameSlot);
 
 		private:
 			std::unique_ptr<MD3D12MultiBuddyAllocator> Allocator = nullptr;
@@ -146,7 +152,7 @@ namespace filament
 
 			void AllocDefaultResource(const D3D12_RESOURCE_DESC& ResourceDesc, uint32_t Alignment, MD3D12ResourceLocation& ResourceLocation);
 
-			void CleanUpAllocations();
+			void CleanUpAllocations(uint32_t FrameSlot);
 
 		private:
 			std::unique_ptr<MD3D12MultiBuddyAllocator> Allocator = nullptr;
@@ -163,7 +169,7 @@ namespace filament
 
 			void AllocTextureResource(const D3D12_RESOURCE_STATES& ResourceState, const D3D12_RESOURCE_DESC& ResourceDesc, MD3D12ResourceLocation& ResourceLocation);
 
-			void CleanUpAllocations();
+			void CleanUpAllocations(uint32_t FrameSlot);
 
 		private:
 			std::unique_ptr<MD3D12MultiBuddyAllocator> Allocator = nullptr;

@@ -49,6 +49,8 @@ namespace filament
 				swapChain.As(&m_swapChain);
 			}
 			context->m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+			// GPU is idle (waitForGPU above), so the starting slot can be reclaimed.
+			context->ReclaimFrameSlot(context->m_frameIndex);
 			context->m_dxgiFactory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
 			// Create window swap chain.
 			// Create per-frame resources.
@@ -99,6 +101,9 @@ namespace filament
 		{
 			default_render_target = true;
 			samples = context->msaaSamples > 1 ? context->msaaSamples : 1;
+			// Matches the swapchain / MSAA framebuffer formats created in D3D12SwapChain.
+			colorFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+			depthFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		}
 
 		D3D12RenderTarget::~D3D12RenderTarget()
@@ -135,8 +140,6 @@ namespace filament
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
 
 				DSV = std::make_unique<MD3D12DepthStencilView>(context, dsvDesc, depthStencilTexture.Get());
-				//dsv = context->m_descHeapDSV.alloc();
-				//context->m_device->CreateDepthStencilView(depthStencilTexture.Get(), &dsvDesc, dsv.cpuHandle);
 			}
 		}
 
@@ -335,7 +338,79 @@ namespace filament
 			info = std::move(program);
 		}
 
-		ComPtr<ID3D12PipelineState> D3D12Program::GetPSO(D3D12Context* context, const backend::PipelineState& ps)
+		void D3D12Program::EnsureRootSignature(D3D12Context* context)
+		{
+			if (m_RootSignature) {
+				return;
+			}
+
+			UINT total_size = (UINT)(vert_cbv.size() + vert_srv.size() + vert_sam.size() +
+				frag_cbv.size() + frag_srv.size() + frag_sam.size());
+			std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters(total_size);
+			std::vector<CD3DX12_DESCRIPTOR_RANGE1> descriptorRanges(total_size);
+
+			UINT index = 0;
+			for (size_t i = 0; i < vert_cbv.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_cbv[i];
+				rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_VERTEX);
+				vert_cbv_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+			for (size_t i = 0; i < vert_srv.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_srv[i];
+				descriptorRanges[index] = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
+				rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
+				vert_srv_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+			for (size_t i = 0; i < frag_cbv.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_cbv[i];
+				rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
+				frag_cbv_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+			for (size_t i = 0; i < frag_srv.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_srv[i];
+				descriptorRanges[index] = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
+				rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
+				frag_srv_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+
+			for (size_t i = 0; i < vert_sam.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_sam[i];
+				descriptorRanges[index] = { D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE };
+				rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
+				vert_sam_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+			for (size_t i = 0; i < frag_sam.size(); ++i)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_sam[i];
+				descriptorRanges[index] = { D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE };
+				rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
+				frag_sam_map[bind_desc.BindPoint] = index;
+				index++;
+			}
+
+			CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC signatureDesc;
+			signatureDesc.Init_1_1(
+				(UINT)rootParameters.size(), rootParameters.data(),
+				0, nullptr,
+				D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+			m_RootSignature = context->createRootSignature(signatureDesc);
+		}
+
+		ComPtr<ID3D12PipelineState> D3D12Program::GetPSO(
+			D3D12Context* context,
+			const backend::PipelineState& ps,
+			const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputLayout,
+			uint64_t inputLayoutKey)
 		{
 			UINT samples = 1;
 			if (context->current_render_target && context->current_render_target->samples > 0)
@@ -347,100 +422,62 @@ namespace filament
 				samples = context->msaaSamples;
 			}
 
-			if (m_PipelineState == nullptr || m_psoSamples != samples) {
-				m_PipelineState.Reset();
-				m_psoSamples = samples;
-				UINT total_size = vert_cbv.size() + vert_srv.size() + frag_cbv.size() + frag_srv.size();
-				std::vector<CD3DX12_ROOT_PARAMETER1> rootParameters;
-				std::vector<CD3DX12_DESCRIPTOR_RANGE1> descriptorRanges;
-				rootParameters.resize(total_size);
-				descriptorRanges.resize(total_size);
-
-				UINT index = 0;
-				for (size_t i = 0; i < vert_cbv.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_cbv[i];
-					//CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
-					//descriptorRanges[index] = descriptor;
-					//rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
-					rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_VERTEX);
-					vert_cbv_map[bind_desc.BindPoint] = index;
-					index++;
-				}
-				for (size_t i = 0; i < vert_srv.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_srv[i];
-					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
-					descriptorRanges[index] = descriptor;
-					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_VERTEX);
-					vert_srv_map[bind_desc.BindPoint] = index;
-					index++;
-				}
-				//
-				for (size_t i = 0; i < frag_cbv.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_cbv[i];
-					//const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC };
-					//descriptorRanges[index] = descriptor;
-					//rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
-					rootParameters[index].InitAsConstantBufferView(bind_desc.BindPoint, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
-					frag_cbv_map[bind_desc.BindPoint] = index;
-					index++;
-				}
-				for (size_t i = 0; i < frag_srv.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_srv[i];
-					const CD3DX12_DESCRIPTOR_RANGE1 descriptor = { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bind_desc.BindPoint, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE };
-					descriptorRanges[index] = descriptor;
-					rootParameters[index].InitAsDescriptorTable(1, &descriptorRanges[index], D3D12_SHADER_VISIBILITY_PIXEL);
-					frag_srv_map[bind_desc.BindPoint] = index;
-					index++;
-				}
-
-				std::vector<CD3DX12_STATIC_SAMPLER_DESC> defaultSamplerDescs;
-				UINT sam_size = vert_sam.size() + frag_sam.size();
-				defaultSamplerDescs.resize(sam_size);
-				UINT sam_index = 0;
-				for (size_t i = 0; i < vert_sam.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = vert_sam[i];
-					CD3DX12_STATIC_SAMPLER_DESC defaultSamplerDesc{ bind_desc.BindPoint, D3D12_FILTER_ANISOTROPIC };
-					defaultSamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-					defaultSamplerDescs[sam_index] = defaultSamplerDesc;
-					sam_index++;
-				}
-
-				for (size_t i = 0; i < frag_sam.size(); ++i)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bind_desc = frag_sam[i];
-					CD3DX12_STATIC_SAMPLER_DESC defaultSamplerDesc{ bind_desc.BindPoint, D3D12_FILTER_ANISOTROPIC };
-					defaultSamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-					defaultSamplerDescs[sam_index] = defaultSamplerDesc;
-					sam_index++;
-				}
-
-				CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC signatureDesc;
-				signatureDesc.Init_1_1(rootParameters.size(), rootParameters.data(), defaultSamplerDescs.size(), defaultSamplerDescs.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-				m_RootSignature = context->createRootSignature(signatureDesc);
-
-				D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-				psoDesc.pRootSignature = m_RootSignature.Get();
-				psoDesc.InputLayout = { meshInputLayout.data(), (UINT)meshInputLayout.size() };
-				psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertex_binary);
-				psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixel_binary);
-				context->SetState(ps, psoDesc);
-				psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-				psoDesc.NumRenderTargets = 1;
-				psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-				psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-				psoDesc.SampleDesc.Count = samples;
-				psoDesc.SampleMask = UINT_MAX;
-
-				if (FAILED(context->m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_PipelineState)))) {
-					throw std::runtime_error("Failed to create graphics pipeline state");
-				}
+			DXGI_FORMAT colorFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+			DXGI_FORMAT depthFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			if (context->current_render_target)
+			{
+				colorFormat = context->current_render_target->colorFormat;
+				depthFormat = context->current_render_target->depthFormat;
 			}
-			return m_PipelineState;
+
+			// DXGI_FORMAT values fit in 8 bits.
+			const PsoKey key{
+				(uint64_t(ps.rasterState.u) << 32) |
+				(uint64_t(samples & 0xFF) << 16) |
+				(uint64_t(colorFormat & 0xFF) << 8) |
+				uint64_t(depthFormat & 0xFF),
+				inputLayoutKey };
+			auto it = m_psoCache.find(key);
+			if (it != m_psoCache.end()) {
+				return it->second;
+			}
+
+			EnsureRootSignature(context);
+
+			D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+			psoDesc.pRootSignature = m_RootSignature.Get();
+			psoDesc.InputLayout = { inputLayout.data(), (UINT)inputLayout.size() };
+			psoDesc.VS = CD3DX12_SHADER_BYTECODE(vertex_binary);
+			psoDesc.PS = CD3DX12_SHADER_BYTECODE(pixel_binary);
+			context->SetState(ps, psoDesc);
+			psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+			psoDesc.SampleDesc.Count = samples;
+			psoDesc.SampleMask = UINT_MAX;
+
+			if (colorFormat != DXGI_FORMAT_UNKNOWN)
+			{
+				psoDesc.NumRenderTargets = 1;
+				psoDesc.RTVFormats[0] = colorFormat;
+			}
+			else
+			{
+				psoDesc.NumRenderTargets = 0;
+			}
+
+			psoDesc.DSVFormat = depthFormat;
+			if (depthFormat == DXGI_FORMAT_UNKNOWN)
+			{
+				psoDesc.DepthStencilState.DepthEnable = FALSE;
+				psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				psoDesc.DepthStencilState.StencilEnable = FALSE;
+			}
+
+			ComPtr<ID3D12PipelineState> pso;
+			if (FAILED(context->m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pso)))) {
+				throw std::runtime_error("Failed to create graphics pipeline state");
+			}
+			m_psoCache[key] = pso;
+			return pso;
 		}
 
 		D3D12Program::~D3D12Program()
@@ -453,9 +490,12 @@ namespace filament
 			size(size),
 			usage(usage)
 		{
-			cb = std::make_shared<MD3D12ConstantBuffer>();
 			auto UploadBufferAllocator = context->GetUploadBufferAllocator();
-			UploadBufferAllocator->AllocUploadResource(size, UPLOAD_RESOURCE_ALIGNMENT, cb->ResourceLocation);
+			for (UINT i = 0; i < D3D12Context::NumFrames; ++i)
+			{
+				frames[i] = std::make_shared<MD3D12ConstantBuffer>();
+				UploadBufferAllocator->AllocUploadResource(size, UPLOAD_RESOURCE_ALIGNMENT, frames[i]->ResourceLocation);
+			}
 		}
 
 		D3D12UniformBuffer::~D3D12UniformBuffer()
@@ -463,10 +503,24 @@ namespace filament
 
 		}
 
+		MD3D12ConstantBufferRef D3D12UniformBuffer::GetCurrent(D3D12Context* context)
+		{
+			const UINT slot = context->m_frameIndex % D3D12Context::NumFrames;
+			if (frameVersion[slot] != version && !shadow.empty())
+			{
+				std::memcpy(frames[slot]->ResourceLocation.MappedAddress, shadow.data(), shadow.size());
+				frameVersion[slot] = version;
+			}
+			return frames[slot];
+		}
+
 		void D3D12UniformBuffer::Load(D3D12Context* context, const BufferDescriptor& data)
 		{
 			if (data.buffer) {
-				std::memcpy(cb->ResourceLocation.MappedAddress, data.buffer, data.size);
+				const size_t n = (std::min)(data.size, size);
+				shadow.assign((const uint8_t*)data.buffer, (const uint8_t*)data.buffer + n);
+				++version;
+				GetCurrent(context);
 			}
 		}
 
@@ -552,7 +606,9 @@ namespace filament
 			assert(!(desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-			srvDesc.Format = desc.Format;
+			// Typeless depth resources need the typed SRV format (e.g. R24_UNORM_X8).
+			const DXGI_FORMAT viewFormat = context->GetTextureViewFormat(format);
+			srvDesc.Format = (viewFormat != DXGI_FORMAT_UNKNOWN) ? viewFormat : desc.Format;
 			srvDesc.ViewDimension = dimension;
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			switch (dimension) {
@@ -577,6 +633,24 @@ namespace filament
 			SRV = std::make_unique<MD3D12ShaderResourceView>(context, srvDesc, texture.Get());
 		}
 
+		void D3D12Texture::TransitionTo(D3D12Context* context, D3D12_RESOURCE_STATES stateAfter)
+		{
+			if (!texture || resourceState == stateAfter) {
+				return;
+			}
+			context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(
+				texture.Get(), resourceState, stateAfter));
+			resourceState = stateAfter;
+		}
+
+		D3D12_RESOURCE_STATES D3D12Texture::IdleState() const
+		{
+			if (usage & TextureUsage::SAMPLEABLE) {
+				return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			}
+			return D3D12_RESOURCE_STATE_COMMON;
+		}
+
 		void D3D12Texture::createTextureUAV(D3D12Context* context, UINT mipSlice)
 		{
 			const D3D12_RESOURCE_DESC desc = texture->GetDesc();
@@ -597,8 +671,29 @@ namespace filament
 			UAV = std::make_unique<MD3D12UnorderedAccessView>(context, uavDesc, texture.Get());
 		}
 
-		void D3D12Texture::CreateDepth(D3D12Context* context, DXGI_FORMAT format, uint32_t samples, uint32_t width, uint32_t height)
+		static bool isDepthTextureFormat(TextureFormat format)
 		{
+			switch (format)
+			{
+			case TextureFormat::DEPTH16:
+			case TextureFormat::DEPTH24:
+			case TextureFormat::DEPTH24_STENCIL8:
+			case TextureFormat::DEPTH32F:
+			case TextureFormat::DEPTH32F_STENCIL8:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		void D3D12Texture::CreateDepth(D3D12Context* context, DXGI_FORMAT /*unused*/, uint32_t samples, uint32_t width, uint32_t height)
+		{
+			const DXGI_FORMAT resourceFormat = context->GetTextureFormat(format);
+			const DXGI_FORMAT dsvFormat = context->GetDepthViewFormat(format);
+			if (resourceFormat == DXGI_FORMAT_UNKNOWN || dsvFormat == DXGI_FORMAT_UNKNOWN) {
+				throw std::runtime_error("Unsupported depth texture format");
+			}
+
 			D3D12_RESOURCE_DESC desc = {};
 			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			desc.Width = width;
@@ -606,26 +701,32 @@ namespace filament
 			desc.DepthOrArraySize = 1;
 			desc.MipLevels = 1;
 			desc.SampleDesc.Count = samples;
-			if (format != DXGI_FORMAT_UNKNOWN) {
-				desc.Format = format;
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+			desc.Format = resourceFormat;
+			desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			// Shadow maps / depth attachments that are also SAMPLEABLE must remain shader-readable.
+			if (!(usage & TextureUsage::SAMPLEABLE)) {
+				desc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+			}
 
-				if (FAILED(context->m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_DEPTH_WRITE,
-					&CD3DX12_CLEAR_VALUE{ format, 1.0f, 0 },
-					IID_PPV_ARGS(&texture))))
-				{
-					throw std::runtime_error("Failed to create RenderTarget depth-stencil texture");
-				}
+			if (FAILED(context->m_device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+				D3D12_HEAP_FLAG_NONE,
+				&desc,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				&CD3DX12_CLEAR_VALUE{ dsvFormat, 1.0f, 0 },
+				IID_PPV_ARGS(&texture))))
+			{
+				throw std::runtime_error("Failed to create depth-stencil texture");
+			}
+			resourceState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
-				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-				dsvDesc.Format = desc.Format;
-				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
-				
-				DSV = std::make_unique<MD3D12DepthStencilView>(context, dsvDesc, texture.Get());
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+			dsvDesc.Format = dsvFormat;
+			dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
+			DSV = std::make_unique<MD3D12DepthStencilView>(context, dsvDesc, texture.Get());
+
+			if (usage & TextureUsage::SAMPLEABLE) {
+				createTextureSRV(context, D3D12_SRV_DIMENSION_TEXTURE2D);
 			}
 		}
 
@@ -641,47 +742,63 @@ namespace filament
 			TextureUsage usage):
 			HwTexture(target, levels, samples, width, height, depth, format, usage)
 		{
-			UINT mip_levels = levels;
-			UINT bind_flags = 0;
-			UINT misc_flags = 0;
-
 			if (target == backend::SamplerType::SAMPLER_CUBEMAP)
 			{
 				depth = 6;
 			}
-			UINT array_size = depth;
 
 			assert(depth == 1 || depth == 6);
 
 			levels = (levels > 0) ? levels : Utility::numMipmapLevels(width, height);
 
+			if (isDepthTextureFormat(format) ||
+				(usage & TextureUsage::DEPTH_ATTACHMENT) ||
+				(usage & TextureUsage::STENCIL_ATTACHMENT))
+			{
+				CreateDepth(context, context->GetDepthViewFormat(format), samples > 0 ? samples : 1, width, height);
+				return;
+			}
+
 			D3D12_RESOURCE_DESC desc = {};
 			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			desc.Width = width;
 			desc.Height = height;
-			desc.DepthOrArraySize = depth;
+			desc.DepthOrArraySize = (UINT16)depth;
 			desc.MipLevels = levels;
-			desc.SampleDesc.Count = 1;
-			if (format == TextureFormat::DEPTH24_STENCIL8)
-			{
-				desc.Format = context->GetDepthViewFormat(format);
-				CreateDepth(context, desc.Format, 1, width, height);
-			}
-			else
-			{
-				desc.Format = context->GetTextureFormat(format);;
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-				if (FAILED(context->m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_COMMON,
-					nullptr,
-					IID_PPV_ARGS(&texture))))
-				{
-					throw std::runtime_error("Failed to create 2D texture");
-				}
+			desc.SampleDesc.Count = samples > 0 ? samples : 1;
+			desc.Format = context->GetTextureFormat(format);
+			desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
+			if (usage & TextureUsage::COLOR_ATTACHMENT) {
+				desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+			}
+			else {
+				// UAV only for non-RT textures (legacy mipgen path).
+				desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+			}
+
+			D3D12_CLEAR_VALUE clearValue = {};
+			clearValue.Format = desc.Format;
+			const D3D12_CLEAR_VALUE* pClear = nullptr;
+			D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+			if (usage & TextureUsage::COLOR_ATTACHMENT) {
+				initialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+				pClear = &clearValue;
+			}
+
+			if (FAILED(context->m_device->CreateCommittedResource(
+				&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
+				D3D12_HEAP_FLAG_NONE,
+				&desc,
+				initialState,
+				pClear,
+				IID_PPV_ARGS(&texture))))
+			{
+				throw std::runtime_error("Failed to create 2D texture");
+			}
+			resourceState = initialState;
+
+			if (usage & TextureUsage::SAMPLEABLE) {
 				D3D12_SRV_DIMENSION srvDim;
 				switch (depth) {
 				case 1:  srvDim = D3D12_SRV_DIMENSION_TEXTURE2D; break;
@@ -753,18 +870,27 @@ namespace filament
 			}
 
 			{
+				context->ensureCommandListRecording();
+
 				const CD3DX12_TEXTURE_COPY_LOCATION destCopyLocation{ texture.Get(), subresource };
 				const CD3DX12_TEXTURE_COPY_LOCATION srcCopyLocation{ textureStagingBuffer.buffer.Get(), textureStagingBuffer.layouts[0] };
 				const UINT dstX = fullSubresource ? 0 : (UINT)x;
 				const UINT dstY = fullSubresource ? 0 : (UINT)y;
 
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST, subresource));
+				TransitionTo(context, D3D12_RESOURCE_STATE_COPY_DEST);
 				context->m_commandList->CopyTextureRegion(&destCopyLocation, dstX, dstY, 0, &srcCopyLocation, nullptr);
-				context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON, subresource));
+				TransitionTo(context, IdleState());
 			}
 
-			context->executeCommandList();
-			context->waitForGPU();
+			// Keep staging alive until this frame slot is reclaimed; do not flush here ¡ª
+			// uploads batch into the current list and ride the next makeCurrent/commit.
+			ComPtr<ID3D12Resource> staging = std::move(textureStagingBuffer.buffer);
+			ID3D12Resource* raw = staging.Detach();
+			context->DeferRelease(std::shared_ptr<void>(raw, [](void* p) {
+				if (p) {
+					static_cast<ID3D12Resource*>(p)->Release();
+				}
+			}));
 		}
 
 		void D3D12Texture::CopyTexture(
@@ -780,6 +906,31 @@ namespace filament
 			assert(dst_extent.x == src_extent.x);
 			assert(dst_extent.y == src_extent.y);
 			assert(dst_extent.z == src_extent.z);
+			// CopyTextureRegion can't scale, and whole-resource state tracking can't express
+			// one texture being source and destination at once.
+			if (!texture || !src || !src->texture || src == this ||
+				dst_extent.x != src_extent.x || dst_extent.y != src_extent.y || dst_extent.z != src_extent.z)
+			{
+				return;
+			}
+
+			const D3D12_RESOURCE_DESC dstDesc = texture->GetDesc();
+			const D3D12_RESOURCE_DESC srcDesc = src->texture->GetDesc();
+			const UINT dstSub = D3D12CalcSubresource(dst_level, dst_layer, 0, dstDesc.MipLevels, dstDesc.DepthOrArraySize);
+			const UINT srcSub = D3D12CalcSubresource(src_level, src_layer, 0, srcDesc.MipLevels, srcDesc.DepthOrArraySize);
+			const CD3DX12_TEXTURE_COPY_LOCATION dstLoc{ texture.Get(), dstSub };
+			const CD3DX12_TEXTURE_COPY_LOCATION srcLoc{ src->texture.Get(), srcSub };
+			const D3D12_BOX box = {
+				(UINT)src_offset.x, (UINT)src_offset.y, (UINT)src_offset.z,
+				(UINT)(src_offset.x + src_extent.x), (UINT)(src_offset.y + src_extent.y), (UINT)(src_offset.z + src_extent.z)
+			};
+
+			context->ensureCommandListRecording();
+			src->TransitionTo(context, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			TransitionTo(context, D3D12_RESOURCE_STATE_COPY_DEST);
+			context->m_commandList->CopyTextureRegion(&dstLoc, (UINT)dst_offset.x, (UINT)dst_offset.y, (UINT)dst_offset.z, &srcLoc, &box);
+			TransitionTo(context, IdleState());
+			src->TransitionTo(context, src->IdleState());
 		}
 
 		void D3D12Texture::CopyTextureToMemory(
@@ -789,6 +940,72 @@ namespace filament
 			const Offset3D& extent,
 			PixelBufferDescriptor& data)
 		{
+			if (!texture || !data.buffer || extent.x <= 0 || extent.y <= 0) {
+				return;
+			}
+
+			const D3D12_RESOURCE_DESC desc = texture->GetDesc();
+			// Readback of MSAA or multi-plane depth/stencil resources needs a resolve or plane split first.
+			if (desc.SampleDesc.Count > 1 || DSV) {
+				return;
+			}
+
+			D3D12_RESOURCE_DESC regionDesc = desc;
+			regionDesc.Width = (UINT64)extent.x;
+			regionDesc.Height = (UINT)extent.y;
+			regionDesc.DepthOrArraySize = 1;
+			regionDesc.MipLevels = 1;
+			regionDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+			UINT numRows = 0;
+			UINT64 rowBytes = 0;
+			UINT64 totalBytes = 0;
+			context->m_device->GetCopyableFootprints(&regionDesc, 0, 1, 0, &footprint, &numRows, &rowBytes, &totalBytes);
+
+			ComPtr<ID3D12Resource> readback;
+			const CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_READBACK);
+			const CD3DX12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(totalBytes);
+			if (FAILED(context->m_device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufferDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&readback))))
+			{
+				return;
+			}
+
+			const UINT sub = D3D12CalcSubresource(level, layer, 0, desc.MipLevels, desc.DepthOrArraySize);
+			const CD3DX12_TEXTURE_COPY_LOCATION srcLoc{ texture.Get(), sub };
+			const CD3DX12_TEXTURE_COPY_LOCATION dstLoc{ readback.Get(), footprint };
+			const D3D12_BOX box = {
+				(UINT)offset.x, (UINT)offset.y, 0,
+				(UINT)(offset.x + extent.x), (UINT)(offset.y + extent.y), 1
+			};
+
+			context->ensureCommandListRecording();
+			TransitionTo(context, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			context->m_commandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, &box);
+			TransitionTo(context, IdleState());
+
+			// Synchronous like the D3D11 path: the caller's buffer is filled before this returns.
+			context->executeCommandList(true);
+			context->waitForGPU();
+
+			const D3D12_RANGE readRange{ 0, (SIZE_T)totalBytes };
+			uint8_t* mapped = nullptr;
+			if (FAILED(readback->Map(0, &readRange, reinterpret_cast<void**>(&mapped)))) {
+				return;
+			}
+			uint8_t* dst = static_cast<uint8_t*>(data.buffer);
+			for (UINT row = 0; row < numRows; ++row)
+			{
+				const size_t dstOffset = (size_t)row * (size_t)rowBytes;
+				if (dstOffset >= data.size) {
+					break;
+				}
+				const size_t bytes = (std::min)((size_t)rowBytes, data.size - dstOffset);
+				memcpy(dst + dstOffset, mapped + footprint.Offset + (size_t)row * footprint.Footprint.RowPitch, bytes);
+			}
+			const D3D12_RANGE writeRange{ 0, 0 };
+			readback->Unmap(0, &writeRange);
 		}
 
 		void D3D12Texture::GenerateMipmaps(D3D12Context* context)
@@ -951,6 +1168,9 @@ namespace filament
 
 			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
 			context->CopyBufferRegion(DefaultBuffer, VertexBufferRefArray[index]->ResourceLocation.OffsetFromBaseOfResource, UploadBuffer, UploadResourceLocation.OffsetFromBaseOfResource, data.size);
+			// Return shared buddy heap to a drawable state so other suballocations stay valid.
+			context->TransitionResource(DefaultBuffer,
+				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
 		}
 
 		D3D12IndexBuffer::D3D12IndexBuffer(
@@ -1008,6 +1228,8 @@ namespace filament
 
 			context->TransitionResource(DefaultBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
 			context->CopyBufferRegion(DefaultBuffer, IndexBufferRef->ResourceLocation.OffsetFromBaseOfResource, UploadBuffer, UploadResourceLocation.OffsetFromBaseOfResource, data.size);
+			context->TransitionResource(DefaultBuffer,
+				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER);
 		}
 
 		D3D12RenderPrimitive::D3D12RenderPrimitive(D3D12Context* context)

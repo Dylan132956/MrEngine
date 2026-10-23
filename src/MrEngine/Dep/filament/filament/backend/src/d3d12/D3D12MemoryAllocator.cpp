@@ -9,6 +9,8 @@ namespace filament
 		using namespace DirectX;
 		using namespace Microsoft::WRL;
 
+		uint32_t MD3D12BuddyAllocator::CurrentFrameSlot = 0;
+
 		MD3D12BuddyAllocator::MD3D12BuddyAllocator(ID3D12Device* InDevice, const TAllocatorInitData& InInitData)
 			: D3DDevice(InDevice), InitData(InInitData)
 		{
@@ -224,20 +226,19 @@ namespace filament
 
 		void MD3D12BuddyAllocator::Deallocate(MD3D12ResourceLocation& ResourceLocation)
 		{
-			DeferredDeletionQueue.push_back(ResourceLocation.BlockData);
+			DeferredDeletionQueue[CurrentFrameSlot % kD3D12FrameSlots].push_back(ResourceLocation.BlockData);
 		}
 
-		void MD3D12BuddyAllocator::CleanUpAllocations()
+		void MD3D12BuddyAllocator::CleanUpAllocations(uint32_t FrameSlot)
 		{
-			for (uint32_t i = 0; i < DeferredDeletionQueue.size(); i++)
+			auto& Queue = DeferredDeletionQueue[FrameSlot % kD3D12FrameSlots];
+			for (uint32_t i = 0; i < Queue.size(); i++)
 			{
-				const MD3D12BuddyBlockData& Block = DeferredDeletionQueue[i];
-
-				DeallocateInternal(Block);
+				DeallocateInternal(Queue[i]);
 			}
 
 			// clear out all of the released blocks, don't allow the array to shrink
-			DeferredDeletionQueue.clear();
+			Queue.clear();
 		}
 
 		void MD3D12BuddyAllocator::DeallocateInternal(const MD3D12BuddyBlockData& Block)
@@ -309,11 +310,11 @@ namespace filament
 			return true;
 		}
 
-		void MD3D12MultiBuddyAllocator::CleanUpAllocations()
+		void MD3D12MultiBuddyAllocator::CleanUpAllocations(uint32_t FrameSlot)
 		{
 			for (auto& Allocator : Allocators)
 			{
-				Allocator->CleanUpAllocations();
+				Allocator->CleanUpAllocations(FrameSlot);
 			}
 		}
 
@@ -336,9 +337,9 @@ namespace filament
 			return ResourceLocation.MappedAddress;
 		}
 
-		void MD3D12UploadBufferAllocator::CleanUpAllocations()
+		void MD3D12UploadBufferAllocator::CleanUpAllocations(uint32_t FrameSlot)
 		{
-			Allocator->CleanUpAllocations();
+			Allocator->CleanUpAllocations(FrameSlot);
 		}
 
 
@@ -378,9 +379,10 @@ namespace filament
 			}
 		}
 
-		void MD3D12DefaultBufferAllocator::CleanUpAllocations()
+		void MD3D12DefaultBufferAllocator::CleanUpAllocations(uint32_t FrameSlot)
 		{
-			Allocator->CleanUpAllocations();
+			Allocator->CleanUpAllocations(FrameSlot);
+			UavAllocator->CleanUpAllocations(FrameSlot);
 		}
 
 
@@ -416,9 +418,9 @@ namespace filament
 			}
 		}
 
-		void MD3D3TextureResourceAllocator::CleanUpAllocations()
+		void MD3D3TextureResourceAllocator::CleanUpAllocations(uint32_t FrameSlot)
 		{
-			Allocator->CleanUpAllocations();
+			Allocator->CleanUpAllocations(FrameSlot);
 		}
 
 	}

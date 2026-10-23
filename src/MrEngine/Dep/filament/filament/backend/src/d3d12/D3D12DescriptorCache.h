@@ -1,6 +1,7 @@
 #pragma once
 
 #include "D3D12Utils.h"
+#include "D3D12MemoryAllocator.h"
 
 namespace filament
 {
@@ -23,16 +24,18 @@ namespace filament
 
 			void AppendRtvDescriptors(const std::vector<D3D12_CPU_DESCRIPTOR_HANDLE>& RtvDescriptors, CD3DX12_GPU_DESCRIPTOR_HANDLE& OutGpuHandle, CD3DX12_CPU_DESCRIPTOR_HANDLE& OutCpuHandle);
 
-			void Reset();
+			// Switch to FrameSlot's region and discard what that slot used last time.
+			// Caller must have waited for the GPU work that last used this slot.
+			void Reset(uint32_t FrameSlot);
 
 		private:
 			void CreateCacheCbvSrvUavDescriptorHeap();
 
 			void CreateCacheRtvDescriptorHeap();
 
-			void ResetCacheCbvSrvUavDescriptorHeap();
+			void ResetCacheCbvSrvUavDescriptorHeap(uint32_t FrameSlot);
 
-			void ResetCacheRtvDescriptorHeap();
+			void ResetCacheRtvDescriptorHeap(uint32_t FrameSlot);
 
 		private:
 			D3D12Context* m_context;
@@ -41,9 +44,12 @@ namespace filament
 
 			UINT CbvSrvUavDescriptorSize;
 
-			static const int MaxCbvSrvUavDescripotrCount = 2048;
+			// Split evenly across kD3D12FrameSlots so in-flight frames keep their descriptors.
+			static const int MaxCbvSrvUavDescripotrCount = 4096;
 
 			uint32_t CbvSrvUavDescriptorOffset = 0;
+
+			uint32_t CbvSrvUavRegionEnd = MaxCbvSrvUavDescripotrCount / kD3D12FrameSlots;
 
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CacheRtvDescriptorHeap = nullptr;
@@ -53,6 +59,8 @@ namespace filament
 			static const int MaxRtvDescriptorCount = 1024;
 
 			uint32_t RtvDescriptorOffset = 0;
+
+			uint32_t RtvRegionEnd = MaxRtvDescriptorCount / kD3D12FrameSlots;
 		};
 	}
 }

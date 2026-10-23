@@ -167,6 +167,8 @@ namespace filament
 			DescriptorHeap createDescriptorHeap(const D3D12_DESCRIPTOR_HEAP_DESC& desc) const;
 			FrameBuffer createFrameBuffer(UINT width, UINT height, UINT samples, DXGI_FORMAT colorFormat, DXGI_FORMAT depthstencilFormat);
 			void executeCommandList(bool reset=true) const;
+			// Open the list for recording if it was closed (e.g. after commit).
+			void ensureCommandListRecording() const;
 			void waitForGPU() const;
 			void SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc);
 			DXGI_FORMAT GetTextureFormat(TextureFormat format);
@@ -197,6 +199,14 @@ namespace filament
 			MD3D12HeapSlotAllocator* GetHeapSlotAllocator(D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
 
 			MD3D12DescriptorCache* GetDescriptorCache() { return DescriptorCache.get(); }
+
+			// Each distinct SamplerParams gets a permanent slot in the shader-visible sampler heap.
+			D3D12_GPU_DESCRIPTOR_HANDLE GetSampler(const SamplerParams& params);
+
+			ID3D12DescriptorHeap* GetSamplerHeap() const { return m_samplerHeap.Get(); }
+
+			// Null descriptor for SRV slots the shader declares but nothing is bound to.
+			D3D12_CPU_DESCRIPTOR_HANDLE GetNullSRV(D3D_SRV_DIMENSION dimension) const;
 
 			struct UniformBufferBinding
 			{
@@ -232,6 +242,8 @@ namespace filament
 			ComPtr<ID3D12CommandQueue> m_commandQueue;
 			ComPtr<IDXGISwapChain3> m_swapChain;
 			ComPtr<ID3D12GraphicsCommandList> m_commandList;
+			// Tracks whether m_commandList is open for recording.
+			mutable bool m_commandListRecording = false;
 			static const UINT NumFrames = 2;
 			ComPtr<ID3D12CommandAllocator> m_commandAllocators[NumFrames];
 			FrameBuffer m_framebuffers[NumFrames];
@@ -241,7 +253,17 @@ namespace filament
 			UINT m_frameIndex = 0;
 			ComPtr<ID3D12Fence> m_fence;
 			HANDLE m_fenceCompletionEvent;
+			// Value each frame slot must reach before its resources can be reused.
 			mutable UINT64 m_fenceValues[NumFrames] = {};
+			// Single monotonic counter for the single m_fence; never signal a smaller value.
+			mutable UINT64 m_lastSignaledFence = 0;
+
+			// Keeps GPU objects alive until the frame slot they were released in has completed.
+			void DeferRelease(std::shared_ptr<void> object);
+			// Make `slot` the recording slot and free everything queued against it.
+			// Only call after waiting on m_fenceValues[slot].
+			void ReclaimFrameSlot(UINT slot);
+			std::vector<std::shared_ptr<void>> m_deferredReleases[NumFrames];
 
 			// Preferred MSAA sample count for the default (swapchain) pass. 1 disables MSAA.
 			UINT maxSamples = 16;
@@ -270,6 +292,15 @@ namespace filament
 			std::unique_ptr<MD3D12HeapSlotAllocator> SRVHeapSlotAllocator = nullptr;
 
 			std::unique_ptr<MD3D12DescriptorCache> DescriptorCache = nullptr;
+
+			static const UINT MaxSamplerCount = 2048;
+			ComPtr<ID3D12DescriptorHeap> m_samplerHeap;
+			UINT m_samplerDescriptorSize = 0;
+			std::unordered_map<uint32_t, D3D12_GPU_DESCRIPTOR_HANDLE> m_samplers;
+
+			std::unique_ptr<MD3D12ShaderResourceView> m_nullSRV2D;
+			std::unique_ptr<MD3D12ShaderResourceView> m_nullSRV2DArray;
+			std::unique_ptr<MD3D12ShaderResourceView> m_nullSRVCube;
 		};
 	}
 }

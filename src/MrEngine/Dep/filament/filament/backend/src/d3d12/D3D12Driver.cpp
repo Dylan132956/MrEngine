@@ -59,14 +59,9 @@ namespace filament
 
 		void D3D12Driver::endFrame(uint32_t frame_id)
 		{
-			// Clean memory allocations
-			m_context->GetUploadBufferAllocator()->CleanUpAllocations();
-
-			m_context->GetDefaultBufferAllocator()->CleanUpAllocations();
-
-			m_context->GetTextureResourceAllocator()->CleanUpAllocations();
-
-			m_context->GetDescriptorCache()->Reset();
+			// Descriptor / buddy reclaim happens in commit after the frame fence wait,
+			// so we never reset slots still referenced by in-flight GPU work.
+			(void)frame_id;
 		}
 
 		void D3D12Driver::flush(int dummy)
@@ -169,52 +164,25 @@ namespace filament
 				depth,
 				stencil);
 
-			//assert(samples == 1);
-
-			D3D12_RESOURCE_DESC desc = {};
-			desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			desc.Width = width;
-			desc.Height = height;
-			desc.DepthOrArraySize = 1;
-			desc.MipLevels = 1;
-			desc.SampleDesc.Count = samples;
+			render_target->width = width;
+			render_target->height = height;
+			render_target->samples = samples > 0 ? samples : 1;
 
 			if (flags & TargetBufferFlags::COLOR)
 			{
 				auto color_texture = handle_cast<D3D12Texture>(m_handle_map, color.handle);
-				desc.Format = m_context->GetTextureViewFormat(color_texture->format);
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-				const float optimizedClearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				if (FAILED(m_context->m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_RENDER_TARGET,
-					&CD3DX12_CLEAR_VALUE{ desc.Format, optimizedClearColor },
-					IID_PPV_ARGS(&render_target->colorTexture))))
-				{
-					throw std::runtime_error("Failed to create FrameBuffer color texture");
-				}
+				render_target->colorTex = color_texture;
+				render_target->colorTexture = color_texture->texture;
 
 				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-				rtvDesc.Format = desc.Format;
+				rtvDesc.Format = m_context->GetTextureViewFormat(color_texture->format);
 				rtvDesc.ViewDimension = (samples > 1) ? D3D12_RTV_DIMENSION_TEXTURE2DMS : D3D12_RTV_DIMENSION_TEXTURE2D;
-
-				//render_target->rtv = m_context->m_descHeapRTV.alloc();
-				//m_context->m_device->CreateRenderTargetView(render_target->colorTexture.Get(), &rtvDesc, render_target->rtv.cpuHandle);
-
 				if (samples <= 1) {
-					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-					srvDesc.Format = desc.Format;
-					srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-					srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-					srvDesc.Texture2D.MostDetailedMip = 0;
-					srvDesc.Texture2D.MipLevels = 1;
-
-					//render_target->srv = m_context->m_descHeapCBV_SRV_UAV.alloc();
-					//m_context->m_device->CreateShaderResourceView(render_target->colorTexture.Get(), &srvDesc, render_target->srv.cpuHandle);
+					rtvDesc.Texture2D.MipSlice = color.level;
 				}
+				render_target->RTV = std::make_unique<MD3D12RenderTargetView>(
+					m_context, rtvDesc, color_texture->texture.Get());
+				render_target->colorFormat = rtvDesc.Format;
 			}
 			if ((flags & TargetBufferFlags::DEPTH) ||
 				(flags & TargetBufferFlags::STENCIL))
@@ -233,31 +201,18 @@ namespace filament
 					level = stencil.level;
 				}
 
-				D3D12_DEPTH_STENCIL_VIEW_DESC depth_desc = { };
-				depth_desc.Format = m_context->GetDepthViewFormat(texture->format);
-				depth_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-				depth_desc.Texture2D.MipSlice = level;
-
-				desc.Format = depth_desc.Format;
-				desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-
-				if (FAILED(m_context->m_device->CreateCommittedResource(
-					&CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT },
-					D3D12_HEAP_FLAG_NONE,
-					&desc,
-					D3D12_RESOURCE_STATE_DEPTH_WRITE,
-					&CD3DX12_CLEAR_VALUE{desc.Format, 1.0f, 0 },
-					IID_PPV_ARGS(&render_target->depthStencilTexture))))
-				{
-					throw std::runtime_error("Failed to create RenderTarget depth-stencil texture");
-				}
+				render_target->depthTex = texture;
+				render_target->depthStencilTexture = texture->texture;
 
 				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-				dsvDesc.Format = desc.Format;
+				dsvDesc.Format = m_context->GetDepthViewFormat(texture->format);
 				dsvDesc.ViewDimension = (samples > 1) ? D3D12_DSV_DIMENSION_TEXTURE2DMS : D3D12_DSV_DIMENSION_TEXTURE2D;
-
-				//render_target->dsv = m_context->m_descHeapDSV.alloc();
-				//m_context->m_device->CreateDepthStencilView(render_target->depthStencilTexture.Get(), &dsvDesc, render_target->dsv.cpuHandle);
+				if (samples <= 1) {
+					dsvDesc.Texture2D.MipSlice = level;
+				}
+				render_target->DSV = std::make_unique<MD3D12DepthStencilView>(
+					m_context, dsvDesc, texture->texture.Get());
+				render_target->depthFormat = dsvDesc.Format;
 			}
 		}
 
@@ -340,26 +295,38 @@ namespace filament
 			return Handle<HwStream>();
 		}
 
+		// Buffer memory comes from the buddy allocators, whose frees are already deferred
+		// per frame slot, so these no longer need a full GPU stall.
 		void D3D12Driver::destroyVertexBuffer(Handle<HwVertexBuffer> vbh)
 		{
-			m_context->waitForGPU();
 			destruct_handle<D3D12VertexBuffer>(m_handle_map, vbh);
 		}
 
 		void D3D12Driver::destroyIndexBuffer(Handle<HwIndexBuffer> ibh)
 		{
-			m_context->waitForGPU();
 			destruct_handle<D3D12IndexBuffer>(m_handle_map, ibh);
 		}
 
 		void D3D12Driver::destroyRenderPrimitive(Handle<HwRenderPrimitive> rph)
 		{
-			m_context->waitForGPU();
 			destruct_handle<D3D12RenderPrimitive>(m_handle_map, rph);
 		}
 
 		void D3D12Driver::destroyProgram(Handle<HwProgram> ph)
 		{
+			if (!ph)
+			{
+				return;
+			}
+			auto program = handle_cast<D3D12Program>(m_handle_map, ph);
+			struct Hold {
+				ComPtr<ID3D12RootSignature> root;
+				decltype(D3D12Program::m_psoCache) psos;
+			};
+			auto hold = std::make_shared<Hold>();
+			hold->root = std::move(program->m_RootSignature);
+			hold->psos = std::move(program->m_psoCache);
+			m_context->DeferRelease(hold);
 			destruct_handle<D3D12Program>(m_handle_map, ph);
 		}
 
@@ -370,17 +337,62 @@ namespace filament
 
 		void D3D12Driver::destroyUniformBuffer(Handle<HwUniformBuffer> ubh)
 		{
+			if (!ubh)
+			{
+				return;
+			}
+			auto uniform_buffer = handle_cast<D3D12UniformBuffer>(m_handle_map, ubh);
+			struct Hold { MD3D12ConstantBufferRef frames[D3D12Context::NumFrames]; };
+			auto hold = std::make_shared<Hold>();
+			for (UINT i = 0; i < D3D12Context::NumFrames; ++i)
+			{
+				hold->frames[i] = std::move(uniform_buffer->frames[i]);
+			}
+			m_context->DeferRelease(hold);
 			destruct_handle<D3D12UniformBuffer>(m_handle_map, ubh);
 		}
 
 		void D3D12Driver::destroyTexture(Handle<HwTexture> th)
 		{
+			if (!th)
+			{
+				return;
+			}
+			auto texture = handle_cast<D3D12Texture>(m_handle_map, th);
+			struct Hold {
+				ComPtr<ID3D12Resource> resource;
+				std::unique_ptr<MD3D12ShaderResourceView> srv;
+				std::unique_ptr<MD3D12DepthStencilView> dsv;
+				std::unique_ptr<MD3D12UnorderedAccessView> uav;
+			};
+			auto hold = std::make_shared<Hold>();
+			hold->resource = std::move(texture->texture);
+			hold->srv = std::move(texture->SRV);
+			hold->dsv = std::move(texture->DSV);
+			hold->uav = std::move(texture->UAV);
+			m_context->DeferRelease(hold);
 			destruct_handle<D3D12Texture>(m_handle_map, th);
 		}
 
 		void D3D12Driver::destroyRenderTarget(Handle<HwRenderTarget> rth)
 		{
-			m_context->waitForGPU();
+			if (!rth)
+			{
+				return;
+			}
+			auto render_target = handle_cast<D3D12RenderTarget>(m_handle_map, rth);
+			struct Hold {
+				ComPtr<ID3D12Resource> color;
+				ComPtr<ID3D12Resource> depth;
+				std::unique_ptr<MD3D12RenderTargetView> rtv;
+				std::unique_ptr<MD3D12DepthStencilView> dsv;
+			};
+			auto hold = std::make_shared<Hold>();
+			hold->color = std::move(render_target->colorTexture);
+			hold->depth = std::move(render_target->depthStencilTexture);
+			hold->rtv = std::move(render_target->RTV);
+			hold->dsv = std::move(render_target->DSV);
+			m_context->DeferRelease(hold);
 			destruct_handle<D3D12RenderTarget>(m_handle_map, rth);
 		}
 
@@ -455,7 +467,32 @@ namespace filament
 
 		bool D3D12Driver::isRenderTargetFormatSupported(TextureFormat format)
 		{
-			return this->isTextureFormatSupported(format);
+			if (!this->isTextureFormatSupported(format))
+			{
+				return false;
+			}
+
+			switch (format)
+			{
+			case TextureFormat::DEPTH16:
+			case TextureFormat::DEPTH24:
+			case TextureFormat::DEPTH24_STENCIL8:
+			case TextureFormat::DEPTH32F:
+			case TextureFormat::DEPTH32F_STENCIL8:
+			{
+				D3D12_FEATURE_DATA_FORMAT_SUPPORT info = { m_context->GetDepthViewFormat(format) };
+				return info.Format != DXGI_FORMAT_UNKNOWN &&
+					SUCCEEDED(m_context->m_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &info, sizeof(info))) &&
+					(info.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
+			}
+			default:
+			{
+				D3D12_FEATURE_DATA_FORMAT_SUPPORT info = { m_context->GetTextureViewFormat(format) };
+				return info.Format != DXGI_FORMAT_UNKNOWN &&
+					SUCCEEDED(m_context->m_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &info, sizeof(info))) &&
+					(info.Support1 & D3D12_FORMAT_SUPPORT1_RENDER_TARGET);
+			}
+			}
 		}
 
 		bool D3D12Driver::isFrameTimeSupported()
@@ -530,20 +567,24 @@ namespace filament
 				auto buffer = static_cast<uint8_t*>(data.buffer) + face_offsets[i];
 				if (data.type == PixelDataType::COMPRESSED)
 				{
+					const uint32_t mipW = (std::max)(1u, texture->width >> level);
+					const uint32_t mipH = (std::max)(1u, texture->height >> level);
 					texture->UpdateTexture(
 						m_context,
 						i, level,
 						0, 0,
-						texture->width >> level, texture->height >> level,
+						mipW, mipH,
 						PixelBufferDescriptor(buffer, data.size / 6, data.compressedFormat, data.imageSize, nullptr));
 				}
 				else
 				{
+					const uint32_t mipW = (std::max)(1u, texture->width >> level);
+					const uint32_t mipH = (std::max)(1u, texture->height >> level);
 					texture->UpdateTexture(
 						m_context,
 						i, level,
 						0, 0,
-						texture->width >> level, texture->height >> level,
+						mipW, mipH,
 						PixelBufferDescriptor(buffer, data.size / 6, data.format, data.type));
 				}
 			}
@@ -700,9 +741,9 @@ namespace filament
 			{
 				fb.colorTexture = render_target->colorTexture;
 				fb.depthStencilTexture = render_target->depthStencilTexture;
-				if (render_target->SRV)
+				if (render_target->RTV)
 				{
-					rtvHandle = render_target->SRV->GetDescriptorHandle();
+					rtvHandle = render_target->RTV->GetDescriptorHandle();
 					hasColor = render_target->colorTexture != nullptr;
 				}
 				if (render_target->DSV)
@@ -711,10 +752,13 @@ namespace filament
 					hasDepth = render_target->depthStencilTexture != nullptr;
 				}
 				target_height = render_target->height;
-				if (fb.colorTexture)
+				if (render_target->colorTex)
 				{
-					m_context->m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(fb.colorTexture.Get(),
-						D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
+					render_target->colorTex->TransitionTo(m_context, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				}
+				if (render_target->depthTex)
+				{
+					render_target->depthTex->TransitionTo(m_context, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				}
 			}
 
@@ -763,7 +807,8 @@ namespace filament
 
 				if (hasDepth)
 				{
-					m_context->m_commandList->ClearDepthStencilView(dsvHandle, flags, 1.0f, 0, 0, nullptr);
+					m_context->m_commandList->ClearDepthStencilView(
+						dsvHandle, flags, params.clearDepth, 0, 0, nullptr);
 				}
 			}
 			m_context->m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -771,6 +816,20 @@ namespace filament
 
 		void D3D12Driver::endRenderPass(int dummy)
 		{
+			auto* rt = m_context->current_render_target;
+			if (rt && !rt->default_render_target)
+			{
+				// Make attachments sampleable again for subsequent passes / shadow sampling.
+				if (rt->colorTex && (rt->colorTex->usage & TextureUsage::SAMPLEABLE))
+				{
+					rt->colorTex->TransitionTo(m_context, rt->colorTex->IdleState());
+				}
+				if (rt->depthTex && (rt->depthTex->usage & TextureUsage::SAMPLEABLE))
+				{
+					rt->depthTex->TransitionTo(m_context, rt->depthTex->IdleState());
+				}
+			}
+
 			m_context->current_render_target = nullptr;
 			m_context->current_render_pass_flags = { };
 
@@ -825,11 +884,12 @@ namespace filament
 			uint32_t width,
 			uint32_t height)
 		{
+			const LONG top = (LONG)(m_context->current_render_target->height - (bottom + height));
 			CD3DX12_RECT rect(
 				(LONG)left,
-				(LONG)(m_context->current_render_target->height - (bottom + height)),
-				(LONG)left + width,
-				(LONG)bottom + height);
+				top,
+				(LONG)left + (LONG)width,
+				top + (LONG)height);
 			m_context->m_commandList->RSSetScissorRects(1, &rect);
 		}
 
@@ -838,16 +898,20 @@ namespace filament
 			auto swap_chain = handle_cast<D3D12SwapChain>(m_handle_map, sch_draw);
 			if (m_context->current_swap_chain != swap_chain)
 			{
-				if (m_context->current_swap_chain == nullptr) {
-					m_context->executeCommandList(false);
-					m_context->waitForGPU();
-				}
 				m_context->current_swap_chain = swap_chain;
+			}
+
+			// Flush any init / inter-frame uploads that were recorded since the last
+			// execute, then wait so this frame's allocator is idle before Reset.
+			if (m_context->m_commandListRecording)
+			{
+				m_context->executeCommandList(false);
+				m_context->waitForGPU();
 			}
 
 			ID3D12CommandAllocator* commandAllocator = m_context->m_commandAllocators[m_context->m_frameIndex].Get();
 			commandAllocator->Reset();
-			m_context->m_commandList->Reset(commandAllocator, nullptr);
+			m_context->ensureCommandListRecording();
 		}
 
 		void D3D12Driver::commit(Handle<HwSwapChain> sch)
@@ -891,16 +955,20 @@ namespace filament
 			DXGI_PRESENT_PARAMETERS dpp = {};
 			swap_chain->m_swapChain->Present1(0, DXGI_PRESENT_ALLOW_TEARING, &dpp);
 
-			const UINT64 prevFrameFenceValue = m_context->m_fenceValues[m_context->m_frameIndex];
-			m_context->m_commandQueue->Signal(m_context->m_fence.Get(), prevFrameFenceValue);
-			m_context->m_frameIndex = swap_chain->m_swapChain->GetCurrentBackBufferIndex();
-			UINT64& currentFrameFenceValue = m_context->m_fenceValues[m_context->m_frameIndex];
+			// Monotonic fence: never Signal(0) (CreateFence(0) already completed that value).
+			const UINT64 submittedFence = ++m_context->m_lastSignaledFence;
+			m_context->m_commandQueue->Signal(m_context->m_fence.Get(), submittedFence);
+			m_context->m_fenceValues[m_context->m_frameIndex] = submittedFence;
 
-			if (m_context->m_fence->GetCompletedValue() < currentFrameFenceValue) {
-				m_context->m_fence->SetEventOnCompletion(currentFrameFenceValue, m_context->m_fenceCompletionEvent);
+			m_context->m_frameIndex = swap_chain->m_swapChain->GetCurrentBackBufferIndex();
+			const UINT64 waitValue = m_context->m_fenceValues[m_context->m_frameIndex];
+			if (m_context->m_fence->GetCompletedValue() < waitValue) {
+				m_context->m_fence->SetEventOnCompletion(waitValue, m_context->m_fenceCompletionEvent);
 				WaitForSingleObjectEx(m_context->m_fenceCompletionEvent, INFINITE, FALSE);
 			}
-			currentFrameFenceValue = prevFrameFenceValue + 1;
+
+			// Only the slot we just waited on is idle; the frame just submitted keeps its own.
+			m_context->ReclaimFrameSlot(m_context->m_frameIndex);
 		}
 
 		void D3D12Driver::bindUniformBuffer(size_t index, Handle<HwUniformBuffer> ubh)
@@ -909,9 +977,7 @@ namespace filament
 
 			assert(index < m_context->uniform_buffer_bindings.size());
 			
-			m_context->uniform_buffer_bindings[index].ConstantBufferRef = uniform_buffer->cb;
-			//m_context->uniform_buffer_bindings[index].cbv = uniform_buffer->cbv;
-			//m_context->uniform_buffer_bindings[index].updata = uniform_buffer->updata;
+			m_context->uniform_buffer_bindings[index].ConstantBufferRef = uniform_buffer->GetCurrent(m_context);
 			m_context->uniform_buffer_bindings[index].offset = 0;
 			m_context->uniform_buffer_bindings[index].size = uniform_buffer->size;
 		}
@@ -928,6 +994,7 @@ namespace filament
 			assert(offset < uniform_buffer->size);
 			assert(offset + size <= uniform_buffer->size);
 
+			m_context->uniform_buffer_bindings[index].ConstantBufferRef = uniform_buffer->GetCurrent(m_context);
 			m_context->uniform_buffer_bindings[index].offset = offset;
 			m_context->uniform_buffer_bindings[index].size = size;
 		}
@@ -982,7 +1049,32 @@ namespace filament
 			uint32_t height,
 			PixelBufferDescriptor&& data)
 		{
+			auto rt = handle_cast<D3D12RenderTarget>(m_handle_map, src);
+			// Only single-sampled offscreen targets own a readable engine texture.
+			if (!rt || !rt->colorTex || rt->samples > 1 || width == 0 || height == 0 || y + height > rt->height) {
+				return;
+			}
 
+			// Filament rects are bottom-left based; D3D textures are top-left based.
+			const uint32_t top = rt->height - (y + height);
+			rt->colorTex->CopyTextureToMemory(m_context, 0, 0,
+				Offset3D({ (int)x, (int)top, 0 }), Offset3D({ (int)width, (int)height, 1 }), data);
+
+			// Match glReadPixels: the bottom row comes first in the user buffer.
+			const size_t rowBytes = data.size / height;
+			if (rowBytes > 0)
+			{
+				std::vector<uint8_t> tmp(rowBytes);
+				uint8_t* rows = static_cast<uint8_t*>(data.buffer);
+				for (uint32_t i = 0; i < height / 2; ++i)
+				{
+					uint8_t* a = rows + i * rowBytes;
+					uint8_t* b = rows + (height - 1 - i) * rowBytes;
+					memcpy(tmp.data(), a, rowBytes);
+					memcpy(a, b, rowBytes);
+					memcpy(b, tmp.data(), rowBytes);
+				}
+			}
 		}
 
 		void D3D12Driver::readStreamPixels(
@@ -1004,7 +1096,53 @@ namespace filament
 			backend::Viewport srcRect,
 			SamplerMagFilter filter)
 		{
-			
+			if (!(buffers & TargetBufferFlags::COLOR)) {
+				return;
+			}
+			auto dstRt = handle_cast<D3D12RenderTarget>(m_handle_map, dst);
+			auto srcRt = handle_cast<D3D12RenderTarget>(m_handle_map, src);
+			if (!dstRt || !srcRt || !dstRt->colorTex || !srcRt->colorTex || dstRt->colorTex == srcRt->colorTex) {
+				return;
+			}
+			// Copies and resolves can't scale; a scaling blit would need a draw.
+			if (dstRect.width != srcRect.width || dstRect.height != srcRect.height) {
+				return;
+			}
+
+			D3D12Texture* dstTex = dstRt->colorTex;
+			D3D12Texture* srcTex = srcRt->colorTex;
+			const int srcTop = (int)srcRt->height - (srcRect.bottom + (int)srcRect.height);
+			const int dstTop = (int)dstRt->height - (dstRect.bottom + (int)dstRect.height);
+
+			if (srcRt->samples > 1 && dstRt->samples <= 1)
+			{
+				// ResolveSubresource has no rect; only whole-surface resolves are possible.
+				if (srcRect.left != 0 || srcTop != 0 || dstRect.left != 0 || dstTop != 0 ||
+					srcRect.width != srcRt->width || srcRect.height != srcRt->height ||
+					dstRt->width != srcRt->width || dstRt->height != srcRt->height)
+				{
+					return;
+				}
+				m_context->ensureCommandListRecording();
+				srcTex->TransitionTo(m_context, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
+				dstTex->TransitionTo(m_context, D3D12_RESOURCE_STATE_RESOLVE_DEST);
+				m_context->m_commandList->ResolveSubresource(dstTex->texture.Get(), 0, srcTex->texture.Get(), 0, dstRt->colorFormat);
+				dstTex->TransitionTo(m_context, dstTex->IdleState());
+				srcTex->TransitionTo(m_context, srcTex->IdleState());
+				return;
+			}
+
+			if (srcRt->samples != dstRt->samples) {
+				return;
+			}
+			dstTex->CopyTexture(m_context,
+				0, 0,
+				Offset3D({ dstRect.left, dstTop, 0 }),
+				Offset3D({ (int)dstRect.width, (int)dstRect.height, 1 }),
+				srcTex,
+				0, 0,
+				Offset3D({ srcRect.left, srcTop, 0 }),
+				Offset3D({ (int)srcRect.width, (int)srcRect.height, 1 }));
 		}
 
 		void D3D12Driver::draw(backend::PipelineState ps, Handle<HwRenderPrimitive> rph)
@@ -1015,44 +1153,40 @@ namespace filament
 			auto index_buffer = handle_cast<D3D12IndexBuffer>(m_handle_map, primitive->index_buffer);
 
 			auto DescriptorCache = m_context->GetDescriptorCache();
-			if (program->meshInputLayout.size() == 0)
-			{
-				auto get_format = [](ElementType type) {
-					switch (type)
-					{
-					case ElementType::FLOAT2: return DXGI_FORMAT_R32G32_FLOAT;
-					case ElementType::FLOAT3: return DXGI_FORMAT_R32G32B32_FLOAT;
-					case ElementType::FLOAT4: return DXGI_FORMAT_R32G32B32A32_FLOAT;
-					case ElementType::UBYTE4: return DXGI_FORMAT_R8G8B8A8_UINT;
-					default: assert(false); return DXGI_FORMAT_UNKNOWN;
-					}
-				};
-				for (size_t i = 0; i < vertex_buffer->attributes.size(); ++i)
+			auto get_format = [](ElementType type) {
+				switch (type)
 				{
-					if (primitive->enabled_attributes & (1 << i))
-					{
-						//const auto& attribute = vertex_buffer->attributes[i];
-						//D3D12_INPUT_ELEMENT_DESC desc = { };
-						//desc.SemanticName = Semantics[attribute.Semantic].SemanticName;
-						//desc.SemanticIndex = Semantics[attribute.Semantic].SemanticIndex;
-						//desc.Format = get_format(attribute.type);
-						//desc.InputSlot = (UINT)0;
-						//desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-						//desc.AlignedByteOffset = attribute.offset;
-						//program->meshInputLayout.push_back(desc);
-						const auto& attribute = vertex_buffer->attributes[i];
-						D3D12_INPUT_ELEMENT_DESC desc = { };
-						desc.SemanticName = "TEXCOORD";
-						desc.SemanticIndex = (UINT)i;
-						desc.Format = get_format(attribute.type);
-						desc.InputSlot = (UINT)0;
-						desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-						desc.AlignedByteOffset = attribute.offset;
-						program->meshInputLayout.push_back(desc);
-					}
+				case ElementType::FLOAT2: return DXGI_FORMAT_R32G32_FLOAT;
+				case ElementType::FLOAT3: return DXGI_FORMAT_R32G32B32_FLOAT;
+				case ElementType::FLOAT4: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+				case ElementType::UBYTE4: return DXGI_FORMAT_R8G8B8A8_UINT;
+				default: assert(false); return DXGI_FORMAT_UNKNOWN;
+				}
+			};
+			// Programs are shared by meshes with different vertex formats, so the layout is per draw.
+			std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
+			uint64_t inputLayoutKey = 14695981039346656037ull;
+			auto hashValue = [&inputLayoutKey](uint64_t v) {
+				inputLayoutKey ^= v;
+				inputLayoutKey *= 1099511628211ull;
+			};
+			for (size_t i = 0; i < vertex_buffer->attributes.size(); ++i)
+			{
+				if (primitive->enabled_attributes & (1 << i))
+				{
+					const auto& attribute = vertex_buffer->attributes[i];
+					D3D12_INPUT_ELEMENT_DESC desc = { };
+					desc.SemanticName = "TEXCOORD";
+					desc.SemanticIndex = (UINT)i;
+					desc.Format = get_format(attribute.type);
+					desc.InputSlot = (UINT)0;
+					desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+					desc.AlignedByteOffset = attribute.offset;
+					inputLayout.push_back(desc);
+					hashValue((uint64_t(i) << 40) | (uint64_t(desc.Format) << 32) | desc.AlignedByteOffset);
 				}
 			}
-			m_context->m_commandList->SetPipelineState(program->GetPSO(m_context, ps).Get());
+			m_context->m_commandList->SetPipelineState(program->GetPSO(m_context, ps, inputLayout, inputLayoutKey).Get());
 			m_context->m_commandList->SetGraphicsRootSignature(program->m_RootSignature.Get());
 			UINT indexTable = 0;
 			//ID3D12DescriptorHeap* descriptorHeaps[] = {
@@ -1060,96 +1194,102 @@ namespace filament
 			//};
 			//m_context->m_commandList->SetDescriptorHeaps(1, descriptorHeaps);
 			auto CacheCbvSrvUavDescriptorHeap = m_context->GetDescriptorCache()->GetCacheCbvSrvUavDescriptorHeap();
-			ID3D12DescriptorHeap* DescriptorHeaps[] = { CacheCbvSrvUavDescriptorHeap.Get() };
-			m_context->m_commandList->SetDescriptorHeaps(1, DescriptorHeaps);
+			ID3D12DescriptorHeap* DescriptorHeaps[] = { CacheCbvSrvUavDescriptorHeap.Get(), m_context->GetSamplerHeap() };
+			m_context->m_commandList->SetDescriptorHeaps(2, DescriptorHeaps);
 
-			if (program->vertex_binary)
-			{
-				for (size_t i = 0; i < program->vert_cbv.size(); ++i)
+			auto commandList = m_context->m_commandList.Get();
+			auto bindCbvs = [&](const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& cbvs, std::map<UINT, UINT>& cbvMap) {
+				for (const auto& cbv : cbvs)
 				{
-					int bindpoint = program->vert_cbv[i].BindPoint;
-					//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
-					if (m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef)
-						m_context->m_commandList->SetGraphicsRootConstantBufferView(program->vert_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
+					const auto& binding = m_context->uniform_buffer_bindings[cbv.BindPoint];
+					if (binding.ConstantBufferRef)
+						commandList->SetGraphicsRootConstantBufferView(cbvMap[cbv.BindPoint], binding.ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
 				}
+			};
+			bindCbvs(program->vert_cbv, program->vert_cbv_map);
+			bindCbvs(program->frag_cbv, program->frag_cbv_map);
 
-                const auto& samplers = program->info.getSamplerGroupInfo();
-                for (size_t i = 0; i < samplers.size(); ++i)
-                {
-                    if (i == 2 || i == 3) // vs
-                    {
-                        if (m_context->sampler_group_binding[i].sampler_group)
-                        {
-                            auto sampler_group = handle_cast<D3D12SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
-
-                            for (int j = 0; j < samplers[i].size(); ++j)
-                            {
-                                auto& s = sampler_group->sb->getSamplers()[j];
-
-                                if (s.t)
-                                {
-                                    auto texture = handle_const_cast<D3D12Texture>(m_handle_map, s.t);
-									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
-									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
-									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
-
-									if (program->vert_srv_map.count(samplers[i][j].binding)) {
-										m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
-									}
-									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->vert_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
-                                }
-                            }
-                        }
-                    }
-                }
-			}
-			
-			if (program->pixel_binary)
-			{
-				for (size_t i = 0; i < program->frag_cbv.size(); ++i)
+			// Texture t<N> is always paired with sampler s<N>, whichever stage declares them.
+			std::vector<bool> rootBound(program->vert_cbv.size() + program->vert_srv.size() + program->vert_sam.size() +
+				program->frag_cbv.size() + program->frag_srv.size() + program->frag_sam.size(), false);
+			auto bindTable = [&](std::map<UINT, UINT>& map, UINT binding, D3D12_GPU_DESCRIPTOR_HANDLE handle) {
+				auto it = map.find(binding);
+				if (it != map.end())
 				{
-					int bindpoint = program->frag_cbv[i].BindPoint;
-					//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].cbv.gpuHandle);
-					m_context->m_commandList->SetGraphicsRootConstantBufferView(program->frag_cbv_map[bindpoint], m_context->uniform_buffer_bindings[bindpoint].ConstantBufferRef->ResourceLocation.GPUVirtualAddress);
+					commandList->SetGraphicsRootDescriptorTable(it->second, handle);
+					rootBound[it->second] = true;
 				}
+			};
 
-				const auto& samplers = program->info.getSamplerGroupInfo();
-				for (size_t i = 0; i < samplers.size(); ++i)
+			const auto& samplers = program->info.getSamplerGroupInfo();
+			for (size_t i = 0; i < samplers.size() && i < m_context->sampler_group_binding.size(); ++i)
+			{
+				if (samplers[i].empty() || !m_context->sampler_group_binding[i].sampler_group)
+					continue;
+
+				auto sampler_group = handle_cast<D3D12SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
+				const auto* groupSamplers = sampler_group->sb->getSamplers();
+				const size_t groupSize = sampler_group->sb->getSize();
+				for (size_t j = 0; j < samplers[i].size() && j < groupSize; ++j)
 				{
-                    if (i == 4 || i == 6) // ps
-                    {
-                        if (m_context->sampler_group_binding[i].sampler_group)
-                        {
-                            auto sampler_group = handle_cast<D3D12SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
+					const auto& s = groupSamplers[j];
+					if (!s.t)
+						continue;
 
-                            for (int j = 0; j < samplers[i].size(); ++j)
-                            {
-                                auto& s = sampler_group->sb->getSamplers()[j];
+					auto texture = handle_const_cast<D3D12Texture>(m_handle_map, s.t);
+					if (!texture->SRV)
+						continue;
 
-                                if (s.t)
-                                {
-                                    auto texture = handle_const_cast<D3D12Texture>(m_handle_map, s.t);
-									std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors;
-									SrcDescriptors.push_back(texture->SRV->GetDescriptorHandle());
-									auto GpuDescriptorHandle = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
+					const UINT binding = samplers[i][j].binding;
+					const bool usedByVs = program->vert_srv_map.count(binding) || program->vert_sam_map.count(binding);
+					const bool usedByPs = program->frag_srv_map.count(binding) || program->frag_sam_map.count(binding);
+					if (!usedByVs && !usedByPs)
+						continue;
 
-									if (program->frag_srv_map.count(samplers[i][j].binding)) {
-										m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], GpuDescriptorHandle);
-									}
-									//m_context->m_commandList->SetGraphicsRootDescriptorTable(program->frag_srv_map[samplers[i][j].binding], texture->srv.gpuHandle);
-                                }
-                            }
-                        }
-                    }
+					std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors{ texture->SRV->GetDescriptorHandle() };
+					const auto srvGpu = DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors);
+					const auto samplerGpu = m_context->GetSampler(s.s);
+					bindTable(program->vert_srv_map, binding, srvGpu);
+					bindTable(program->frag_srv_map, binding, srvGpu);
+					bindTable(program->vert_sam_map, binding, samplerGpu);
+					bindTable(program->frag_sam_map, binding, samplerGpu);
 				}
 			}
+
+			// Unset descriptor tables are invalid at draw time, so give leftover slots safe defaults.
+			auto bindNullSrvs = [&](const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& srvs, std::map<UINT, UINT>& map) {
+				for (const auto& srv : srvs)
+				{
+					const UINT root = map[srv.BindPoint];
+					if (rootBound[root])
+						continue;
+					std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> SrcDescriptors{ m_context->GetNullSRV(srv.Dimension) };
+					commandList->SetGraphicsRootDescriptorTable(root, DescriptorCache->AppendCbvSrvUavDescriptors(SrcDescriptors));
+				}
+			};
+			auto bindDefaultSamplers = [&](const std::vector<D3D12_SHADER_INPUT_BIND_DESC>& sams, std::map<UINT, UINT>& map) {
+				for (const auto& sam : sams)
+				{
+					const UINT root = map[sam.BindPoint];
+					if (rootBound[root])
+						continue;
+					SamplerParams params;
+					params.filterMag = SamplerMagFilter::LINEAR;
+					params.filterMin = SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+					commandList->SetGraphicsRootDescriptorTable(root, m_context->GetSampler(params));
+				}
+			};
+			bindNullSrvs(program->vert_srv, program->vert_srv_map);
+			bindNullSrvs(program->frag_srv, program->frag_srv_map);
+			bindDefaultSamplers(program->vert_sam, program->vert_sam_map);
+			bindDefaultSamplers(program->frag_sam, program->frag_sam_map);
 
 			m_context->SetVertexBuffer(vertex_buffer->VertexBufferRefArray[0], 0, vertex_buffer->stride, vertex_buffer->size);
 			m_context->SetIndexBuffer(index_buffer->IndexBufferRef, 0, index_buffer->indexFormat, index_buffer->indexDataSize);
 			//m_context->m_commandList->IASetVertexBuffers(0, vertex_buffer->vbvs.size(), &vertex_buffer->vbvs[0]);
 			//m_context->m_commandList->IASetIndexBuffer(&index_buffer->ibv);
 
-			m_context->m_commandList->DrawIndexedInstanced(primitive->count, 1, 0, 0, 0);
+			m_context->m_commandList->DrawIndexedInstanced(primitive->count, 1, primitive->offset, 0, 0);
 		}
 	}
 }

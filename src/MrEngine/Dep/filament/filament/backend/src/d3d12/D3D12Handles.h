@@ -37,6 +37,8 @@ namespace filament
 			int mCurrBackBuffer = 0;
 		};
 
+		struct D3D12Texture;
+
 		struct D3D12RenderTarget : public HwRenderTarget
 		{
 			D3D12RenderTarget(
@@ -54,12 +56,18 @@ namespace filament
 
 			bool default_render_target = false;
 
+			// Offscreen attachments wrap engine textures (not separate orphaned resources).
+			D3D12Texture* colorTex = nullptr;
+			D3D12Texture* depthTex = nullptr;
 			ComPtr<ID3D12Resource> colorTexture;
 			ComPtr<ID3D12Resource> depthStencilTexture;
-			std::unique_ptr<MD3D12ShaderResourceView> SRV;
+			std::unique_ptr<MD3D12RenderTargetView> RTV;
 			std::unique_ptr<MD3D12DepthStencilView> DSV;
-			UINT width, height;
-			UINT samples;
+			UINT width = 0, height = 0;
+			UINT samples = 1;
+			// Attachment formats baked into PSOs; UNKNOWN means the attachment is absent.
+			DXGI_FORMAT colorFormat = DXGI_FORMAT_UNKNOWN;
+			DXGI_FORMAT depthFormat = DXGI_FORMAT_UNKNOWN;
 		};
 
 		struct D3D12Program : public HwProgram
@@ -82,14 +90,20 @@ namespace filament
 			std::map<UINT, UINT> vert_srv_map;
 			std::map<UINT, UINT> frag_cbv_map;
 			std::map<UINT, UINT> frag_srv_map;
+			std::map<UINT, UINT> vert_sam_map;
+			std::map<UINT, UINT> frag_sam_map;
 
-			std::vector<D3D12_INPUT_ELEMENT_DESC> meshInputLayout;
-
-			ComPtr<ID3D12PipelineState> GetPSO(D3D12Context* context, const backend::PipelineState& ps);
+			ComPtr<ID3D12PipelineState> GetPSO(
+				D3D12Context* context,
+				const backend::PipelineState& ps,
+				const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputLayout,
+				uint64_t inputLayoutKey);
+			void EnsureRootSignature(D3D12Context* context);
 
 			ComPtr<ID3D12RootSignature> m_RootSignature;
-			ComPtr<ID3D12PipelineState> m_PipelineState;
-			UINT m_psoSamples = 0;
+			// (raster state | samples | color fmt | depth fmt, vertex layout hash).
+			using PsoKey = std::pair<uint64_t, uint64_t>;
+			std::map<PsoKey, ComPtr<ID3D12PipelineState>> m_psoCache;
 		};
 
 		struct D3D12UniformBuffer : public HwUniformBuffer
@@ -97,13 +111,15 @@ namespace filament
 			D3D12UniformBuffer(D3D12Context* context, size_t size, BufferUsage usage);
 			~D3D12UniformBuffer();
 			void Load(D3D12Context* context, const BufferDescriptor& data);
-			MD3D12ConstantBufferRef cb;
+			MD3D12ConstantBufferRef GetCurrent(D3D12Context* context);
+			// One upload buffer per in-flight frame so CPU writes don't race GPU reads.
+			MD3D12ConstantBufferRef frames[D3D12Context::NumFrames];
+			// Latest contents; a slot is refreshed from here when it lags behind.
+			std::vector<uint8_t> shadow;
+			uint64_t version = 0;
+			uint64_t frameVersion[D3D12Context::NumFrames] = {};
 			size_t size;
 			BufferUsage usage;
-			template<typename T> T* as() const
-			{
-				return reinterpret_cast<T*>(data.cpuAddress);
-			}
 		};
 
 		struct D3D12SamplerGroup : public HwSamplerGroup
@@ -160,8 +176,12 @@ namespace filament
 				const Offset3D& extent,
 				PixelBufferDescriptor& data);
 			void GenerateMipmaps(D3D12Context* context);
+			void TransitionTo(D3D12Context* context, D3D12_RESOURCE_STATES stateAfter);
+			// State the texture is left in between passes/copies.
+			D3D12_RESOURCE_STATES IdleState() const;
 
 			ComPtr<ID3D12Resource> texture;
+			D3D12_RESOURCE_STATES resourceState = D3D12_RESOURCE_STATE_COMMON;
 
 			std::unique_ptr<MD3D12ShaderResourceView> SRV;
 			std::unique_ptr<MD3D12DepthStencilView> DSV;

@@ -107,6 +107,7 @@ namespace filament
 			if (FAILED(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[0].Get(), nullptr, IID_PPV_ARGS(&m_commandList)))) {
 				throw std::runtime_error("Failed to create direct command list");
 			}
+			m_commandListRecording = true;
 
 			// Create 64kB host-mapped buffer in the upload heap for shader constants.
 			//m_constantBuffer = createUploadBuffer(640 * 1024);
@@ -127,6 +128,131 @@ namespace filament
 
 			DescriptorCache = std::make_unique<MD3D12DescriptorCache>(this);
 
+			D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
+			samplerHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+			samplerHeapDesc.NumDescriptors = MaxSamplerCount;
+			samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			if (FAILED(m_device->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&m_samplerHeap)))) {
+				throw std::runtime_error("Failed to create sampler descriptor heap");
+			}
+			m_samplerDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC nullDesc = {};
+			nullDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			nullDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			nullDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			nullDesc.Texture2D.MipLevels = 1;
+			m_nullSRV2D = std::make_unique<MD3D12ShaderResourceView>(this, nullDesc, nullptr);
+
+			nullDesc = {};
+			nullDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			nullDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			nullDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			nullDesc.Texture2DArray.MipLevels = 1;
+			nullDesc.Texture2DArray.ArraySize = 1;
+			m_nullSRV2DArray = std::make_unique<MD3D12ShaderResourceView>(this, nullDesc, nullptr);
+
+			nullDesc = {};
+			nullDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			nullDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			nullDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			nullDesc.TextureCube.MipLevels = 1;
+			m_nullSRVCube = std::make_unique<MD3D12ShaderResourceView>(this, nullDesc, nullptr);
+		}
+
+		D3D12_CPU_DESCRIPTOR_HANDLE D3D12Context::GetNullSRV(D3D_SRV_DIMENSION dimension) const
+		{
+			switch (dimension)
+			{
+			case D3D_SRV_DIMENSION_TEXTURECUBE:
+				return m_nullSRVCube->GetDescriptorHandle();
+			case D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+				return m_nullSRV2DArray->GetDescriptorHandle();
+			default:
+				return m_nullSRV2D->GetDescriptorHandle();
+			}
+		}
+
+		D3D12_GPU_DESCRIPTOR_HANDLE D3D12Context::GetSampler(const SamplerParams& params)
+		{
+			auto find = m_samplers.find(params.u);
+			if (find != m_samplers.end()) {
+				return find->second;
+			}
+
+			if (m_samplers.size() >= MaxSamplerCount) {
+				throw std::runtime_error("D3D12 sampler heap exhausted");
+			}
+
+			const bool minLinear =
+				params.filterMin == SamplerMinFilter::LINEAR ||
+				params.filterMin == SamplerMinFilter::LINEAR_MIPMAP_NEAREST ||
+				params.filterMin == SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+			const bool magLinear = params.filterMag == SamplerMagFilter::LINEAR;
+			const bool mipLinear =
+				params.filterMin == SamplerMinFilter::NEAREST_MIPMAP_LINEAR ||
+				params.filterMin == SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+			const bool hasMips =
+				params.filterMin != SamplerMinFilter::NEAREST &&
+				params.filterMin != SamplerMinFilter::LINEAR;
+			const bool compare = params.compareMode == SamplerCompareMode::COMPARE_TO_TEXTURE;
+			const D3D12_FILTER_REDUCTION_TYPE reduction = compare ?
+				D3D12_FILTER_REDUCTION_TYPE_COMPARISON : D3D12_FILTER_REDUCTION_TYPE_STANDARD;
+
+			auto toAddress = [](SamplerWrapMode mode) {
+				switch (mode)
+				{
+				case SamplerWrapMode::REPEAT: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+				case SamplerWrapMode::MIRRORED_REPEAT: return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+				default: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+				}
+			};
+			auto toCompare = [](SamplerCompareFunc func) {
+				switch (func)
+				{
+				case SamplerCompareFunc::LE: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+				case SamplerCompareFunc::GE: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+				case SamplerCompareFunc::L: return D3D12_COMPARISON_FUNC_LESS;
+				case SamplerCompareFunc::G: return D3D12_COMPARISON_FUNC_GREATER;
+				case SamplerCompareFunc::E: return D3D12_COMPARISON_FUNC_EQUAL;
+				case SamplerCompareFunc::NE: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+				case SamplerCompareFunc::A: return D3D12_COMPARISON_FUNC_ALWAYS;
+				default: return D3D12_COMPARISON_FUNC_NEVER;
+				}
+			};
+
+			D3D12_SAMPLER_DESC desc = {};
+			if (params.anisotropyLog2 > 0 && minLinear && magLinear)
+			{
+				desc.Filter = D3D12_ENCODE_ANISOTROPIC_FILTER(reduction);
+				desc.MaxAnisotropy = (std::min)(16u, 1u << params.anisotropyLog2);
+			}
+			else
+			{
+				desc.Filter = D3D12_ENCODE_BASIC_FILTER(
+					minLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+					magLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+					mipLinear ? D3D12_FILTER_TYPE_LINEAR : D3D12_FILTER_TYPE_POINT,
+					reduction);
+				desc.MaxAnisotropy = 1;
+			}
+			desc.AddressU = toAddress(params.wrapS);
+			desc.AddressV = toAddress(params.wrapT);
+			desc.AddressW = toAddress(params.wrapR);
+			desc.ComparisonFunc = compare ? toCompare(params.compareFunc) : D3D12_COMPARISON_FUNC_NEVER;
+			desc.MinLOD = 0.0f;
+			// GL semantics: non-mipmapped min filters only ever sample the base level.
+			desc.MaxLOD = hasMips ? D3D12_FLOAT32_MAX : 0.0f;
+
+			const UINT index = (UINT)m_samplers.size();
+			D3D12_CPU_DESCRIPTOR_HANDLE cpu = m_samplerHeap->GetCPUDescriptorHandleForHeapStart();
+			cpu.ptr += (SIZE_T)index * m_samplerDescriptorSize;
+			D3D12_GPU_DESCRIPTOR_HANDLE gpu = m_samplerHeap->GetGPUDescriptorHandleForHeapStart();
+			gpu.ptr += (UINT64)index * m_samplerDescriptorSize;
+			m_device->CreateSampler(&desc, cpu);
+
+			m_samplers.emplace(params.u, gpu);
+			return gpu;
 		}
 
 		//UploadBufferRegion D3D12Context::allocFromUploadBuffer(UploadBuffer& buffer, UINT size, int align) const
@@ -243,26 +369,45 @@ namespace filament
 
 		void D3D12Context::executeCommandList(bool reset) const
 		{
+			if (!m_commandListRecording) {
+				if (reset) {
+					ensureCommandListRecording();
+				}
+				return;
+			}
+
 			if (FAILED(m_commandList->Close())) {
 				throw std::runtime_error("Failed close command list (validation error or not in recording state)");
 			}
+			m_commandListRecording = false;
 
 			ID3D12CommandList* lists[] = { m_commandList.Get() };
 			m_commandQueue->ExecuteCommandLists(1, lists);
 
 			if (reset) {
-				m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr);
+				ensureCommandListRecording();
 			}
+		}
+
+		void D3D12Context::ensureCommandListRecording() const
+		{
+			if (m_commandListRecording) {
+				return;
+			}
+			if (FAILED(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr))) {
+				throw std::runtime_error("Failed to reset command list for recording");
+			}
+			m_commandListRecording = true;
 		}
 
 		void D3D12Context::waitForGPU() const
 		{
-			UINT64& fenceValue = m_fenceValues[m_frameIndex];
+			const UINT64 fenceValue = ++m_lastSignaledFence;
 			m_commandQueue->Signal(m_fence.Get(), fenceValue);
-			m_fence->SetEventOnCompletion(fenceValue, m_fenceCompletionEvent);
-			WaitForSingleObjectEx(m_fenceCompletionEvent, INFINITE, FALSE);
-			++fenceValue;
-
+			if (m_fence->GetCompletedValue() < fenceValue) {
+				m_fence->SetEventOnCompletion(fenceValue, m_fenceCompletionEvent);
+				WaitForSingleObjectEx(m_fenceCompletionEvent, INFINITE, FALSE);
+			}
 		}
 
 		ComPtr<IDXGIAdapter1> D3D12Context::getAdapter(const ComPtr<IDXGIFactory4>& factory)
@@ -422,11 +567,36 @@ namespace filament
 
 		D3D12Context::~D3D12Context()
 		{
-			// Release MSAA targets before descriptor heaps (declared later) are destroyed.
+			if (m_commandQueue && m_fence)
+			{
+				waitForGPU();
+			}
+			// Release MSAA targets and deferred objects before descriptor heaps and
+			// memory allocators (declared later) are destroyed.
 			for (UINT i = 0; i < NumFrames; ++i)
 			{
 				m_framebuffers[i] = FrameBuffer{};
+				m_deferredReleases[i].clear();
 			}
+		}
+
+		void D3D12Context::DeferRelease(std::shared_ptr<void> object)
+		{
+			if (object)
+			{
+				m_deferredReleases[m_frameIndex % NumFrames].push_back(std::move(object));
+			}
+		}
+
+		void D3D12Context::ReclaimFrameSlot(UINT slot)
+		{
+			slot %= NumFrames;
+			m_deferredReleases[slot].clear();
+			UploadBufferAllocator->CleanUpAllocations(slot);
+			DefaultBufferAllocator->CleanUpAllocations(slot);
+			TextureResourceAllocator->CleanUpAllocations(slot);
+			DescriptorCache->Reset(slot);
+			MD3D12BuddyAllocator::CurrentFrameSlot = slot;
 		}
 
 		void D3D12Context::SetState(const backend::PipelineState& ps, D3D12_GRAPHICS_PIPELINE_STATE_DESC& psoDesc)
