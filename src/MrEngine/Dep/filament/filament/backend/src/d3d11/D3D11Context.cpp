@@ -1,6 +1,8 @@
 
 #include "D3D11Context.h"
+#include <algorithm>
 #include <assert.h>
+#include <cfloat>
 #include <cstdio>
 
 namespace filament
@@ -308,60 +310,74 @@ namespace filament
 		ID3D11SamplerState* D3D11Context::GetSampler(const backend::SamplerParams& s)
 		{
 			auto find = samplers.find(s.u);
-			if (find == samplers.end())
-			{
-				D3D11_SAMPLER_DESC sampler_desc = { };
-				sampler_desc.MaxAnisotropy = 1;
-				sampler_desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-				sampler_desc.MinLOD = -3.402823466e+38F;
-				sampler_desc.MaxLOD = 3.402823466e+38F;
-
-				switch (s.filterMag)
-				{
-					case SamplerMagFilter::NEAREST:
-						sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-						break;
-					case SamplerMagFilter::LINEAR:
-						sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-						break;
-					default:
-						assert(false);
-						break;
-				}
-
-				switch (s.wrapS)
-				{
-					case SamplerWrapMode::CLAMP_TO_EDGE:
-						sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-						sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-						sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-						break;
-					case SamplerWrapMode::REPEAT:
-						sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-						sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-						sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-						break;
-					case SamplerWrapMode::MIRRORED_REPEAT:
-						sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
-						sampler_desc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
-						sampler_desc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
-						break;
-					default:
-						assert(false);
-						break;
-				}
-
-				ID3D11SamplerState* sampler = nullptr;
-				HRESULT hr = device->CreateSamplerState(&sampler_desc, &sampler);
-				assert(SUCCEEDED(hr));
-
-				samplers.insert({ s.u, sampler });
-				return sampler;
-			}
-			else
+			if (find != samplers.end())
 			{
 				return find->second;
 			}
+
+			const bool minLinear =
+				s.filterMin == SamplerMinFilter::LINEAR ||
+				s.filterMin == SamplerMinFilter::LINEAR_MIPMAP_NEAREST ||
+				s.filterMin == SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+			const bool magLinear = s.filterMag == SamplerMagFilter::LINEAR;
+			const bool mipLinear =
+				s.filterMin == SamplerMinFilter::NEAREST_MIPMAP_LINEAR ||
+				s.filterMin == SamplerMinFilter::LINEAR_MIPMAP_LINEAR;
+			const bool hasMips =
+				s.filterMin != SamplerMinFilter::NEAREST &&
+				s.filterMin != SamplerMinFilter::LINEAR;
+			const bool compare = s.compareMode == SamplerCompareMode::COMPARE_TO_TEXTURE;
+
+			auto toAddress = [](SamplerWrapMode mode) {
+				switch (mode)
+				{
+				case SamplerWrapMode::REPEAT: return D3D11_TEXTURE_ADDRESS_WRAP;
+				case SamplerWrapMode::MIRRORED_REPEAT: return D3D11_TEXTURE_ADDRESS_MIRROR;
+				default: return D3D11_TEXTURE_ADDRESS_CLAMP;
+				}
+			};
+			auto toCompare = [](SamplerCompareFunc func) {
+				switch (func)
+				{
+				case SamplerCompareFunc::LE: return D3D11_COMPARISON_LESS_EQUAL;
+				case SamplerCompareFunc::GE: return D3D11_COMPARISON_GREATER_EQUAL;
+				case SamplerCompareFunc::L: return D3D11_COMPARISON_LESS;
+				case SamplerCompareFunc::G: return D3D11_COMPARISON_GREATER;
+				case SamplerCompareFunc::E: return D3D11_COMPARISON_EQUAL;
+				case SamplerCompareFunc::NE: return D3D11_COMPARISON_NOT_EQUAL;
+				case SamplerCompareFunc::A: return D3D11_COMPARISON_ALWAYS;
+				default: return D3D11_COMPARISON_NEVER;
+				}
+			};
+
+			D3D11_SAMPLER_DESC sampler_desc = {};
+			if (s.anisotropyLog2 > 0 && minLinear && magLinear)
+			{
+				sampler_desc.Filter = D3D11_ENCODE_ANISOTROPIC_FILTER(compare);
+				sampler_desc.MaxAnisotropy = (std::min)(16u, 1u << s.anisotropyLog2);
+			}
+			else
+			{
+				sampler_desc.Filter = D3D11_ENCODE_BASIC_FILTER(
+					minLinear ? D3D11_FILTER_TYPE_LINEAR : D3D11_FILTER_TYPE_POINT,
+					magLinear ? D3D11_FILTER_TYPE_LINEAR : D3D11_FILTER_TYPE_POINT,
+					mipLinear ? D3D11_FILTER_TYPE_LINEAR : D3D11_FILTER_TYPE_POINT,
+					compare);
+				sampler_desc.MaxAnisotropy = 1;
+			}
+			sampler_desc.AddressU = toAddress(s.wrapS);
+			sampler_desc.AddressV = toAddress(s.wrapT);
+			sampler_desc.AddressW = toAddress(s.wrapR);
+			sampler_desc.ComparisonFunc = compare ? toCompare(s.compareFunc) : D3D11_COMPARISON_NEVER;
+			sampler_desc.MinLOD = 0.0f;
+			sampler_desc.MaxLOD = hasMips ? FLT_MAX : 0.0f;
+
+			ID3D11SamplerState* sampler = nullptr;
+			HRESULT hr = device->CreateSamplerState(&sampler_desc, &sampler);
+			assert(SUCCEEDED(hr));
+
+			samplers.insert({ s.u, sampler });
+			return sampler;
 		}
 
 		DXGI_FORMAT D3D11Context::GetTextureFormat(TextureFormat format)

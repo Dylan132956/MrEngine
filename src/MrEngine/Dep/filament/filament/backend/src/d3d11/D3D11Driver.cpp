@@ -714,11 +714,12 @@ namespace filament
 			uint32_t width,
 			uint32_t height)
 		{
+			const LONG top = (LONG)(m_context->current_render_target->height - (bottom + height));
 			CD3D11_RECT rect(
-				(LONG) left,
-				(LONG) (m_context->current_render_target->height - (bottom + height)),
-				(LONG) left + width,
-				(LONG) bottom + height);
+				(LONG)left,
+				top,
+				(LONG)left + (LONG)width,
+				top + (LONG)height);
 			m_context->context->RSSetScissorRects(1, &rect);
 		}
 
@@ -873,36 +874,8 @@ namespace filament
 					}
 				}
 
-                const auto& samplers = program->info.getSamplerGroupInfo();
-                for (size_t i = 0; i < samplers.size(); ++i)
-                {
-                    if (i == 2 || i == 3) // vs
-                    {
-                        if (m_context->sampler_group_binding[i].sampler_group)
-                        {
-                            auto sampler_group = handle_cast<D3D11SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
-
-                            for (int j = 0; j < samplers[i].size(); ++j)
-                            {
-                                auto& s = sampler_group->sb->getSamplers()[j];
-
-                                if (s.t)
-                                {
-                                    auto texture = handle_const_cast<D3D11Texture>(m_handle_map, s.t);
-                                    if (texture->image_view)
-                                    {
-                                        m_context->context->VSSetShaderResources((UINT) samplers[i][j].binding, 1, (ID3D11ShaderResourceView* const*) &texture->image_view);
-
-                                        ID3D11SamplerState* sampler = m_context->GetSampler(s.s);
-                                        m_context->context->VSSetSamplers((UINT) samplers[i][j].binding, 1, &sampler);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 			}
-			
+
 			if (program->pixel_shader)
 			{
 				m_context->context->PSSetShader(program->pixel_shader, nullptr, 0);
@@ -918,36 +891,48 @@ namespace filament
 						m_context->context->PSSetConstantBuffers((UINT) i, 0, nullptr);
 					}
 				}
+			}
 
+			// Bind every sampler group; D3D11 tolerates unused slots. Texture t<N> pairs with s<N>.
+			{
 				const auto& samplers = program->info.getSamplerGroupInfo();
-				for (size_t i = 0; i < samplers.size(); ++i)
+				for (size_t i = 0; i < samplers.size() && i < m_context->sampler_group_binding.size(); ++i)
 				{
-                    if (i == 4 || i == 6) // ps
-                    {
-                        if (m_context->sampler_group_binding[i].sampler_group)
-                        {
-                            auto sampler_group = handle_cast<D3D11SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
+					if (samplers[i].empty() || !m_context->sampler_group_binding[i].sampler_group)
+					{
+						continue;
+					}
 
-                            for (int j = 0; j < samplers[i].size(); ++j)
-                            {
-                                auto& s = sampler_group->sb->getSamplers()[j];
+					auto sampler_group = handle_cast<D3D11SamplerGroup>(m_handle_map, m_context->sampler_group_binding[i].sampler_group);
+					const auto* groupSamplers = sampler_group->sb->getSamplers();
+					const size_t groupSize = sampler_group->sb->getSize();
+					for (size_t j = 0; j < samplers[i].size() && j < groupSize; ++j)
+					{
+						const auto& s = groupSamplers[j];
+						if (!s.t)
+						{
+							continue;
+						}
 
-                                if (s.t)
-                                {
-                                    auto texture = handle_const_cast<D3D11Texture>(m_handle_map, s.t);
-                                    int height = texture->height;
-                                    int width = texture->width;
-                                    if (texture->image_view)
-                                    {
-                                        m_context->context->PSSetShaderResources((UINT) samplers[i][j].binding, 1, (ID3D11ShaderResourceView* const*) &texture->image_view);
+						auto texture = handle_const_cast<D3D11Texture>(m_handle_map, s.t);
+						if (!texture->image_view)
+						{
+							continue;
+						}
 
-                                        ID3D11SamplerState* sampler = m_context->GetSampler(s.s);
-                                        m_context->context->PSSetSamplers((UINT) samplers[i][j].binding, 1, &sampler);
-                                    }
-                                }
-                            }
-                        }
-                    }
+						const UINT binding = (UINT)samplers[i][j].binding;
+						ID3D11SamplerState* sampler = m_context->GetSampler(s.s);
+						if (program->vertex_shader)
+						{
+							m_context->context->VSSetShaderResources(binding, 1, (ID3D11ShaderResourceView* const*)&texture->image_view);
+							m_context->context->VSSetSamplers(binding, 1, &sampler);
+						}
+						if (program->pixel_shader)
+						{
+							m_context->context->PSSetShaderResources(binding, 1, (ID3D11ShaderResourceView* const*)&texture->image_view);
+							m_context->context->PSSetSamplers(binding, 1, &sampler);
+						}
+					}
 				}
 			}
 

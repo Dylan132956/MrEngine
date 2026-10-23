@@ -401,7 +401,17 @@ namespace filament
 				bind_flags |= D3D11_BIND_SHADER_RESOURCE;
 			}
 
-			if (levels > 1)
+			// GENERATE_MIPS needs RT+SRV and is invalid for compressed / depth formats.
+			const bool depthOrStencil =
+				(usage & TextureUsage::DEPTH_ATTACHMENT) ||
+				(usage & TextureUsage::STENCIL_ATTACHMENT);
+			const bool canGenerateMips =
+				levels > 1 &&
+				(usage & TextureUsage::SAMPLEABLE) &&
+				!depthOrStencil &&
+				!isS3TCCompression(format) &&
+				!isETC2Compression(format);
+			if (canGenerateMips)
 			{
 				mip_levels = 0;
 				bind_flags |= D3D11_BIND_RENDER_TARGET;
